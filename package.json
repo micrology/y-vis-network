@@ -1,7 +1,7 @@
 {
   "name": "y-vis-network",
   "version": "1.0.0",
-  "description": "Shared vis-network",
+  "description": "Demo of yjs used to share an editable network graph with vis-network",
   "main": "y-vis-network.js",
   "scripts": {
     "dist": "webpack --mode=development",
@@ -9,25 +9,29 @@
     "postinstall": "npm run dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/micrology/y-vis-network.git"
+    },
   "author": "Nigel Gilbert",
-  "license": "UNLICENSE",
+  "license": "MIT",
   "devDependencies": {
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.10.1"
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "ajv": "^6.10.2",
+    "ajv": "^6.12.2",
     "css": "^2.2.4",
-    "css-loader": "^3.4.1",
+    "css-loader": "^3.5.3",
     "keycharm": "^0.3.1",
-    "moment": "^2.24.0",
-    "serve": "^11.2.0",
-    "style-loader": "^1.1.2",
-    "vis-data": "^6.3.1",
-    "vis-network": "^6.5.0",
-    "vis-util": "^2.0.2",
-    "y-websocket": "^1.0.7",
-    "yjs": "^13.0.0-103"
+    "moment": "^2.26.0",
+    "serve": "^11.3.1",
+    "style-loader": "^1.2.1",
+    "vis-data": "^6.5.3",
+    "vis-network": "^6.5.2",
+    "vis-util": "^2.1.0",
+    "y-websocket": "^1.2.5",
+    "yjs": "^13.0.8"
   }
 }
