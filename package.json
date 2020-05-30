@@ -1,0 +1,33 @@
+{
+  "name": "y-vis-network",
+  "version": "1.0.0",
+  "description": "Shared vis-network",
+  "main": "y-vis-network.js",
+  "scripts": {
+    "dist": "webpack --mode=development",
+    "start": "webpack-dev-server --open-page y-vis-network.html",
+    "postinstall": "npm run dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nigel Gilbert",
+  "license": "UNLICENSE",
+  "devDependencies": {
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
+  },
+  "dependencies": {
+    "ajv": "^6.10.2",
+    "css": "^2.2.4",
+    "css-loader": "^3.4.1",
+    "keycharm": "^0.3.1",
+    "moment": "^2.24.0",
+    "serve": "^11.2.0",
+    "style-loader": "^1.1.2",
+    "vis-data": "^6.3.1",
+    "vis-network": "^6.5.0",
+    "vis-util": "^2.0.2",
+    "y-websocket": "^1.0.7",
+    "yjs": "^13.0.0-103"
+  }
+}
