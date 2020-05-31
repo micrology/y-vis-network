@@ -1,5 +1,5 @@
 # y-vis-network
-## Demo of yjs used to share an editable network graph with vis-network
+## yjs used to share an editable network graph with vis-network
 
 This is an example of how one can use [yjs](https://github.com/yjs/yjs.git) to allow the collaborative editing of a network graph (of e.g. a social network) in real time using the 
 [vis-network](https://github.com/visjs/vis-network.git) package.
