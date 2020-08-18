@@ -55653,7 +55653,8 @@ create a new shared document and start the WebSocket provider
  */
 const doc = new yjs__WEBPACK_IMPORTED_MODULE_0__["Doc"]();
 const wsProvider = new y_websocket__WEBPACK_IMPORTED_MODULE_1__["WebsocketProvider"](
-	'ws://localhost:1234',
+//	'ws://localhost:1234',
+	'wss://cress.soc.surrey.ac.uk/wss',
 	'y-vis-network-example6',
 	doc
 );
