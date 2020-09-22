@@ -2304,17 +2304,19 @@ const isoCrypto = typeof crypto === 'undefined' ? null : crypto
 const cryptoRandomBuffer = isoCrypto !== null
   ? len => {
     // browser
-    const arr = new Uint8Array(len)
+    const buf = new ArrayBuffer(len)
+    const arr = new Uint8Array(buf)
     isoCrypto.getRandomValues(arr)
-    return arr.buffer
+    return buf
   }
   : len => {
     // polyfill
-    const arr = new Uint8Array(len)
+    const buf = new ArrayBuffer(len)
+    const arr = new Uint8Array(buf)
     for (let i = 0; i < len; i++) {
       arr[i] = Math.ceil((Math.random() * 0xFFFFFFFF) >>> 0)
     }
-    return arr.buffer
+    return buf
   }
 
 exports.performance = perf
@@ -2782,7 +2784,13 @@ const BITS27 = BIT28 - 1
 const BITS28 = BIT29 - 1
 const BITS29 = BIT30 - 1
 const BITS30 = BIT31 - 1
+/**
+ * @type {number}
+ */
 const BITS31 = 0x7FFFFFFF
+/**
+ * @type {number}
+ */
 const BITS32 = 0xFFFFFFFF
 
 
@@ -2916,7 +2924,7 @@ const publish = (room, data) => {
 /*!*************************************!*\
   !*** ./node_modules/lib0/buffer.js ***!
   \*************************************/
-/*! exports provided: createUint8ArrayFromLen, createUint8ArrayViewFromArrayBuffer, createUint8ArrayFromArrayBuffer, toBase64, fromBase64, copyUint8Array */
+/*! exports provided: createUint8ArrayFromLen, createUint8ArrayViewFromArrayBuffer, createUint8ArrayFromArrayBuffer, toBase64, fromBase64, copyUint8Array, encodeAny, decodeAny */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -2927,13 +2935,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toBase64", function() { return toBase64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromBase64", function() { return fromBase64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "copyUint8Array", function() { return copyUint8Array; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeAny", function() { return encodeAny; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "decodeAny", function() { return decodeAny; });
 /* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./string.js */ "./node_modules/lib0/string.js");
 /* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./environment.js */ "./node_modules/lib0/environment.js");
+/* harmony import */ var _encoding_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./encoding.js */ "./node_modules/lib0/encoding.js");
+/* harmony import */ var _decoding_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./decoding.js */ "./node_modules/lib0/decoding.js");
 /**
  * Utility functions to work with buffers (Uint8Array).
  *
  * @module buffer
  */
+
+
 
 
 
@@ -2997,7 +3011,10 @@ const fromBase64Browser = s => {
 /**
  * @param {string} s
  */
-const fromBase64Node = s => new Uint8Array(Buffer.from(s, 'base64').buffer)
+const fromBase64Node = s => {
+  const buf = Buffer.from(s, 'base64')
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+}
 
 /* istanbul ignore next */
 const toBase64 = _environment_js__WEBPACK_IMPORTED_MODULE_1__["isBrowser"] ? toBase64Browser : toBase64Node
@@ -3016,6 +3033,27 @@ const copyUint8Array = uint8Array => {
   newBuf.set(uint8Array)
   return newBuf
 }
+
+/**
+ * Encode anything as a UInt8Array. It's a pun on typescripts's `any` type.
+ * See encoding.writeAny for more information.
+ *
+ * @param {any} data
+ * @return {Uint8Array}
+ */
+const encodeAny = data => {
+  const encoder = _encoding_js__WEBPACK_IMPORTED_MODULE_2__["createEncoder"]()
+  _encoding_js__WEBPACK_IMPORTED_MODULE_2__["writeAny"](encoder, data)
+  return _encoding_js__WEBPACK_IMPORTED_MODULE_2__["toUint8Array"](encoder)
+}
+
+/**
+ * Decode an any-encoded value.
+ *
+ * @param {Uint8Array} buf
+ * @return {any}
+ */
+const decodeAny = buf => _decoding_js__WEBPACK_IMPORTED_MODULE_3__["readAny"](_decoding_js__WEBPACK_IMPORTED_MODULE_3__["createDecoder"](buf))
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../buffer/index.js */ "./node_modules/buffer/index.js").Buffer))
 
@@ -3052,7 +3090,7 @@ const undefinedToNull = v => v === undefined ? null : v
 /*!***************************************!*\
   !*** ./node_modules/lib0/decoding.js ***!
   \***************************************/
-/*! exports provided: Decoder, createDecoder, hasContent, clone, readUint8Array, readVarUint8Array, readTailAsUint8Array, skip8, readUint8, readUint16, readUint32, peekUint8, peekUint16, peekUint32, readVarUint, readVarInt, peekVarUint, peekVarInt, readVarString, peekVarString, readFromDataView, readFloat32, readFloat64, readBigInt64, readBigUint64, readAny */
+/*! exports provided: Decoder, createDecoder, hasContent, clone, readUint8Array, readVarUint8Array, readTailAsUint8Array, skip8, readUint8, readUint16, readUint32, readUint32BigEndian, peekUint8, peekUint16, peekUint32, readVarUint, readVarInt, peekVarUint, peekVarInt, readVarString, peekVarString, readFromDataView, readFloat32, readFloat64, readBigInt64, readBigUint64, readAny, RleDecoder, IntDiffDecoder, RleIntDiffDecoder, UintOptRleDecoder, IncUintOptRleDecoder, IntDiffOptRleDecoder, StringDecoder */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3068,6 +3106,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUint8", function() { return readUint8; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUint16", function() { return readUint16; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUint32", function() { return readUint32; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUint32BigEndian", function() { return readUint32BigEndian; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "peekUint8", function() { return peekUint8; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "peekUint16", function() { return peekUint16; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "peekUint32", function() { return peekUint32; });
@@ -3083,9 +3122,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readBigInt64", function() { return readBigInt64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readBigUint64", function() { return readBigUint64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readAny", function() { return readAny; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RleDecoder", function() { return RleDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IntDiffDecoder", function() { return IntDiffDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RleIntDiffDecoder", function() { return RleIntDiffDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UintOptRleDecoder", function() { return UintOptRleDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IncUintOptRleDecoder", function() { return IncUintOptRleDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IntDiffOptRleDecoder", function() { return IntDiffOptRleDecoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StringDecoder", function() { return StringDecoder; });
 /* harmony import */ var _buffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer.js */ "./node_modules/lib0/buffer.js");
 /* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./binary.js */ "./node_modules/lib0/binary.js");
-/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./string.js */ "./node_modules/lib0/string.js");
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./math.js */ "./node_modules/lib0/math.js");
 /**
  * Efficient schema-less binary decoding with support for variable length encoding.
  *
@@ -3256,6 +3302,24 @@ const readUint32 = decoder => {
 }
 
 /**
+ * Read 4 bytes as unsigned integer in big endian order.
+ * (most significant byte first)
+ *
+ * @function
+ * @param {Decoder} decoder
+ * @return {number} An unsigned integer.
+ */
+const readUint32BigEndian = decoder => {
+  const uint =
+    (decoder.arr[decoder.pos + 3] +
+    (decoder.arr[decoder.pos + 2] << 8) +
+    (decoder.arr[decoder.pos + 1] << 16) +
+    (decoder.arr[decoder.pos] << 24)) >>> 0
+  decoder.pos += 4
+  return uint
+}
+
+/**
  * Look ahead without incrementing position.
  * to the next byte and read it as unsigned integer.
  *
@@ -3324,6 +3388,7 @@ const readVarUint = decoder => {
  * 1/8th of the storage is used as encoding overhead.
  *  * numbers < 2^7 is stored in one bytlength
  *  * numbers < 2^14 is stored in two bylength
+ * @todo This should probably create the inverse ~num if unmber is negative - but this would be a breaking change.
  *
  * @function
  * @param {Decoder} decoder
@@ -3343,7 +3408,7 @@ const readVarInt = decoder => {
     num = num | ((r & _binary_js__WEBPACK_IMPORTED_MODULE_1__["BITS7"]) << len)
     len += 7
     if (r < _binary_js__WEBPACK_IMPORTED_MODULE_1__["BIT8"]) {
-      return sign * num
+      return sign * (num >>> 0)
     }
     /* istanbul ignore if */
     if (len > 41) {
@@ -3393,8 +3458,30 @@ const peekVarInt = decoder => {
  * @param {Decoder} decoder
  * @return {String} The read String.
  */
-const readVarString = decoder =>
-  _string_js__WEBPACK_IMPORTED_MODULE_2__["decodeUtf8"](readVarUint8Array(decoder))
+const readVarString = decoder => {
+  let remainingLen = readVarUint(decoder)
+  if (remainingLen === 0) {
+    return ''
+  } else {
+    let encodedString = String.fromCodePoint(readUint8(decoder)) // remember to decrease remainingLen
+    if (--remainingLen < 100) { // do not create a Uint8Array for small strings
+      while (remainingLen--) {
+        encodedString += String.fromCodePoint(readUint8(decoder))
+      }
+    } else {
+      while (remainingLen > 0) {
+        const nextLen = remainingLen < 10000 ? remainingLen : 10000
+        // this is dangerous, we create a fresh array view from the existing buffer
+        const bytes = decoder.arr.subarray(decoder.pos, decoder.pos + nextLen)
+        decoder.pos += nextLen
+        // Starting with ES5.1 we can supply a generic array-like object as arguments
+        encodedString += String.fromCodePoint.apply(null, /** @type {any} */ (bytes))
+        remainingLen -= nextLen
+      }
+    }
+    return decodeURIComponent(escape(encodedString))
+  }
+}
 
 /**
  * Look ahead and read varString without incrementing position
@@ -3481,6 +3568,215 @@ const readAnyLookupTable = [
  * @param {Decoder} decoder
  */
 const readAny = decoder => readAnyLookupTable[127 - readUint8(decoder)](decoder)
+
+/**
+ * T must not be null.
+ *
+ * @template T
+ */
+class RleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {function(Decoder):T} reader
+   */
+  constructor (uint8Array, reader) {
+    super(uint8Array)
+    /**
+     * The reader
+     */
+    this.reader = reader
+    /**
+     * Current state
+     * @type {T|null}
+     */
+    this.s = null
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = this.reader(this)
+      if (hasContent(this)) {
+        this.count = readVarUint(this) + 1 // see encoder implementation for the reason why this is incremented
+      } else {
+        this.count = -1 // read the current value forever
+      }
+    }
+    this.count--
+    return /** @type {T} */ (this.s)
+  }
+}
+
+class IntDiffDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {number} start
+   */
+  constructor (uint8Array, start) {
+    super(uint8Array)
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    this.s += readVarInt(this)
+    return this.s
+  }
+}
+
+class RleIntDiffDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   * @param {number} start
+   */
+  constructor (uint8Array, start) {
+    super(uint8Array)
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+    this.count = 0
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    if (this.count === 0) {
+      this.s += readVarInt(this)
+      if (hasContent(this)) {
+        this.count = readVarUint(this) + 1 // see encoder implementation for the reason why this is incremented
+      } else {
+        this.count = -1 // read the current value forever
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s)
+  }
+}
+
+class UintOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = readVarInt(this)
+      // if the sign is negative, we read the count too, otherwise count is 1
+      const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_2__["isNegativeZero"](this.s)
+      this.count = 1
+      if (isNegative) {
+        this.s = -this.s
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s)
+  }
+}
+
+class IncUintOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  read () {
+    if (this.count === 0) {
+      this.s = readVarInt(this)
+      // if the sign is negative, we read the count too, otherwise count is 1
+      const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_2__["isNegativeZero"](this.s)
+      this.count = 1
+      if (isNegative) {
+        this.s = -this.s
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.count--
+    return /** @type {number} */ (this.s++)
+  }
+}
+
+class IntDiffOptRleDecoder extends Decoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    super(uint8Array)
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+    this.diff = 0
+  }
+
+  /**
+   * @return {number}
+   */
+  read () {
+    if (this.count === 0) {
+      const diff = readVarInt(this)
+      // if the first bit is set, we read more data
+      const hasCount = diff & 1
+      this.diff = diff >> 1
+      this.count = 1
+      if (hasCount) {
+        this.count = readVarUint(this) + 2
+      }
+    }
+    this.s += this.diff
+    this.count--
+    return this.s
+  }
+}
+
+class StringDecoder {
+  /**
+   * @param {Uint8Array} uint8Array
+   */
+  constructor (uint8Array) {
+    this.decoder = new UintOptRleDecoder(uint8Array)
+    this.str = readVarString(this.decoder)
+    /**
+     * @type {number}
+     */
+    this.spos = 0
+  }
+
+  /**
+   * @return {string}
+   */
+  read () {
+    const end = this.spos + this.decoder.read()
+    const res = this.str.slice(this.spos, end)
+    this.spos = end
+    return res
+  }
+}
 
 
 /***/ }),
@@ -3609,7 +3905,7 @@ const setAttributes = (el, attrs) => {
  */
 /* istanbul ignore next */
 const setAttributesMap = (el, attrs) => {
-  _map_js__WEBPACK_IMPORTED_MODULE_1__["map"](attrs, (value, key) => el.setAttribute(key, value))
+  attrs.forEach((value, key) => { el.setAttribute(key, value) })
   return el
 }
 
@@ -3833,7 +4129,7 @@ const isParentOf = (parent, child) => {
 /*!***************************************!*\
   !*** ./node_modules/lib0/encoding.js ***!
   \***************************************/
-/*! exports provided: Encoder, createEncoder, length, toUint8Array, write, set, writeUint8, setUint8, writeUint16, setUint16, writeUint32, setUint32, writeVarUint, writeVarInt, writeVarString, writeBinaryEncoder, writeUint8Array, writeVarUint8Array, writeOnDataView, writeFloat32, writeFloat64, writeBigInt64, writeBigUint64, writeAny */
+/*! exports provided: Encoder, createEncoder, length, toUint8Array, write, set, writeUint8, setUint8, writeUint16, setUint16, writeUint32, writeUint32BigEndian, setUint32, writeVarUint, writeVarInt, writeVarString, writeBinaryEncoder, writeUint8Array, writeVarUint8Array, writeOnDataView, writeFloat32, writeFloat64, writeBigInt64, writeBigUint64, writeAny, RleEncoder, IntDiffEncoder, RleIntDiffEncoder, UintOptRleEncoder, IncUintOptRleEncoder, IntDiffOptRleEncoder, StringEncoder */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3849,6 +4145,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeUint16", function() { return writeUint16; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setUint16", function() { return setUint16; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeUint32", function() { return writeUint32; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeUint32BigEndian", function() { return writeUint32BigEndian; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setUint32", function() { return setUint32; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeVarUint", function() { return writeVarUint; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeVarInt", function() { return writeVarInt; });
@@ -3862,11 +4159,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeBigInt64", function() { return writeBigInt64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeBigUint64", function() { return writeBigUint64; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeAny", function() { return writeAny; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RleEncoder", function() { return RleEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IntDiffEncoder", function() { return IntDiffEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RleIntDiffEncoder", function() { return RleIntDiffEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UintOptRleEncoder", function() { return UintOptRleEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IncUintOptRleEncoder", function() { return IncUintOptRleEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "IntDiffOptRleEncoder", function() { return IntDiffOptRleEncoder; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "StringEncoder", function() { return StringEncoder; });
 /* harmony import */ var _buffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer.js */ "./node_modules/lib0/buffer.js");
 /* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./math.js */ "./node_modules/lib0/math.js");
 /* harmony import */ var _number_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./number.js */ "./node_modules/lib0/number.js");
 /* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./binary.js */ "./node_modules/lib0/binary.js");
-/* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./string.js */ "./node_modules/lib0/string.js");
 /**
  * Efficient schema-less binary encoding with support for variable length encoding.
  *
@@ -3894,7 +4197,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @module encoding
  */
-
 
 
 
@@ -4073,6 +4375,20 @@ const writeUint32 = (encoder, num) => {
 }
 
 /**
+ * Write two bytes as an unsigned integer in big endian order.
+ * (most significant byte first)
+ *
+ * @function
+ * @param {Encoder} encoder
+ * @param {number} num The number that is to be encoded.
+ */
+const writeUint32BigEndian = (encoder, num) => {
+  for (let i = 3; i >= 0; i--) {
+    write(encoder, (num >>> (8 * i)) & _binary_js__WEBPACK_IMPORTED_MODULE_3__["BITS8"])
+  }
+}
+
+/**
  * Write two bytes as an unsigned integer at a specific location.
  *
  * @function
@@ -4109,15 +4425,19 @@ const writeVarUint = (encoder, num) => {
  *
  * Encodes integers in the range from [-2147483648, -2147483647].
  *
+ * We don't use zig-zag encoding because we want to keep the option open
+ * to use the same function for BigInt and 53bit integers (doubles).
+ *
+ * We use the 7th bit instead for signaling that this is a negative number.
+ *
  * @function
  * @param {Encoder} encoder
  * @param {number} num The number that is to be encoded.
  */
 const writeVarInt = (encoder, num) => {
-  let isNegative = false
-  if (num < 0) {
+  const isNegative = _math_js__WEBPACK_IMPORTED_MODULE_1__["isNegativeZero"](num)
+  if (isNegative) {
     num = -num
-    isNegative = true
   }
   //             |- whether to continue reading         |- whether is negative     |- number
   write(encoder, (num > _binary_js__WEBPACK_IMPORTED_MODULE_3__["BITS6"] ? _binary_js__WEBPACK_IMPORTED_MODULE_3__["BIT8"] : 0) | (isNegative ? _binary_js__WEBPACK_IMPORTED_MODULE_3__["BIT7"] : 0) | (_binary_js__WEBPACK_IMPORTED_MODULE_3__["BITS6"] & num))
@@ -4137,8 +4457,14 @@ const writeVarInt = (encoder, num) => {
  * @param {Encoder} encoder
  * @param {String} str The string that is to be encoded.
  */
-const writeVarString = (encoder, str) =>
-  writeVarUint8Array(encoder, _string_js__WEBPACK_IMPORTED_MODULE_4__["encodeUtf8"](str))
+const writeVarString = (encoder, str) => {
+  const encodedString = unescape(encodeURIComponent(str))
+  const len = encodedString.length
+  writeVarUint(encoder, len)
+  for (let i = 0; i < len; i++) {
+    write(encoder, /** @type {number} */ (encodedString.codePointAt(i)))
+  }
+}
 
 /**
  * Write the content of another Encoder.
@@ -4350,6 +4676,322 @@ const writeAny = (encoder, data) => {
   }
 }
 
+/**
+ * Now come a few stateful encoder that have their own classes.
+ */
+
+/**
+ * Basic Run Length Encoder - a basic compression implementation.
+ *
+ * Encodes [1,1,1,7] to [1,3,7,1] (3 times 1, 1 time 7). This encoder might do more harm than good if there are a lot of values that are not repeated.
+ *
+ * It was originally used for image compression. Cool .. article http://csbruce.com/cbm/transactor/pdfs/trans_v7_i06.pdf
+ *
+ * @note T must not be null!
+ *
+ * @template T
+ */
+class RleEncoder extends Encoder {
+  /**
+   * @param {function(Encoder, T):void} writer
+   */
+  constructor (writer) {
+    super()
+    /**
+     * The writer
+     */
+    this.w = writer
+    /**
+     * Current state
+     * @type {T|null}
+     */
+    this.s = null
+    this.count = 0
+  }
+
+  /**
+   * @param {T} v
+   */
+  write (v) {
+    if (this.s === v) {
+      this.count++
+    } else {
+      if (this.count > 0) {
+        // flush counter, unless this is the first value (count = 0)
+        writeVarUint(this, this.count - 1) // since count is always > 0, we can decrement by one. non-standard encoding ftw
+      }
+      this.count = 1
+      // write first value
+      this.w(this, v)
+      this.s = v
+    }
+  }
+}
+
+/**
+ * Basic diff decoder using variable length encoding.
+ *
+ * Encodes the values [3, 1100, 1101, 1050, 0] to [3, 1097, 1, -51, -1050] using writeVarInt.
+ */
+class IntDiffEncoder extends Encoder {
+  /**
+   * @param {number} start
+   */
+  constructor (start) {
+    super()
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    writeVarInt(this, v - this.s)
+    this.s = v
+  }
+}
+
+/**
+ * A combination of IntDiffEncoder and RleEncoder.
+ *
+ * Basically first writes the IntDiffEncoder and then counts duplicate diffs using RleEncoding.
+ *
+ * Encodes the values [1,1,1,2,3,4,5,6] as [1,1,0,2,1,5] (RLE([1,0,0,1,1,1,1,1]) ⇒ RleIntDiff[1,1,0,2,1,5])
+ */
+class RleIntDiffEncoder extends Encoder {
+  /**
+   * @param {number} start
+   */
+  constructor (start) {
+    super()
+    /**
+     * Current state
+     * @type {number}
+     */
+    this.s = start
+    this.count = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.s === v && this.count > 0) {
+      this.count++
+    } else {
+      if (this.count > 0) {
+        // flush counter, unless this is the first value (count = 0)
+        writeVarUint(this, this.count - 1) // since count is always > 0, we can decrement by one. non-standard encoding ftw
+      }
+      this.count = 1
+      // write first value
+      writeVarInt(this, v - this.s)
+      this.s = v
+    }
+  }
+}
+
+/**
+ * @param {UintOptRleEncoder} encoder
+ */
+const flushUintOptRleEncoder = encoder => {
+  if (encoder.count > 0) {
+    // flush counter, unless this is the first value (count = 0)
+    // case 1: just a single value. set sign to positive
+    // case 2: write several values. set sign to negative to indicate that there is a length coming
+    writeVarInt(encoder.encoder, encoder.count === 1 ? encoder.s : -encoder.s)
+    if (encoder.count > 1) {
+      writeVarUint(encoder.encoder, encoder.count - 2) // since count is always > 1, we can decrement by one. non-standard encoding ftw
+    }
+  }
+}
+
+/**
+ * Optimized Rle encoder that does not suffer from the mentioned problem of the basic Rle encoder.
+ *
+ * Internally uses VarInt encoder to write unsigned integers. If the input occurs multiple times, we write
+ * write it as a negative number. The UintOptRleDecoder then understands that it needs to read a count.
+ *
+ * Encodes [1,2,3,3,3] as [1,2,-3,3] (once 1, once 2, three times 3)
+ */
+class UintOptRleEncoder {
+  constructor () {
+    this.encoder = new Encoder()
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.s === v) {
+      this.count++
+    } else {
+      flushUintOptRleEncoder(this)
+      this.count = 1
+      this.s = v
+    }
+  }
+
+  toUint8Array () {
+    flushUintOptRleEncoder(this)
+    return toUint8Array(this.encoder)
+  }
+}
+
+/**
+ * Increasing Uint Optimized RLE Encoder
+ *
+ * The RLE encoder counts the number of same occurences of the same value.
+ * The IncUintOptRle encoder counts if the value increases.
+ * I.e. 7, 8, 9, 10 will be encoded as [-7, 4]. 1, 3, 5 will be encoded
+ * as [1, 3, 5].
+ */
+class IncUintOptRleEncoder {
+  constructor () {
+    this.encoder = new Encoder()
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.s + this.count === v) {
+      this.count++
+    } else {
+      flushUintOptRleEncoder(this)
+      this.count = 1
+      this.s = v
+    }
+  }
+
+  toUint8Array () {
+    flushUintOptRleEncoder(this)
+    return toUint8Array(this.encoder)
+  }
+}
+
+/**
+ * @param {IntDiffOptRleEncoder} encoder
+ */
+const flushIntDiffOptRleEncoder = encoder => {
+  if (encoder.count > 0) {
+    //          31 bit making up the diff | wether to write the counter
+    const encodedDiff = encoder.diff << 1 | (encoder.count === 1 ? 0 : 1)
+    // flush counter, unless this is the first value (count = 0)
+    // case 1: just a single value. set first bit to positive
+    // case 2: write several values. set first bit to negative to indicate that there is a length coming
+    writeVarInt(encoder.encoder, encodedDiff)
+    if (encoder.count > 1) {
+      writeVarUint(encoder.encoder, encoder.count - 2) // since count is always > 1, we can decrement by one. non-standard encoding ftw
+    }
+  }
+}
+
+/**
+ * A combination of the IntDiffEncoder and the UintOptRleEncoder.
+ *
+ * The count approach is similar to the UintDiffOptRleEncoder, but instead of using the negative bitflag, it encodes
+ * in the LSB whether a count is to be read. Therefore this Encoder only supports 31 bit integers!
+ *
+ * Encodes [1, 2, 3, 2] as [3, 1, 6, -1] (more specifically [(1 << 1) | 1, (3 << 0) | 0, -1])
+ *
+ * Internally uses variable length encoding. Contrary to normal UintVar encoding, the first byte contains:
+ * * 1 bit that denotes whether the next value is a count (LSB)
+ * * 1 bit that denotes whether this value is negative (MSB - 1)
+ * * 1 bit that denotes whether to continue reading the variable length integer (MSB)
+ *
+ * Therefore, only five bits remain to encode diff ranges.
+ *
+ * Use this Encoder only when appropriate. In most cases, this is probably a bad idea.
+ */
+class IntDiffOptRleEncoder {
+  constructor () {
+    this.encoder = new Encoder()
+    /**
+     * @type {number}
+     */
+    this.s = 0
+    this.count = 0
+    this.diff = 0
+  }
+
+  /**
+   * @param {number} v
+   */
+  write (v) {
+    if (this.diff === v - this.s) {
+      this.s = v
+      this.count++
+    } else {
+      flushIntDiffOptRleEncoder(this)
+      this.count = 1
+      this.diff = v - this.s
+      this.s = v
+    }
+  }
+
+  toUint8Array () {
+    flushIntDiffOptRleEncoder(this)
+    return toUint8Array(this.encoder)
+  }
+}
+
+/**
+ * Optimized String Encoder.
+ *
+ * Encoding many small strings in a simple Encoder is not very efficient. The function call to decode a string takes some time and creates references that must be eventually deleted.
+ * In practice, when decoding several million small strings, the GC will kick in more and more often to collect orphaned string objects (or maybe there is another reason?).
+ *
+ * This string encoder solves the above problem. All strings are concatenated and written as a single string using a single encoding call.
+ *
+ * The lengths are encoded using a UintOptRleEncoder.
+ */
+class StringEncoder {
+  constructor () {
+    /**
+     * @type {Array<string>}
+     */
+    this.sarr = []
+    this.s = ''
+    this.lensE = new UintOptRleEncoder()
+  }
+
+  /**
+   * @param {string} string
+   */
+  write (string) {
+    this.s += string
+    if (this.s.length > 19) {
+      this.sarr.push(this.s)
+      this.s = ''
+    }
+    this.lensE.write(string.length)
+  }
+
+  toUint8Array () {
+    const encoder = new Encoder()
+    this.sarr.push(this.s)
+    this.s = ''
+    writeVarString(encoder, this.sarr.join(''))
+    writeUint8Array(encoder, this.lensE.toUint8Array())
+    return toUint8Array(encoder)
+  }
+}
+
 
 /***/ }),
 
@@ -4427,7 +5069,8 @@ const computeParams = () => {
       if (currParamName !== null) {
         params.set(currParamName, '')
       }
-    } else {
+    // in ReactNative for example this would not be true (unless connected to the Remote Debugger)
+    } else if (typeof location === 'object') {
       params = _map_js__WEBPACK_IMPORTED_MODULE_0__["create"]()
       // eslint-disable-next-line no-undef
       ;(location.search || '?').slice(1).split('&').forEach(kv => {
@@ -4437,6 +5080,8 @@ const computeParams = () => {
           params.set(`-${_string_js__WEBPACK_IMPORTED_MODULE_1__["fromCamelCase"](key, '-')}`, value)
         }
       })
+    } else {
+      params = _map_js__WEBPACK_IMPORTED_MODULE_0__["create"]()
     }
   }
   return params
@@ -4642,14 +5287,14 @@ const idleCallback = cb => typeof requestIdleCallback !== 'undefined' ? new Idle
 
 /**
  * @param {number} timeout Timeout of the debounce action
- * @return {function(function | null):void}
+ * @return {function(function():void):void}
  */
 const createDebouncer = timeout => {
   let timer = -1
   return f => {
     clearTimeout(timer)
     if (f) {
-      timer = setTimeout(f, timeout)
+      timer = /** @type {any} */ (setTimeout(f, timeout))
     }
   }
 }
@@ -4661,7 +5306,7 @@ const createDebouncer = timeout => {
 /*!***************************************!*\
   !*** ./node_modules/lib0/function.js ***!
   \***************************************/
-/*! exports provided: callAll, nop, apply, id, equalityStrict, equalityFlat */
+/*! exports provided: callAll, nop, apply, id, equalityStrict, equalityFlat, equalityDeep */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -4672,6 +5317,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "id", function() { return id; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "equalityStrict", function() { return equalityStrict; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "equalityFlat", function() { return equalityFlat; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "equalityDeep", function() { return equalityDeep; });
 /* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./array.js */ "./node_modules/lib0/array.js");
 /* harmony import */ var _object_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./object.js */ "./node_modules/lib0/object.js");
 /**
@@ -4735,6 +5381,85 @@ const equalityStrict = (a, b) => a === b
  * @return {boolean}
  */
 const equalityFlat = (a, b) => a === b || (a != null && b != null && a.constructor === b.constructor && ((a instanceof Array && _array_js__WEBPACK_IMPORTED_MODULE_0__["equalFlat"](a, /** @type {Array<T>} */ (b))) || (typeof a === 'object' && _object_js__WEBPACK_IMPORTED_MODULE_1__["equalFlat"](a, b))))
+
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+const equalityDeep = (a, b) => {
+  if (a == null || b == null) {
+    return equalityStrict(a, b)
+  }
+  if (a.constructor !== b.constructor) {
+    return false
+  }
+  if (a === b) {
+    return true
+  }
+  switch (a.constructor) {
+    case ArrayBuffer:
+      a = new Uint8Array(a)
+      b = new Uint8Array(b)
+    // eslint-disable-next-line no-fallthrough
+    case Uint8Array: {
+      if (a.byteLength !== b.byteLength) {
+        return false
+      }
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+          return false
+        }
+      }
+      break
+    }
+    case Set: {
+      if (a.size !== b.size) {
+        return false
+      }
+      for (const value of a) {
+        if (!b.has(value)) {
+          return false
+        }
+      }
+      break
+    }
+    case Map: {
+      if (a.size !== b.size) {
+        return false
+      }
+      for (const key of a.keys()) {
+        if (!b.has(key) || !equalityDeep(a.get(key), b.get(key))) {
+          return false
+        }
+      }
+      break
+    }
+    case Object:
+      if (_object_js__WEBPACK_IMPORTED_MODULE_1__["length"](a) !== _object_js__WEBPACK_IMPORTED_MODULE_1__["length"](b)) {
+        return false
+      }
+      for (const key in a) {
+        if (!_object_js__WEBPACK_IMPORTED_MODULE_1__["hasProperty"](a, key) || !equalityDeep(a[key], b[key])) {
+          return false
+        }
+      }
+      break
+    case Array:
+      if (a.length !== b.length) {
+        return false
+      }
+      for (let i = 0; i < a.length; i++) {
+        if (!equalityDeep(a[i], b[i])) {
+          return false
+        }
+      }
+      break
+    default:
+      return false
+  }
+  return true
+}
 
 
 /***/ }),
@@ -5471,7 +6196,7 @@ const all = (m, f) => {
 /*!***********************************!*\
   !*** ./node_modules/lib0/math.js ***!
   \***********************************/
-/*! exports provided: floor, ceil, abs, imul, round, log10, log2, log, sqrt, add, min, max, isNaN, pow, exp10 */
+/*! exports provided: floor, ceil, abs, imul, round, log10, log2, log, sqrt, add, min, max, isNaN, pow, exp10, sign, isNegativeZero */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -5491,6 +6216,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isNaN", function() { return isNaN; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "pow", function() { return pow; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "exp10", function() { return exp10; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "sign", function() { return sign; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isNegativeZero", function() { return isNegativeZero; });
 /**
  * Common Math expressions.
  *
@@ -5541,6 +6268,14 @@ const pow = Math.pow
  * @return {number}
  */
 const exp10 = exp => Math.pow(10, exp)
+
+const sign = Math.sign
+
+/**
+ * @param {number} n
+ * @return {boolean} Wether n is negative. This function also differentiates between -0 and +0
+ */
+const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0
 
 
 /***/ }),
@@ -5723,6 +6458,9 @@ const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER
 const MIN_SAFE_INTEGER = Number.MIN_SAFE_INTEGER
 
 const LOWEST_INT32 = 1 << 31
+/**
+ * @type {number}
+ */
 const HIGHEST_INT32 = _binary_js__WEBPACK_IMPORTED_MODULE_1__["BITS31"]
 
 /**
@@ -6260,11 +6998,10 @@ const _decodeUtf8Polyfill = buf => {
   let bufPos = 0
   while (remainingLen > 0) {
     const nextLen = remainingLen < 10000 ? remainingLen : 10000
-    const bytes = new Array(nextLen)
-    for (let i = 0; i < nextLen; i++) {
-      bytes[i] = buf[bufPos++]
-    }
-    encodedString += String.fromCodePoint.apply(null, bytes)
+    const bytes = buf.subarray(bufPos, bufPos + nextLen)
+    bufPos += nextLen
+    // Starting with ES5.1 we can supply a generic array-like object as arguments
+    encodedString += String.fromCodePoint.apply(null, /** @type {any} */ (bytes))
     remainingLen -= nextLen
   }
   return decodeURIComponent(escape(encodedString))
@@ -6940,8 +7677,8 @@ module.exports = function (list, options) {
  *
  * Manage unstructured data using DataSet. Add, update, and remove data, and listen for changes in the data.
  *
- * @version 6.5.3
- * @date    2020-05-17T17:30:39.164Z
+ * @version 6.6.1
+ * @date    2020-06-15T13:21:34.180Z
  *
  * @copyright (c) 2011-2017 Almende B.V, http://almende.com
  * @copyright (c) 2017-2019 visjs contributors, https://github.com/visjs
@@ -6959,7 +7696,33 @@ module.exports = function (list, options) {
  *
  * vis.js may be distributed under either license.
  */
-!function(t,e){ true?e(exports):undefined}(this,(function(t){var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{};function r(t,e){return t(e={exports:{}},e.exports),e.exports}function n(t){return t&&t.default||t}function i(){throw new Error("Dynamic requires are not currently supported by @rollup/plugin-commonjs")}var a=function(t){return t&&t.Math==Math&&t},o=a("object"==typeof globalThis&&globalThis)||a("object"==typeof window&&window)||a("object"==typeof self&&self)||a("object"==typeof e&&e)||Function("return this")(),s=function(t){try{return!!t()}catch(t){return!0}},u=!s((function(){return 7!=Object.defineProperty({},1,{get:function(){return 7}})[1]})),c={}.propertyIsEnumerable,l=Object.getOwnPropertyDescriptor,f={f:l&&!c.call({1:2},1)?function(t){var e=l(this,t);return!!e&&e.enumerable}:c},h=function(t,e){return{enumerable:!(1&t),configurable:!(2&t),writable:!(4&t),value:e}},d={}.toString,p=function(t){return d.call(t).slice(8,-1)},y="".split,v=s((function(){return!Object("z").propertyIsEnumerable(0)}))?function(t){return"String"==p(t)?y.call(t,""):Object(t)}:Object,m=function(t){if(null==t)throw TypeError("Can't call method on "+t);return t},_=function(t){return v(m(t))},g=function(t){return"object"==typeof t?null!==t:"function"==typeof t},w=function(t,e){if(!g(t))return t;var r,n;if(e&&"function"==typeof(r=t.toString)&&!g(n=r.call(t)))return n;if("function"==typeof(r=t.valueOf)&&!g(n=r.call(t)))return n;if(!e&&"function"==typeof(r=t.toString)&&!g(n=r.call(t)))return n;throw TypeError("Can't convert object to primitive value")},b={}.hasOwnProperty,S=function(t,e){return b.call(t,e)},k=o.document,O=g(k)&&g(k.createElement),D=function(t){return O?k.createElement(t):{}},M=!u&&!s((function(){return 7!=Object.defineProperty(D("div"),"a",{get:function(){return 7}}).a})),x=Object.getOwnPropertyDescriptor,Y={f:u?x:function(t,e){if(t=_(t),e=w(e,!0),M)try{return x(t,e)}catch(t){}if(S(t,e))return h(!f.f.call(t,e),t[e])}},T=/#|\.prototype\./,P=function(t,e){var r=A[j(t)];return r==I||r!=E&&("function"==typeof e?s(e):!!e)},j=P.normalize=function(t){return String(t).replace(T,".").toLowerCase()},A=P.data={},E=P.NATIVE="N",I=P.POLYFILL="P",L=P,C={},F=function(t){if("function"!=typeof t)throw TypeError(String(t)+" is not a function");return t},R=function(t,e,r){if(F(t),void 0===e)return t;switch(r){case 0:return function(){return t.call(e)};case 1:return function(r){return t.call(e,r)};case 2:return function(r,n){return t.call(e,r,n)};case 3:return function(r,n,i){return t.call(e,r,n,i)}}return function(){return t.apply(e,arguments)}},N=function(t){if(!g(t))throw TypeError(String(t)+" is not an object");return t},W=Object.defineProperty,U={f:u?W:function(t,e,r){if(N(t),e=w(e,!0),N(r),M)try{return W(t,e,r)}catch(t){}if("get"in r||"set"in r)throw TypeError("Accessors not supported");return"value"in r&&(t[e]=r.value),t}},H=u?function(t,e,r){return U.f(t,e,h(1,r))}:function(t,e,r){return t[e]=r,t},G=Y.f,V=function(t){var e=function(e,r,n){if(this instanceof t){switch(arguments.length){case 0:return new t;case 1:return new t(e);case 2:return new t(e,r)}return new t(e,r,n)}return t.apply(this,arguments)};return e.prototype=t.prototype,e},z=function(t,e){var r,n,i,a,s,u,c,l,f=t.target,h=t.global,d=t.stat,p=t.proto,y=h?o:d?o[f]:(o[f]||{}).prototype,v=h?C:C[f]||(C[f]={}),m=v.prototype;for(i in e)r=!L(h?i:f+(d?".":"#")+i,t.forced)&&y&&S(y,i),s=v[i],r&&(u=t.noTargetGet?(l=G(y,i))&&l.value:y[i]),a=r&&u?u:e[i],r&&typeof s==typeof a||(c=t.bind&&r?R(a,o):t.wrap&&r?V(a):p&&"function"==typeof a?R(Function.call,a):a,(t.sham||a&&a.sham||s&&s.sham)&&H(c,"sham",!0),v[i]=c,p&&(S(C,n=f+"Prototype")||H(C,n,{}),C[n][i]=a,t.real&&m&&!m[i]&&H(m,i,a)))},q=Array.isArray||function(t){return"Array"==p(t)},Z=Math.ceil,$=Math.floor,J=function(t){return isNaN(t=+t)?0:(t>0?$:Z)(t)},B=Math.min,Q=function(t){return t>0?B(J(t),9007199254740991):0},X=function(t,e,r,n,i,a,o,s){for(var u,c=i,l=0,f=!!o&&R(o,s,3);l<n;){if(l in r){if(u=f?f(r[l],l,e):r[l],a>0&&q(u))c=X(t,e,u,Q(u.length),c,a-1)-1;else{if(c>=9007199254740991)throw TypeError("Exceed the acceptable array length");t[c]=u}c++}l++}return c},K=X,tt=function(t){return Object(m(t))},et=o["__core-js_shared__"]||function(t,e){try{H(o,t,e)}catch(r){o[t]=e}return e}("__core-js_shared__",{}),rt=r((function(t){(t.exports=function(t,e){return et[t]||(et[t]=void 0!==e?e:{})})("versions",[]).push({version:"3.6.4",mode:"pure",copyright:"© 2020 Denis Pushkarev (zloirock.ru)"})})),nt=0,it=Math.random(),at=function(t){return"Symbol("+String(void 0===t?"":t)+")_"+(++nt+it).toString(36)},ot=!!Object.getOwnPropertySymbols&&!s((function(){return!String(Symbol())})),st=ot&&!Symbol.sham&&"symbol"==typeof Symbol.iterator,ut=rt("wks"),ct=o.Symbol,lt=st?ct:ct&&ct.withoutSetter||at,ft=function(t){return S(ut,t)||(ot&&S(ct,t)?ut[t]=ct[t]:ut[t]=lt("Symbol."+t)),ut[t]},ht=ft("species"),dt=function(t,e){var r;return q(t)&&("function"!=typeof(r=t.constructor)||r!==Array&&!q(r.prototype)?g(r)&&null===(r=r[ht])&&(r=void 0):r=void 0),new(void 0===r?Array:r)(0===e?0:e)};z({target:"Array",proto:!0},{flatMap:function(t){var e,r=tt(this),n=Q(r.length);return F(t),(e=dt(r,0)).length=K(e,r,r,n,0,1,t,arguments.length>1?arguments[1]:void 0),e}});var pt,yt,vt=function(t){return C[t+"Prototype"]},mt=vt("Array").flatMap,_t=Array.prototype,gt=function(t){var e=t.flatMap;return t===_t||t instanceof Array&&e===_t.flatMap?mt:e},wt=[].push,bt=function(t){var e=1==t,r=2==t,n=3==t,i=4==t,a=6==t,o=5==t||a;return function(s,u,c,l){for(var f,h,d=tt(s),p=v(d),y=R(u,c,3),m=Q(p.length),_=0,g=l||dt,w=e?g(s,m):r?g(s,0):void 0;m>_;_++)if((o||_ in p)&&(h=y(f=p[_],_,d),t))if(e)w[_]=h;else if(h)switch(t){case 3:return!0;case 5:return f;case 6:return _;case 2:wt.call(w,f)}else if(i)return!1;return a?-1:n||i?i:w}},St={forEach:bt(0),map:bt(1),filter:bt(2),some:bt(3),every:bt(4),find:bt(5),findIndex:bt(6)},kt=function(t){return"function"==typeof t?t:void 0},Ot=function(t,e){return arguments.length<2?kt(C[t])||kt(o[t]):C[t]&&C[t][e]||o[t]&&o[t][e]},Dt=Ot("navigator","userAgent")||"",Mt=o.process,xt=Mt&&Mt.versions,Yt=xt&&xt.v8;Yt?yt=(pt=Yt.split("."))[0]+pt[1]:Dt&&(!(pt=Dt.match(/Edge\/(\d+)/))||pt[1]>=74)&&(pt=Dt.match(/Chrome\/(\d+)/))&&(yt=pt[1]);var Tt=yt&&+yt,Pt=ft("species"),jt=function(t){return Tt>=51||!s((function(){var e=[];return(e.constructor={})[Pt]=function(){return{foo:1}},1!==e[t](Boolean).foo}))},At=Object.defineProperty,Et={},It=function(t){throw t},Lt=function(t,e){if(S(Et,t))return Et[t];e||(e={});var r=[][t],n=!!S(e,"ACCESSORS")&&e.ACCESSORS,i=S(e,0)?e[0]:It,a=S(e,1)?e[1]:void 0;return Et[t]=!!r&&!s((function(){if(n&&!u)return!0;var t={length:-1};n?At(t,1,{enumerable:!0,get:It}):t[1]=1,r.call(t,i,a)}))},Ct=St.map,Ft=jt("map"),Rt=Lt("map");z({target:"Array",proto:!0,forced:!Ft||!Rt},{map:function(t){return Ct(this,t,arguments.length>1?arguments[1]:void 0)}});var Nt=vt("Array").map,Wt=Array.prototype,Ut=function(t){var e=t.map;return t===Wt||t instanceof Array&&e===Wt.map?Nt:e},Ht=St.filter,Gt=jt("filter"),Vt=Lt("filter");z({target:"Array",proto:!0,forced:!Gt||!Vt},{filter:function(t){return Ht(this,t,arguments.length>1?arguments[1]:void 0)}});var zt=vt("Array").filter,qt=Array.prototype,Zt=function(t){var e=t.filter;return t===qt||t instanceof Array&&e===qt.filter?zt:e},$t=function(t){return function(e,r,n,i){F(r);var a=tt(e),o=v(a),s=Q(a.length),u=t?s-1:0,c=t?-1:1;if(n<2)for(;;){if(u in o){i=o[u],u+=c;break}if(u+=c,t?u<0:s<=u)throw TypeError("Reduce of empty array with no initial value")}for(;t?u>=0:s>u;u+=c)u in o&&(i=r(i,o[u],u,a));return i}},Jt=function(t,e){var r=[][t];return!!r&&s((function(){r.call(null,e||function(){throw 1},1)}))},Bt={left:$t(!1),right:$t(!0)}.left,Qt=Jt("reduce"),Xt=Lt("reduce",{1:0});z({target:"Array",proto:!0,forced:!Qt||!Xt},{reduce:function(t){return Bt(this,t,arguments.length,arguments.length>1?arguments[1]:void 0)}});var Kt=vt("Array").reduce,te=Array.prototype,ee=function(t){var e=t.reduce;return t===te||t instanceof Array&&e===te.reduce?Kt:e},re=[].slice,ne={},ie=function(t,e,r){if(!(e in ne)){for(var n=[],i=0;i<e;i++)n[i]="a["+i+"]";ne[e]=Function("C,a","return new C("+n.join(",")+")")}return ne[e](t,r)},ae=Function.bind||function(t){var e=F(this),r=re.call(arguments,1),n=function(){var i=r.concat(re.call(arguments));return this instanceof n?ie(e,i.length,i):e.apply(t,i)};return g(e.prototype)&&(n.prototype=e.prototype),n};z({target:"Function",proto:!0},{bind:ae});var oe=vt("Function").bind,se=Function.prototype,ue=function(t){var e=t.bind;return t===se||t instanceof Function&&e===se.bind?oe:e};var ce=function(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")};z({target:"Object",stat:!0,forced:!u,sham:!u},{defineProperty:U.f});var le=r((function(t){var e=C.Object,r=t.exports=function(t,r,n){return e.defineProperty(t,r,n)};e.defineProperty.sham&&(r.sham=!0)})),fe=le;function he(t,e){for(var r=0;r<e.length;r++){var n=e[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),fe(t,n.key,n)}}var de=function(t,e,r){return e&&he(t.prototype,e),r&&he(t,r),t};var pe=function(){function t(e,r,n){var i,a,o;ce(this,t),this._source=e,this._transformers=r,this._target=n,this._listeners={add:ue(i=this._add).call(i,this),remove:ue(a=this._remove).call(a,this),update:ue(o=this._update).call(o,this)}}return de(t,[{key:"all",value:function(){return this._target.update(this._transformItems(this._source.get())),this}},{key:"start",value:function(){return this._source.on("add",this._listeners.add),this._source.on("remove",this._listeners.remove),this._source.on("update",this._listeners.update),this}},{key:"stop",value:function(){return this._source.off("add",this._listeners.add),this._source.off("remove",this._listeners.remove),this._source.off("update",this._listeners.update),this}},{key:"_transformItems",value:function(t){var e;return ee(e=this._transformers).call(e,(function(t,e){return e(t)}),t)}},{key:"_add",value:function(t,e){null!=e&&this._target.add(this._transformItems(this._source.get(e.items)))}},{key:"_update",value:function(t,e){null!=e&&this._target.update(this._transformItems(this._source.get(e.items)))}},{key:"_remove",value:function(t,e){null!=e&&this._target.remove(this._transformItems(e.oldData))}}]),t}(),ye=function(){function t(e){ce(this,t),this._source=e,this._transformers=[]}return de(t,[{key:"filter",value:function(t){return this._transformers.push((function(e){return Zt(e).call(e,t)})),this}},{key:"map",value:function(t){return this._transformers.push((function(e){return Ut(e).call(e,t)})),this}},{key:"flatMap",value:function(t){return this._transformers.push((function(e){return gt(e).call(e,t)})),this}},{key:"to",value:function(t){return new pe(this._source,this._transformers,t)}}]),t}(),ve=le,me=Math.max,_e=Math.min,ge=function(t,e){var r=J(t);return r<0?me(r+e,0):_e(r,e)},we=function(t){return function(e,r,n){var i,a=_(e),o=Q(a.length),s=ge(n,o);if(t&&r!=r){for(;o>s;)if((i=a[s++])!=i)return!0}else for(;o>s;s++)if((t||s in a)&&a[s]===r)return t||s||0;return!t&&-1}},be={includes:we(!0),indexOf:we(!1)},Se={},ke=be.indexOf,Oe=function(t,e){var r,n=_(t),i=0,a=[];for(r in n)!S(Se,r)&&S(n,r)&&a.push(r);for(;e.length>i;)S(n,r=e[i++])&&(~ke(a,r)||a.push(r));return a},De=["constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","toLocaleString","toString","valueOf"],Me=Object.keys||function(t){return Oe(t,De)},xe=u?Object.defineProperties:function(t,e){N(t);for(var r,n=Me(e),i=n.length,a=0;i>a;)U.f(t,r=n[a++],e[r]);return t};z({target:"Object",stat:!0,forced:!u,sham:!u},{defineProperties:xe});var Ye=r((function(t){var e=C.Object,r=t.exports=function(t,r){return e.defineProperties(t,r)};e.defineProperties.sham&&(r.sham=!0)})),Te=De.concat("length","prototype"),Pe={f:Object.getOwnPropertyNames||function(t){return Oe(t,Te)}},je={f:Object.getOwnPropertySymbols},Ae=Ot("Reflect","ownKeys")||function(t){var e=Pe.f(N(t)),r=je.f;return r?e.concat(r(t)):e},Ee=function(t,e,r){var n=w(e);n in t?U.f(t,n,h(0,r)):t[n]=r};z({target:"Object",stat:!0,sham:!u},{getOwnPropertyDescriptors:function(t){for(var e,r,n=_(t),i=Y.f,a=Ae(n),o={},s=0;a.length>s;)void 0!==(r=i(n,e=a[s++]))&&Ee(o,e,r);return o}});var Ie=C.Object.getOwnPropertyDescriptors,Le={},Ce=Function.toString;"function"!=typeof et.inspectSource&&(et.inspectSource=function(t){return Ce.call(t)});var Fe,Re,Ne,We=et.inspectSource,Ue=o.WeakMap,He="function"==typeof Ue&&/native code/.test(We(Ue)),Ge=rt("keys"),Ve=function(t){return Ge[t]||(Ge[t]=at(t))},ze=o.WeakMap;if(He){var qe=new ze,Ze=qe.get,$e=qe.has,Je=qe.set;Fe=function(t,e){return Je.call(qe,t,e),e},Re=function(t){return Ze.call(qe,t)||{}},Ne=function(t){return $e.call(qe,t)}}else{var Be=Ve("state");Se[Be]=!0,Fe=function(t,e){return H(t,Be,e),e},Re=function(t){return S(t,Be)?t[Be]:{}},Ne=function(t){return S(t,Be)}}var Qe,Xe,Ke,tr={set:Fe,get:Re,has:Ne,enforce:function(t){return Ne(t)?Re(t):Fe(t,{})},getterFor:function(t){return function(e){var r;if(!g(e)||(r=Re(e)).type!==t)throw TypeError("Incompatible receiver, "+t+" required");return r}}},er=!s((function(){function t(){}return t.prototype.constructor=null,Object.getPrototypeOf(new t)!==t.prototype})),rr=Ve("IE_PROTO"),nr=Object.prototype,ir=er?Object.getPrototypeOf:function(t){return t=tt(t),S(t,rr)?t[rr]:"function"==typeof t.constructor&&t instanceof t.constructor?t.constructor.prototype:t instanceof Object?nr:null},ar=(ft("iterator"),!1);[].keys&&("next"in(Ke=[].keys())?(Xe=ir(ir(Ke)))!==Object.prototype&&(Qe=Xe):ar=!0),null==Qe&&(Qe={});var or,sr={IteratorPrototype:Qe,BUGGY_SAFARI_ITERATORS:ar},ur=Ot("document","documentElement"),cr=Ve("IE_PROTO"),lr=function(){},fr=function(t){return"<script>"+t+"<\/script>"},hr=function(){try{or=document.domain&&new ActiveXObject("htmlfile")}catch(t){}var t,e;hr=or?function(t){t.write(fr("")),t.close();var e=t.parentWindow.Object;return t=null,e}(or):((e=D("iframe")).style.display="none",ur.appendChild(e),e.src=String("javascript:"),(t=e.contentWindow.document).open(),t.write(fr("document.F=Object")),t.close(),t.F);for(var r=De.length;r--;)delete hr.prototype[De[r]];return hr()};Se[cr]=!0;var dr=Object.create||function(t,e){var r;return null!==t?(lr.prototype=N(t),r=new lr,lr.prototype=null,r[cr]=t):r=hr(),void 0===e?r:xe(r,e)},pr={};pr[ft("toStringTag")]="z";var yr="[object z]"===String(pr),vr=ft("toStringTag"),mr="Arguments"==p(function(){return arguments}()),_r=yr?p:function(t){var e,r,n;return void 0===t?"Undefined":null===t?"Null":"string"==typeof(r=function(t,e){try{return t[e]}catch(t){}}(e=Object(t),vr))?r:mr?p(e):"Object"==(n=p(e))&&"function"==typeof e.callee?"Arguments":n},gr=yr?{}.toString:function(){return"[object "+_r(this)+"]"},wr=U.f,br=ft("toStringTag"),Sr=function(t,e,r,n){if(t){var i=r?t:t.prototype;S(i,br)||wr(i,br,{configurable:!0,value:e}),n&&!yr&&H(i,"toString",gr)}},kr=sr.IteratorPrototype,Or=function(){return this},Dr=Object.setPrototypeOf||("__proto__"in{}?function(){var t,e=!1,r={};try{(t=Object.getOwnPropertyDescriptor(Object.prototype,"__proto__").set).call(r,[]),e=r instanceof Array}catch(t){}return function(r,n){return N(r),function(t){if(!g(t)&&null!==t)throw TypeError("Can't set "+String(t)+" as a prototype")}(n),e?t.call(r,n):r.__proto__=n,r}}():void 0),Mr=function(t,e,r,n){n&&n.enumerable?t[e]=r:H(t,e,r)},xr=sr.IteratorPrototype,Yr=sr.BUGGY_SAFARI_ITERATORS,Tr=ft("iterator"),Pr=function(){return this},jr=function(t,e,r,n,i,a,o){!function(t,e,r){var n=e+" Iterator";t.prototype=dr(kr,{next:h(1,r)}),Sr(t,n,!1,!0),Le[n]=Or}(r,e,n);var s,u,c,l=function(t){if(t===i&&v)return v;if(!Yr&&t in p)return p[t];switch(t){case"keys":case"values":case"entries":return function(){return new r(this,t)}}return function(){return new r(this)}},f=e+" Iterator",d=!1,p=t.prototype,y=p[Tr]||p["@@iterator"]||i&&p[i],v=!Yr&&y||l(i),m="Array"==e&&p.entries||y;if(m&&(s=ir(m.call(new t)),xr!==Object.prototype&&s.next&&(Sr(s,f,!0,!0),Le[f]=Pr)),"values"==i&&y&&"values"!==y.name&&(d=!0,v=function(){return y.call(this)}),o&&p[Tr]!==v&&H(p,Tr,v),Le[e]=v,i)if(u={values:l("values"),keys:a?v:l("keys"),entries:l("entries")},o)for(c in u)!Yr&&!d&&c in p||Mr(p,c,u[c]);else z({target:e,proto:!0,forced:Yr||d},u);return u},Ar=tr.set,Er=tr.getterFor("Array Iterator");jr(Array,"Array",(function(t,e){Ar(this,{type:"Array Iterator",target:_(t),index:0,kind:e})}),(function(){var t=Er(this),e=t.target,r=t.kind,n=t.index++;return!e||n>=e.length?(t.target=void 0,{value:void 0,done:!0}):"keys"==r?{value:n,done:!1}:"values"==r?{value:e[n],done:!1}:{value:[n,e[n]],done:!1}}),"values");Le.Arguments=Le.Array;var Ir=ft("toStringTag");for(var Lr in{CSSRuleList:0,CSSStyleDeclaration:0,CSSValueList:0,ClientRectList:0,DOMRectList:0,DOMStringList:0,DOMTokenList:1,DataTransferItemList:0,FileList:0,HTMLAllCollection:0,HTMLCollection:0,HTMLFormElement:0,HTMLSelectElement:0,MediaList:0,MimeTypeArray:0,NamedNodeMap:0,NodeList:1,PaintRequestList:0,Plugin:0,PluginArray:0,SVGLengthList:0,SVGNumberList:0,SVGPathSegList:0,SVGPointList:0,SVGStringList:0,SVGTransformList:0,SourceBufferList:0,StyleSheetList:0,TextTrackCueList:0,TextTrackList:0,TouchList:0}){var Cr=o[Lr],Fr=Cr&&Cr.prototype;Fr&&_r(Fr)!==Ir&&H(Fr,Ir,Lr),Le[Lr]=Le.Array}var Rr=St.forEach,Nr=Jt("forEach"),Wr=Lt("forEach"),Ur=Nr&&Wr?[].forEach:function(t){return Rr(this,t,arguments.length>1?arguments[1]:void 0)};z({target:"Array",proto:!0,forced:[].forEach!=Ur},{forEach:Ur});var Hr=vt("Array").forEach,Gr=Array.prototype,Vr={DOMTokenList:!0,NodeList:!0},zr=function(t){var e=t.forEach;return t===Gr||t instanceof Array&&e===Gr.forEach||Vr.hasOwnProperty(_r(t))?Hr:e},qr=Y.f,Zr=s((function(){qr(1)}));z({target:"Object",stat:!0,forced:!u||Zr,sham:!u},{getOwnPropertyDescriptor:function(t,e){return qr(_(t),e)}});var $r=r((function(t){var e=C.Object,r=t.exports=function(t,r){return e.getOwnPropertyDescriptor(t,r)};e.getOwnPropertyDescriptor.sham&&(r.sham=!0)})),Jr=Pe.f,Br={}.toString,Qr="object"==typeof window&&window&&Object.getOwnPropertyNames?Object.getOwnPropertyNames(window):[],Xr={f:function(t){return Qr&&"[object Window]"==Br.call(t)?function(t){try{return Jr(t)}catch(t){return Qr.slice()}}(t):Jr(_(t))}},Kr={f:ft},tn=U.f,en=function(t){var e=C.Symbol||(C.Symbol={});S(e,t)||tn(e,t,{value:Kr.f(t)})},rn=St.forEach,nn=Ve("hidden"),an=ft("toPrimitive"),on=tr.set,sn=tr.getterFor("Symbol"),un=Object.prototype,cn=o.Symbol,ln=Ot("JSON","stringify"),fn=Y.f,hn=U.f,dn=Xr.f,pn=f.f,yn=rt("symbols"),vn=rt("op-symbols"),mn=rt("string-to-symbol-registry"),_n=rt("symbol-to-string-registry"),gn=rt("wks"),wn=o.QObject,bn=!wn||!wn.prototype||!wn.prototype.findChild,Sn=u&&s((function(){return 7!=dr(hn({},"a",{get:function(){return hn(this,"a",{value:7}).a}})).a}))?function(t,e,r){var n=fn(un,e);n&&delete un[e],hn(t,e,r),n&&t!==un&&hn(un,e,n)}:hn,kn=function(t,e){var r=yn[t]=dr(cn.prototype);return on(r,{type:"Symbol",tag:t,description:e}),u||(r.description=e),r},On=st?function(t){return"symbol"==typeof t}:function(t){return Object(t)instanceof cn},Dn=function(t,e,r){t===un&&Dn(vn,e,r),N(t);var n=w(e,!0);return N(r),S(yn,n)?(r.enumerable?(S(t,nn)&&t[nn][n]&&(t[nn][n]=!1),r=dr(r,{enumerable:h(0,!1)})):(S(t,nn)||hn(t,nn,h(1,{})),t[nn][n]=!0),Sn(t,n,r)):hn(t,n,r)},Mn=function(t,e){N(t);var r=_(e),n=Me(r).concat(Pn(r));return rn(n,(function(e){u&&!xn.call(r,e)||Dn(t,e,r[e])})),t},xn=function(t){var e=w(t,!0),r=pn.call(this,e);return!(this===un&&S(yn,e)&&!S(vn,e))&&(!(r||!S(this,e)||!S(yn,e)||S(this,nn)&&this[nn][e])||r)},Yn=function(t,e){var r=_(t),n=w(e,!0);if(r!==un||!S(yn,n)||S(vn,n)){var i=fn(r,n);return!i||!S(yn,n)||S(r,nn)&&r[nn][n]||(i.enumerable=!0),i}},Tn=function(t){var e=dn(_(t)),r=[];return rn(e,(function(t){S(yn,t)||S(Se,t)||r.push(t)})),r},Pn=function(t){var e=t===un,r=dn(e?vn:_(t)),n=[];return rn(r,(function(t){!S(yn,t)||e&&!S(un,t)||n.push(yn[t])})),n};if(ot||(Mr((cn=function(){if(this instanceof cn)throw TypeError("Symbol is not a constructor");var t=arguments.length&&void 0!==arguments[0]?String(arguments[0]):void 0,e=at(t),r=function(t){this===un&&r.call(vn,t),S(this,nn)&&S(this[nn],e)&&(this[nn][e]=!1),Sn(this,e,h(1,t))};return u&&bn&&Sn(un,e,{configurable:!0,set:r}),kn(e,t)}).prototype,"toString",(function(){return sn(this).tag})),Mr(cn,"withoutSetter",(function(t){return kn(at(t),t)})),f.f=xn,U.f=Dn,Y.f=Yn,Pe.f=Xr.f=Tn,je.f=Pn,Kr.f=function(t){return kn(ft(t),t)},u&&hn(cn.prototype,"description",{configurable:!0,get:function(){return sn(this).description}})),z({global:!0,wrap:!0,forced:!ot,sham:!ot},{Symbol:cn}),rn(Me(gn),(function(t){en(t)})),z({target:"Symbol",stat:!0,forced:!ot},{for:function(t){var e=String(t);if(S(mn,e))return mn[e];var r=cn(e);return mn[e]=r,_n[r]=e,r},keyFor:function(t){if(!On(t))throw TypeError(t+" is not a symbol");if(S(_n,t))return _n[t]},useSetter:function(){bn=!0},useSimple:function(){bn=!1}}),z({target:"Object",stat:!0,forced:!ot,sham:!u},{create:function(t,e){return void 0===e?dr(t):Mn(dr(t),e)},defineProperty:Dn,defineProperties:Mn,getOwnPropertyDescriptor:Yn}),z({target:"Object",stat:!0,forced:!ot},{getOwnPropertyNames:Tn,getOwnPropertySymbols:Pn}),z({target:"Object",stat:!0,forced:s((function(){je.f(1)}))},{getOwnPropertySymbols:function(t){return je.f(tt(t))}}),ln){var jn=!ot||s((function(){var t=cn();return"[null]"!=ln([t])||"{}"!=ln({a:t})||"{}"!=ln(Object(t))}));z({target:"JSON",stat:!0,forced:jn},{stringify:function(t,e,r){for(var n,i=[t],a=1;arguments.length>a;)i.push(arguments[a++]);if(n=e,(g(e)||void 0!==t)&&!On(t))return q(e)||(e=function(t,e){if("function"==typeof n&&(e=n.call(this,t,e)),!On(e))return e}),i[1]=e,ln.apply(null,i)}})}cn.prototype[an]||H(cn.prototype,an,cn.prototype.valueOf),Sr(cn,"Symbol"),Se[nn]=!0;var An=C.Object.getOwnPropertySymbols,En=function(t){return function(e,r){var n,i,a=String(m(e)),o=J(r),s=a.length;return o<0||o>=s?t?"":void 0:(n=a.charCodeAt(o))<55296||n>56319||o+1===s||(i=a.charCodeAt(o+1))<56320||i>57343?t?a.charAt(o):n:t?a.slice(o,o+2):i-56320+(n-55296<<10)+65536}},In={codeAt:En(!1),charAt:En(!0)}.charAt,Ln=tr.set,Cn=tr.getterFor("String Iterator");jr(String,"String",(function(t){Ln(this,{type:"String Iterator",string:String(t),index:0})}),(function(){var t,e=Cn(this),r=e.string,n=e.index;return n>=r.length?{value:void 0,done:!0}:(t=In(r,n),e.index+=t.length,{value:t,done:!1})}));var Fn=ft("iterator"),Rn=function(t){if(null!=t)return t[Fn]||t["@@iterator"]||Le[_r(t)]},Nn=function(t){var e=Rn(t);if("function"!=typeof e)throw TypeError(String(t)+" is not iterable");return N(e.call(t))},Wn=Rn,Un=ft("isConcatSpreadable"),Hn=Tt>=51||!s((function(){var t=[];return t[Un]=!1,t.concat()[0]!==t})),Gn=jt("concat"),Vn=function(t){if(!g(t))return!1;var e=t[Un];return void 0!==e?!!e:q(t)};z({target:"Array",proto:!0,forced:!Hn||!Gn},{concat:function(t){var e,r,n,i,a,o=tt(this),s=dt(o,0),u=0;for(e=-1,n=arguments.length;e<n;e++)if(a=-1===e?o:arguments[e],Vn(a)){if(u+(i=Q(a.length))>9007199254740991)throw TypeError("Maximum allowed index exceeded");for(r=0;r<i;r++,u++)r in a&&Ee(s,u,a[r])}else{if(u>=9007199254740991)throw TypeError("Maximum allowed index exceeded");Ee(s,u++,a)}return s.length=u,s}});var zn=Object.freeze({__proto__:null});en("asyncIterator");var qn=Object.freeze({__proto__:null});en("hasInstance"),en("isConcatSpreadable"),en("iterator"),en("match"),en("matchAll"),en("replace"),en("search"),en("species"),en("split"),en("toPrimitive"),en("toStringTag"),en("unscopables"),Sr(Math,"Math",!0),Sr(o.JSON,"JSON",!0),n(zn),n(qn);var Zn=C.Symbol,$n=Zn,Jn=function(t,e,r,n){try{return n?e(N(r)[0],r[1]):e(r)}catch(e){var i=t.return;throw void 0!==i&&N(i.call(t)),e}},Bn=ft("iterator"),Qn=Array.prototype,Xn=function(t){return void 0!==t&&(Le.Array===t||Qn[Bn]===t)},Kn=ft("iterator"),ti=!1;try{var ei=0,ri={next:function(){return{done:!!ei++}},return:function(){ti=!0}};ri[Kn]=function(){return this},Array.from(ri,(function(){throw 2}))}catch(t){}var ni=!function(t,e){if(!e&&!ti)return!1;var r=!1;try{var n={};n[Kn]=function(){return{next:function(){return{done:r=!0}}}},t(n)}catch(t){}return r}((function(t){Array.from(t)}));z({target:"Array",stat:!0,forced:ni},{from:function(t){var e,r,n,i,a,o,s=tt(t),u="function"==typeof this?this:Array,c=arguments.length,l=c>1?arguments[1]:void 0,f=void 0!==l,h=Rn(s),d=0;if(f&&(l=R(l,c>2?arguments[2]:void 0,2)),null==h||u==Array&&Xn(h))for(r=new u(e=Q(s.length));e>d;d++)o=f?l(s[d],d):s[d],Ee(r,d,o);else for(a=(i=h.call(s)).next,r=new u;!(n=a.call(i)).done;d++)o=f?Jn(i,l,[n.value,d],!0):n.value,Ee(r,d,o);return r.length=d,r}});var ii=C.Array.from,ai=ii,oi=jt("slice"),si=Lt("slice",{ACCESSORS:!0,0:0,1:2}),ui=ft("species"),ci=[].slice,li=Math.max;z({target:"Array",proto:!0,forced:!oi||!si},{slice:function(t,e){var r,n,i,a=_(this),o=Q(a.length),s=ge(t,o),u=ge(void 0===e?o:e,o);if(q(a)&&("function"!=typeof(r=a.constructor)||r!==Array&&!q(r.prototype)?g(r)&&null===(r=r[ui])&&(r=void 0):r=void 0,r===Array||void 0===r))return ci.call(a,s,u);for(n=new(void 0===r?Array:r)(li(u-s,0)),i=0;s<u;s++,i++)s in a&&Ee(n,i,a[s]);return n.length=i,n}});var fi=vt("Array").slice,hi=Array.prototype,di=function(t){var e=t.slice;return t===hi||t instanceof Array&&e===hi.slice?fi:e},pi=di,yi=Ot("Reflect","construct"),vi=s((function(){function t(){}return!(yi((function(){}),[],t)instanceof t)})),mi=!s((function(){yi((function(){}))})),_i=vi||mi;z({target:"Reflect",stat:!0,forced:_i,sham:_i},{construct:function(t,e){F(t),N(e);var r=arguments.length<3?t:F(arguments[2]);if(mi&&!vi)return yi(t,e,r);if(t==r){switch(e.length){case 0:return new t;case 1:return new t(e[0]);case 2:return new t(e[0],e[1]);case 3:return new t(e[0],e[1],e[2]);case 4:return new t(e[0],e[1],e[2],e[3])}var n=[null];return n.push.apply(n,e),new(ae.apply(t,n))}var i=r.prototype,a=dr(g(i)?i:Object.prototype),o=Function.apply.call(t,a,e);return g(o)?o:a}});var gi=C.Reflect.construct,wi=vt("Array").entries,bi=Array.prototype,Si={DOMTokenList:!0,NodeList:!0},ki=function(t){var e=t.entries;return t===bi||t instanceof Array&&e===bi.entries||Si.hasOwnProperty(_r(t))?wi:e},Oi=r((function(t){var e=function(t){var e=Object.prototype,r=e.hasOwnProperty,n="function"==typeof Symbol?Symbol:{},i=n.iterator||"@@iterator",a=n.asyncIterator||"@@asyncIterator",o=n.toStringTag||"@@toStringTag";function s(t,e,r,n){var i=e&&e.prototype instanceof l?e:l,a=Object.create(i.prototype),o=new S(n||[]);return a._invoke=function(t,e,r){var n="suspendedStart";return function(i,a){if("executing"===n)throw new Error("Generator is already running");if("completed"===n){if("throw"===i)throw a;return O()}for(r.method=i,r.arg=a;;){var o=r.delegate;if(o){var s=g(o,r);if(s){if(s===c)continue;return s}}if("next"===r.method)r.sent=r._sent=r.arg;else if("throw"===r.method){if("suspendedStart"===n)throw n="completed",r.arg;r.dispatchException(r.arg)}else"return"===r.method&&r.abrupt("return",r.arg);n="executing";var l=u(t,e,r);if("normal"===l.type){if(n=r.done?"completed":"suspendedYield",l.arg===c)continue;return{value:l.arg,done:r.done}}"throw"===l.type&&(n="completed",r.method="throw",r.arg=l.arg)}}}(t,r,o),a}function u(t,e,r){try{return{type:"normal",arg:t.call(e,r)}}catch(t){return{type:"throw",arg:t}}}t.wrap=s;var c={};function l(){}function f(){}function h(){}var d={};d[i]=function(){return this};var p=Object.getPrototypeOf,y=p&&p(p(k([])));y&&y!==e&&r.call(y,i)&&(d=y);var v=h.prototype=l.prototype=Object.create(d);function m(t){["next","throw","return"].forEach((function(e){t[e]=function(t){return this._invoke(e,t)}}))}function _(t,e){var n;this._invoke=function(i,a){function o(){return new e((function(n,o){!function n(i,a,o,s){var c=u(t[i],t,a);if("throw"!==c.type){var l=c.arg,f=l.value;return f&&"object"==typeof f&&r.call(f,"__await")?e.resolve(f.__await).then((function(t){n("next",t,o,s)}),(function(t){n("throw",t,o,s)})):e.resolve(f).then((function(t){l.value=t,o(l)}),(function(t){return n("throw",t,o,s)}))}s(c.arg)}(i,a,n,o)}))}return n=n?n.then(o,o):o()}}function g(t,e){var r=t.iterator[e.method];if(void 0===r){if(e.delegate=null,"throw"===e.method){if(t.iterator.return&&(e.method="return",e.arg=void 0,g(t,e),"throw"===e.method))return c;e.method="throw",e.arg=new TypeError("The iterator does not provide a 'throw' method")}return c}var n=u(r,t.iterator,e.arg);if("throw"===n.type)return e.method="throw",e.arg=n.arg,e.delegate=null,c;var i=n.arg;return i?i.done?(e[t.resultName]=i.value,e.next=t.nextLoc,"return"!==e.method&&(e.method="next",e.arg=void 0),e.delegate=null,c):i:(e.method="throw",e.arg=new TypeError("iterator result is not an object"),e.delegate=null,c)}function w(t){var e={tryLoc:t[0]};1 in t&&(e.catchLoc=t[1]),2 in t&&(e.finallyLoc=t[2],e.afterLoc=t[3]),this.tryEntries.push(e)}function b(t){var e=t.completion||{};e.type="normal",delete e.arg,t.completion=e}function S(t){this.tryEntries=[{tryLoc:"root"}],t.forEach(w,this),this.reset(!0)}function k(t){if(t){var e=t[i];if(e)return e.call(t);if("function"==typeof t.next)return t;if(!isNaN(t.length)){var n=-1,a=function e(){for(;++n<t.length;)if(r.call(t,n))return e.value=t[n],e.done=!1,e;return e.value=void 0,e.done=!0,e};return a.next=a}}return{next:O}}function O(){return{value:void 0,done:!0}}return f.prototype=v.constructor=h,h.constructor=f,h[o]=f.displayName="GeneratorFunction",t.isGeneratorFunction=function(t){var e="function"==typeof t&&t.constructor;return!!e&&(e===f||"GeneratorFunction"===(e.displayName||e.name))},t.mark=function(t){return Object.setPrototypeOf?Object.setPrototypeOf(t,h):(t.__proto__=h,o in t||(t[o]="GeneratorFunction")),t.prototype=Object.create(v),t},t.awrap=function(t){return{__await:t}},m(_.prototype),_.prototype[a]=function(){return this},t.AsyncIterator=_,t.async=function(e,r,n,i,a){void 0===a&&(a=Promise);var o=new _(s(e,r,n,i),a);return t.isGeneratorFunction(r)?o:o.next().then((function(t){return t.done?t.value:o.next()}))},m(v),v[o]="Generator",v[i]=function(){return this},v.toString=function(){return"[object Generator]"},t.keys=function(t){var e=[];for(var r in t)e.push(r);return e.reverse(),function r(){for(;e.length;){var n=e.pop();if(n in t)return r.value=n,r.done=!1,r}return r.done=!0,r}},t.values=k,S.prototype={constructor:S,reset:function(t){if(this.prev=0,this.next=0,this.sent=this._sent=void 0,this.done=!1,this.delegate=null,this.method="next",this.arg=void 0,this.tryEntries.forEach(b),!t)for(var e in this)"t"===e.charAt(0)&&r.call(this,e)&&!isNaN(+e.slice(1))&&(this[e]=void 0)},stop:function(){this.done=!0;var t=this.tryEntries[0].completion;if("throw"===t.type)throw t.arg;return this.rval},dispatchException:function(t){if(this.done)throw t;var e=this;function n(r,n){return o.type="throw",o.arg=t,e.next=r,n&&(e.method="next",e.arg=void 0),!!n}for(var i=this.tryEntries.length-1;i>=0;--i){var a=this.tryEntries[i],o=a.completion;if("root"===a.tryLoc)return n("end");if(a.tryLoc<=this.prev){var s=r.call(a,"catchLoc"),u=r.call(a,"finallyLoc");if(s&&u){if(this.prev<a.catchLoc)return n(a.catchLoc,!0);if(this.prev<a.finallyLoc)return n(a.finallyLoc)}else if(s){if(this.prev<a.catchLoc)return n(a.catchLoc,!0)}else{if(!u)throw new Error("try statement without catch or finally");if(this.prev<a.finallyLoc)return n(a.finallyLoc)}}}},abrupt:function(t,e){for(var n=this.tryEntries.length-1;n>=0;--n){var i=this.tryEntries[n];if(i.tryLoc<=this.prev&&r.call(i,"finallyLoc")&&this.prev<i.finallyLoc){var a=i;break}}a&&("break"===t||"continue"===t)&&a.tryLoc<=e&&e<=a.finallyLoc&&(a=null);var o=a?a.completion:{};return o.type=t,o.arg=e,a?(this.method="next",this.next=a.finallyLoc,c):this.complete(o)},complete:function(t,e){if("throw"===t.type)throw t.arg;return"break"===t.type||"continue"===t.type?this.next=t.arg:"return"===t.type?(this.rval=this.arg=t.arg,this.method="return",this.next="end"):"normal"===t.type&&e&&(this.next=e),c},finish:function(t){for(var e=this.tryEntries.length-1;e>=0;--e){var r=this.tryEntries[e];if(r.finallyLoc===t)return this.complete(r.completion,r.afterLoc),b(r),c}},catch:function(t){for(var e=this.tryEntries.length-1;e>=0;--e){var r=this.tryEntries[e];if(r.tryLoc===t){var n=r.completion;if("throw"===n.type){var i=n.arg;b(r)}return i}}throw new Error("illegal catch attempt")},delegateYield:function(t,e,r){return this.delegate={iterator:k(t),resultName:e,nextLoc:r},"next"===this.method&&(this.arg=void 0),c}},t}(t.exports);try{regeneratorRuntime=e}catch(t){Function("r","regeneratorRuntime = r")(e)}})),Di=Kr.f("iterator"),Mi=Di,xi=Ot("JSON","stringify"),Yi=/[\uD800-\uDFFF]/g,Ti=/^[\uD800-\uDBFF]$/,Pi=/^[\uDC00-\uDFFF]$/,ji=function(t,e,r){var n=r.charAt(e-1),i=r.charAt(e+1);return Ti.test(t)&&!Pi.test(i)||Pi.test(t)&&!Ti.test(n)?"\\u"+t.charCodeAt(0).toString(16):t},Ai=s((function(){return'"\\udf06\\ud834"'!==xi("\udf06\ud834")||'"\\udead"'!==xi("\udead")}));xi&&z({target:"JSON",stat:!0,forced:Ai},{stringify:function(t,e,r){var n=xi.apply(null,arguments);return"string"==typeof n?n.replace(Yi,ji):n}}),C.JSON||(C.JSON={stringify:JSON.stringify});var Ei=function(t,e,r){return C.JSON.stringify.apply(null,arguments)};var Ii=function(t,e,r){return e in t?fe(t,e,{value:r,enumerable:!0,configurable:!0,writable:!0}):t[e]=r,t},Li=vt("Array").values,Ci=Array.prototype,Fi={DOMTokenList:!0,NodeList:!0},Ri=function(t){var e=t.values;return t===Ci||t instanceof Array&&e===Ci.values||Fi.hasOwnProperty(_r(t))?Li:e},Ni=[],Wi=Ni.sort,Ui=s((function(){Ni.sort(void 0)})),Hi=s((function(){Ni.sort(null)})),Gi=Jt("sort");z({target:"Array",proto:!0,forced:Ui||!Hi||!Gi},{sort:function(t){return void 0===t?Wi.call(tt(this)):Wi.call(tt(this),F(t))}});var Vi=vt("Array").sort,zi=Array.prototype,qi=function(t){var e=t.sort;return t===zi||t instanceof Array&&e===zi.sort?Vi:e},Zi=vt("Array").keys,$i=Array.prototype,Ji={DOMTokenList:!0,NodeList:!0},Bi=function(t){var e=t.keys;return t===$i||t instanceof Array&&e===$i.keys||Ji.hasOwnProperty(_r(t))?Zi:e};z({target:"Array",stat:!0},{isArray:q});var Qi=C.Array.isArray,Xi=Qi;var Ki=function(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n};var ta=function(t){if(Xi(t))return Ki(t)},ea=ii,ra=ft("iterator"),na=function(t){var e=Object(t);return void 0!==e[ra]||"@@iterator"in e||Le.hasOwnProperty(_r(e))};en("asyncDispose"),en("dispose"),en("observable"),en("patternMatch"),en("replaceAll");var ia=Zn;var aa=function(t){if(void 0!==ia&&na(Object(t)))return ea(t)},oa=di;var sa=function(t,e){var r;if(t){if("string"==typeof t)return Ki(t,e);var n=oa(r=Object.prototype.toString.call(t)).call(r,8,-1);return"Object"===n&&t.constructor&&(n=t.constructor.name),"Map"===n||"Set"===n?ea(t):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?Ki(t,e):void 0}};var ua=function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var ca=function(t){return ta(t)||aa(t)||sa(t)||ua()},la=vt("Array").concat,fa=Array.prototype,ha=function(t){var e=t.concat;return t===fa||t instanceof Array&&e===fa.concat?la:e},da=Object.assign,pa=Object.defineProperty,ya=!da||s((function(){if(u&&1!==da({b:1},da(pa({},"a",{enumerable:!0,get:function(){pa(this,"b",{value:3,enumerable:!1})}}),{b:2})).b)return!0;var t={},e={},r=Symbol();return t[r]=7,"abcdefghijklmnopqrst".split("").forEach((function(t){e[t]=t})),7!=da({},t)[r]||"abcdefghijklmnopqrst"!=Me(da({},e)).join("")}))?function(t,e){for(var r=tt(t),n=arguments.length,i=1,a=je.f,o=f.f;n>i;)for(var s,c=v(arguments[i++]),l=a?Me(c).concat(a(c)):Me(c),h=l.length,d=0;h>d;)s=l[d++],u&&!o.call(c,s)||(r[s]=c[s]);return r}:da;z({target:"Object",stat:!0,forced:Object.assign!==ya},{assign:ya});var va=C.Object.assign,ma=St.some,_a=Jt("some"),ga=Lt("some");z({target:"Array",proto:!0,forced:!_a||!ga},{some:function(t){return ma(this,t,arguments.length>1?arguments[1]:void 0)}});var wa=vt("Array").some,ba=Array.prototype,Sa=function(t){var e=t.some;return t===ba||t instanceof Array&&e===ba.some?wa:e},ka=Di,Oa=r((function(t){function e(r){return t.exports=e="function"==typeof ia&&"symbol"==typeof ka?function(t){return typeof t}:function(t){return t&&"function"==typeof ia&&t.constructor===ia&&t!==ia.prototype?"symbol":typeof t},e(r)}t.exports=e})),Da=s((function(){Me(1)}));z({target:"Object",stat:!0,forced:Da},{keys:function(t){return Me(tt(t))}});var Ma=C.Object.keys,xa=!s((function(){return Object.isExtensible(Object.preventExtensions({}))})),Ya=r((function(t){var e=U.f,r=at("meta"),n=0,i=Object.isExtensible||function(){return!0},a=function(t){e(t,r,{value:{objectID:"O"+ ++n,weakData:{}}})},o=t.exports={REQUIRED:!1,fastKey:function(t,e){if(!g(t))return"symbol"==typeof t?t:("string"==typeof t?"S":"P")+t;if(!S(t,r)){if(!i(t))return"F";if(!e)return"E";a(t)}return t[r].objectID},getWeakData:function(t,e){if(!S(t,r)){if(!i(t))return!0;if(!e)return!1;a(t)}return t[r].weakData},onFreeze:function(t){return xa&&o.REQUIRED&&i(t)&&!S(t,r)&&a(t),t}};Se[r]=!0})),Ta=(Ya.REQUIRED,Ya.fastKey,Ya.getWeakData,Ya.onFreeze,r((function(t){var e=function(t,e){this.stopped=t,this.result=e};(t.exports=function(t,r,n,i,a){var o,s,u,c,l,f,h,d=R(r,n,i?2:1);if(a)o=t;else{if("function"!=typeof(s=Rn(t)))throw TypeError("Target is not iterable");if(Xn(s)){for(u=0,c=Q(t.length);c>u;u++)if((l=i?d(N(h=t[u])[0],h[1]):d(t[u]))&&l instanceof e)return l;return new e(!1)}o=s.call(t)}for(f=o.next;!(h=f.call(o)).done;)if("object"==typeof(l=Jn(o,d,h.value,i))&&l&&l instanceof e)return l;return new e(!1)}).stop=function(t){return new e(!0,t)}}))),Pa=function(t,e,r){if(!(t instanceof e))throw TypeError("Incorrect "+(r?r+" ":"")+"invocation");return t},ja=U.f,Aa=St.forEach,Ea=tr.set,Ia=tr.getterFor,La=function(t,e,r){var n,i=-1!==t.indexOf("Map"),a=-1!==t.indexOf("Weak"),c=i?"set":"add",l=o[t],f=l&&l.prototype,h={};if(u&&"function"==typeof l&&(a||f.forEach&&!s((function(){(new l).entries().next()})))){n=e((function(e,r){Ea(Pa(e,n,t),{type:t,collection:new l}),null!=r&&Ta(r,e[c],e,i)}));var d=Ia(t);Aa(["add","clear","delete","forEach","get","has","set","keys","values","entries"],(function(t){var e="add"==t||"set"==t;t in f&&(!a||"clear"!=t)&&H(n.prototype,t,(function(r,n){var i=d(this).collection;if(!e&&a&&!g(r))return"get"==t&&void 0;var o=i[t](0===r?0:r,n);return e?this:o}))})),a||ja(n.prototype,"size",{configurable:!0,get:function(){return d(this).collection.size}})}else n=r.getConstructor(e,t,i,c),Ya.REQUIRED=!0;return Sr(n,t,!1,!0),h[t]=n,z({global:!0,forced:!0},h),a||r.setStrong(n,t,i),n},Ca=function(t,e,r){for(var n in e)r&&r.unsafe&&t[n]?t[n]=e[n]:Mr(t,n,e[n],r);return t},Fa=ft("species"),Ra=U.f,Na=Ya.fastKey,Wa=tr.set,Ua=tr.getterFor,Ha={getConstructor:function(t,e,r,n){var i=t((function(t,a){Pa(t,i,e),Wa(t,{type:e,index:dr(null),first:void 0,last:void 0,size:0}),u||(t.size=0),null!=a&&Ta(a,t[n],t,r)})),a=Ua(e),o=function(t,e,r){var n,i,o=a(t),c=s(t,e);return c?c.value=r:(o.last=c={index:i=Na(e,!0),key:e,value:r,previous:n=o.last,next:void 0,removed:!1},o.first||(o.first=c),n&&(n.next=c),u?o.size++:t.size++,"F"!==i&&(o.index[i]=c)),t},s=function(t,e){var r,n=a(t),i=Na(e);if("F"!==i)return n.index[i];for(r=n.first;r;r=r.next)if(r.key==e)return r};return Ca(i.prototype,{clear:function(){for(var t=a(this),e=t.index,r=t.first;r;)r.removed=!0,r.previous&&(r.previous=r.previous.next=void 0),delete e[r.index],r=r.next;t.first=t.last=void 0,u?t.size=0:this.size=0},delete:function(t){var e=a(this),r=s(this,t);if(r){var n=r.next,i=r.previous;delete e.index[r.index],r.removed=!0,i&&(i.next=n),n&&(n.previous=i),e.first==r&&(e.first=n),e.last==r&&(e.last=i),u?e.size--:this.size--}return!!r},forEach:function(t){for(var e,r=a(this),n=R(t,arguments.length>1?arguments[1]:void 0,3);e=e?e.next:r.first;)for(n(e.value,e.key,this);e&&e.removed;)e=e.previous},has:function(t){return!!s(this,t)}}),Ca(i.prototype,r?{get:function(t){var e=s(this,t);return e&&e.value},set:function(t,e){return o(this,0===t?0:t,e)}}:{add:function(t){return o(this,t=0===t?0:t,t)}}),u&&Ra(i.prototype,"size",{get:function(){return a(this).size}}),i},setStrong:function(t,e,r){var n=e+" Iterator",i=Ua(e),a=Ua(n);jr(t,e,(function(t,e){Wa(this,{type:n,target:t,state:i(t),kind:e,last:void 0})}),(function(){for(var t=a(this),e=t.kind,r=t.last;r&&r.removed;)r=r.previous;return t.target&&(t.last=r=r?r.next:t.state.first)?"keys"==e?{value:r.key,done:!1}:"values"==e?{value:r.value,done:!1}:{value:[r.key,r.value],done:!1}:(t.target=void 0,{value:void 0,done:!0})}),r?"entries":"values",!r,!0),function(t){var e=Ot(t),r=U.f;u&&e&&!e[Fa]&&r(e,Fa,{configurable:!0,get:function(){return this}})}(e)}},Ga=(La("Map",(function(t){return function(){return t(this,arguments.length?arguments[0]:void 0)}}),Ha),C.Map),Va=Qi;z({target:"Object",stat:!0,sham:!u},{create:dr});var za=C.Object,qa=function(t,e){return za.create(t,e)},Za=qa;z({target:"Object",stat:!0},{setPrototypeOf:Dr});var $a=C.Object.setPrototypeOf,Ja=r((function(t){function e(r,n){return t.exports=e=$a||function(t,e){return t.__proto__=e,t},e(r,n)}t.exports=e}));var Ba=function(t,e){if("function"!=typeof e&&null!==e)throw new TypeError("Super expression must either be null or a function");t.prototype=Za(e&&e.prototype,{constructor:{value:t,writable:!0,configurable:!0}}),e&&Ja(t,e)};var Qa=function(t){if(void 0===t)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return t};var Xa=function(t,e){return!e||"object"!==Oa(e)&&"function"!=typeof e?Qa(t):e},Ka=s((function(){ir(1)}));z({target:"Object",stat:!0,forced:Ka,sham:!er},{getPrototypeOf:function(t){return ir(tt(t))}});var to=C.Object.getPrototypeOf,eo=to,ro=r((function(t){function e(r){return t.exports=e=$a?eo:function(t){return t.__proto__||eo(t)},e(r)}t.exports=e})),no="undefined"!=typeof crypto&&crypto.getRandomValues&&crypto.getRandomValues.bind(crypto)||"undefined"!=typeof msCrypto&&"function"==typeof msCrypto.getRandomValues&&msCrypto.getRandomValues.bind(msCrypto),io=new Uint8Array(16);function ao(){if(!no)throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");return no(io)}for(var oo=[],so=0;so<256;++so)oo[so]=(so+256).toString(16).substr(1);function uo(t,e,r){var n=e&&r||0;"string"==typeof t&&(e="binary"===t?new Array(16):null,t=null);var i=(t=t||{}).random||(t.rng||ao)();if(i[6]=15&i[6]|64,i[8]=63&i[8]|128,e)for(var a=0;a<16;++a)e[n+a]=i[a];return e||function(t,e){var r=e||0,n=oo;return[n[t[r++]],n[t[r++]],n[t[r++]],n[t[r++]],"-",n[t[r++]],n[t[r++]],"-",n[t[r++]],n[t[r++]],"-",n[t[r++]],n[t[r++]],"-",n[t[r++]],n[t[r++]],n[t[r++]],n[t[r++]],n[t[r++]],n[t[r++]]].join("")}(i)}var co,lo=qa,fo="\t\n\v\f\r                　\u2028\u2029\ufeff",ho="["+fo+"]",po=RegExp("^"+ho+ho+"*"),yo=RegExp(ho+ho+"*$"),vo=function(t){return function(e){var r=String(m(e));return 1&t&&(r=r.replace(po,"")),2&t&&(r=r.replace(yo,"")),r}},mo={start:vo(1),end:vo(2),trim:vo(3)},_o=mo.trim;z({target:"String",proto:!0,forced:(co="trim",s((function(){return!!fo[co]()||"​᠎"!="​᠎"[co]()||fo[co].name!==co})))},{trim:function(){return _o(this)}});vt("String").trim;var go=mo.trim,wo=o.parseInt,bo=/^[+-]?0[Xx]/,So=8!==wo(fo+"08")||22!==wo(fo+"0x16")?function(t,e){var r=go(String(t));return wo(r,e>>>0||(bo.test(r)?16:10))}:wo;z({global:!0,forced:parseInt!=So},{parseInt:So});var ko=f.f,Oo=function(t){return function(e){for(var r,n=_(e),i=Me(n),a=i.length,o=0,s=[];a>o;)r=i[o++],u&&!ko.call(n,r)||s.push(t?[r,n[r]]:n[r]);return s}},Do={entries:Oo(!0),values:Oo(!1)}.values;z({target:"Object",stat:!0},{values:function(t){return Do(t)}});C.Object.values;var Mo=to,xo=be.indexOf,Yo=[].indexOf,To=!!Yo&&1/[1].indexOf(1,-0)<0,Po=Jt("indexOf"),jo=Lt("indexOf",{ACCESSORS:!0,1:0});z({target:"Array",proto:!0,forced:To||!Po||!jo},{indexOf:function(t){return To?Yo.apply(this,arguments)||0:xo(this,t,arguments.length>1?arguments[1]:void 0)}});vt("Array").indexOf;var Ao=function(t){if(Xi(t))return t};var Eo=function(t,e){if(void 0!==ia&&na(Object(t))){var r=[],n=!0,i=!1,a=void 0;try{for(var o,s=Nn(t);!(n=(o=s.next()).done)&&(r.push(o.value),!e||r.length!==e);n=!0);}catch(t){i=!0,a=t}finally{try{n||null==s.return||s.return()}finally{if(i)throw a}}return r}};var Io=function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var Lo=function(t,e){return Ao(t)||Eo(t,e)||sa(t,e)||Io()};z({target:"Date",stat:!0},{now:function(){return(new Date).getTime()}});C.Date.now;function Co(t){return t instanceof Number||"number"==typeof t}function Fo(t){return t instanceof String||"string"==typeof t}function Ro(t,e,r,n){var i=!1;!0===n&&(i=null===e[r]&&void 0!==t[r]),i?delete t[r]:t[r]=e[r]}function No(t,e){var r=arguments.length>2&&void 0!==arguments[2]&&arguments[2],n=arguments.length>3&&void 0!==arguments[3]&&arguments[3];for(var i in e)if(Object.prototype.hasOwnProperty.call(e,i)||!0===r)if("object"===Oa(e[i])&&null!==e[i]&&Mo(e[i])===Object.prototype)void 0===t[i]?t[i]=No({},e[i],r):"object"===Oa(t[i])&&null!==t[i]&&Mo(t[i])===Object.prototype?No(t[i],e[i],r):Ro(t,e,i,n);else if(Va(e[i])){var a;t[i]=pi(a=e[i]).call(a)}else Ro(t,e,i,n);return t}function Wo(t){var e=Oa(t);return"object"===e?null===t?"null":t instanceof Boolean?"Boolean":t instanceof Number?"Number":t instanceof String?"String":Va(t)?"Array":t instanceof Date?"Date":"Object":"number"===e?"Number":"boolean"===e?"Boolean":"string"===e?"String":void 0===e?"undefined":e}var Uo=r((function(t,e){t.exports=function(){var e,r;function n(){return e.apply(null,arguments)}function a(t){return t instanceof Array||"[object Array]"===Object.prototype.toString.call(t)}function o(t){return null!=t&&"[object Object]"===Object.prototype.toString.call(t)}function s(t){return void 0===t}function u(t){return"number"==typeof t||"[object Number]"===Object.prototype.toString.call(t)}function c(t){return t instanceof Date||"[object Date]"===Object.prototype.toString.call(t)}function l(t,e){var r,n=[];for(r=0;r<t.length;++r)n.push(e(t[r],r));return n}function f(t,e){return Object.prototype.hasOwnProperty.call(t,e)}function h(t,e){for(var r in e)f(e,r)&&(t[r]=e[r]);return f(e,"toString")&&(t.toString=e.toString),f(e,"valueOf")&&(t.valueOf=e.valueOf),t}function d(t,e,r,n){return Oe(t,e,r,n,!0).utc()}function p(t){return null==t._pf&&(t._pf={empty:!1,unusedTokens:[],unusedInput:[],overflow:-2,charsLeftOver:0,nullInput:!1,invalidMonth:null,invalidFormat:!1,userInvalidated:!1,iso:!1,parsedDateParts:[],meridiem:null,rfc2822:!1,weekdayMismatch:!1}),t._pf}function y(t){if(null==t._isValid){var e=p(t),n=r.call(e.parsedDateParts,(function(t){return null!=t})),i=!isNaN(t._d.getTime())&&e.overflow<0&&!e.empty&&!e.invalidMonth&&!e.invalidWeekday&&!e.weekdayMismatch&&!e.nullInput&&!e.invalidFormat&&!e.userInvalidated&&(!e.meridiem||e.meridiem&&n);if(t._strict&&(i=i&&0===e.charsLeftOver&&0===e.unusedTokens.length&&void 0===e.bigHour),null!=Object.isFrozen&&Object.isFrozen(t))return i;t._isValid=i}return t._isValid}function v(t){var e=d(NaN);return null!=t?h(p(e),t):p(e).userInvalidated=!0,e}r=Array.prototype.some?Array.prototype.some:function(t){for(var e=Object(this),r=e.length>>>0,n=0;n<r;n++)if(n in e&&t.call(this,e[n],n,e))return!0;return!1};var m=n.momentProperties=[];function _(t,e){var r,n,i;if(s(e._isAMomentObject)||(t._isAMomentObject=e._isAMomentObject),s(e._i)||(t._i=e._i),s(e._f)||(t._f=e._f),s(e._l)||(t._l=e._l),s(e._strict)||(t._strict=e._strict),s(e._tzm)||(t._tzm=e._tzm),s(e._isUTC)||(t._isUTC=e._isUTC),s(e._offset)||(t._offset=e._offset),s(e._pf)||(t._pf=p(e)),s(e._locale)||(t._locale=e._locale),m.length>0)for(r=0;r<m.length;r++)s(i=e[n=m[r]])||(t[n]=i);return t}var g=!1;function w(t){_(this,t),this._d=new Date(null!=t._d?t._d.getTime():NaN),this.isValid()||(this._d=new Date(NaN)),!1===g&&(g=!0,n.updateOffset(this),g=!1)}function b(t){return t instanceof w||null!=t&&null!=t._isAMomentObject}function S(t){return t<0?Math.ceil(t)||0:Math.floor(t)}function k(t){var e=+t,r=0;return 0!==e&&isFinite(e)&&(r=S(e)),r}function O(t,e,r){var n,i=Math.min(t.length,e.length),a=Math.abs(t.length-e.length),o=0;for(n=0;n<i;n++)(r&&t[n]!==e[n]||!r&&k(t[n])!==k(e[n]))&&o++;return o+a}function D(t){!1===n.suppressDeprecationWarnings&&"undefined"!=typeof console&&console.warn&&console.warn("Deprecation warning: "+t)}function M(t,e){var r=!0;return h((function(){if(null!=n.deprecationHandler&&n.deprecationHandler(null,t),r){for(var i,a=[],o=0;o<arguments.length;o++){if(i="","object"==typeof arguments[o]){for(var s in i+="\n["+o+"] ",arguments[0])i+=s+": "+arguments[0][s]+", ";i=i.slice(0,-2)}else i=arguments[o];a.push(i)}D(t+"\nArguments: "+Array.prototype.slice.call(a).join("")+"\n"+(new Error).stack),r=!1}return e.apply(this,arguments)}),e)}var x,Y={};function T(t,e){null!=n.deprecationHandler&&n.deprecationHandler(t,e),Y[t]||(D(e),Y[t]=!0)}function P(t){return t instanceof Function||"[object Function]"===Object.prototype.toString.call(t)}function j(t,e){var r,n=h({},t);for(r in e)f(e,r)&&(o(t[r])&&o(e[r])?(n[r]={},h(n[r],t[r]),h(n[r],e[r])):null!=e[r]?n[r]=e[r]:delete n[r]);for(r in t)f(t,r)&&!f(e,r)&&o(t[r])&&(n[r]=h({},n[r]));return n}function A(t){null!=t&&this.set(t)}n.suppressDeprecationWarnings=!1,n.deprecationHandler=null,x=Object.keys?Object.keys:function(t){var e,r=[];for(e in t)f(t,e)&&r.push(e);return r};var E={};function I(t,e){var r=t.toLowerCase();E[r]=E[r+"s"]=E[e]=t}function L(t){return"string"==typeof t?E[t]||E[t.toLowerCase()]:void 0}function C(t){var e,r,n={};for(r in t)f(t,r)&&(e=L(r))&&(n[e]=t[r]);return n}var F={};function R(t,e){F[t]=e}function N(t,e,r){var n=""+Math.abs(t),i=e-n.length;return(t>=0?r?"+":"":"-")+Math.pow(10,Math.max(0,i)).toString().substr(1)+n}var W=/(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g,U=/(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,H={},G={};function V(t,e,r,n){var i=n;"string"==typeof n&&(i=function(){return this[n]()}),t&&(G[t]=i),e&&(G[e[0]]=function(){return N(i.apply(this,arguments),e[1],e[2])}),r&&(G[r]=function(){return this.localeData().ordinal(i.apply(this,arguments),t)})}function z(t,e){return t.isValid()?(e=q(e,t.localeData()),H[e]=H[e]||function(t){var e,r,n,i=t.match(W);for(e=0,r=i.length;e<r;e++)G[i[e]]?i[e]=G[i[e]]:i[e]=(n=i[e]).match(/\[[\s\S]/)?n.replace(/^\[|\]$/g,""):n.replace(/\\/g,"");return function(e){var n,a="";for(n=0;n<r;n++)a+=P(i[n])?i[n].call(e,t):i[n];return a}}(e),H[e](t)):t.localeData().invalidDate()}function q(t,e){var r=5;function n(t){return e.longDateFormat(t)||t}for(U.lastIndex=0;r>=0&&U.test(t);)t=t.replace(U,n),U.lastIndex=0,r-=1;return t}var Z=/\d/,$=/\d\d/,J=/\d{3}/,B=/\d{4}/,Q=/[+-]?\d{6}/,X=/\d\d?/,K=/\d\d\d\d?/,tt=/\d\d\d\d\d\d?/,et=/\d{1,3}/,rt=/\d{1,4}/,nt=/[+-]?\d{1,6}/,it=/\d+/,at=/[+-]?\d+/,ot=/Z|[+-]\d\d:?\d\d/gi,st=/Z|[+-]\d\d(?::?\d\d)?/gi,ut=/[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i,ct={};function lt(t,e,r){ct[t]=P(e)?e:function(t,n){return t&&r?r:e}}function ft(t,e){return f(ct,t)?ct[t](e._strict,e._locale):new RegExp(ht(t.replace("\\","").replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g,(function(t,e,r,n,i){return e||r||n||i}))))}function ht(t){return t.replace(/[-\/\\^$*+?.()|[\]{}]/g,"\\$&")}var dt={};function pt(t,e){var r,n=e;for("string"==typeof t&&(t=[t]),u(e)&&(n=function(t,r){r[e]=k(t)}),r=0;r<t.length;r++)dt[t[r]]=n}function yt(t,e){pt(t,(function(t,r,n,i){n._w=n._w||{},e(t,n._w,n,i)}))}function vt(t,e,r){null!=e&&f(dt,t)&&dt[t](e,r._a,r,t)}function mt(t){return _t(t)?366:365}function _t(t){return t%4==0&&t%100!=0||t%400==0}V("Y",0,0,(function(){var t=this.year();return t<=9999?""+t:"+"+t})),V(0,["YY",2],0,(function(){return this.year()%100})),V(0,["YYYY",4],0,"year"),V(0,["YYYYY",5],0,"year"),V(0,["YYYYYY",6,!0],0,"year"),I("year","y"),R("year",1),lt("Y",at),lt("YY",X,$),lt("YYYY",rt,B),lt("YYYYY",nt,Q),lt("YYYYYY",nt,Q),pt(["YYYYY","YYYYYY"],0),pt("YYYY",(function(t,e){e[0]=2===t.length?n.parseTwoDigitYear(t):k(t)})),pt("YY",(function(t,e){e[0]=n.parseTwoDigitYear(t)})),pt("Y",(function(t,e){e[0]=parseInt(t,10)})),n.parseTwoDigitYear=function(t){return k(t)+(k(t)>68?1900:2e3)};var gt,wt=bt("FullYear",!0);function bt(t,e){return function(r){return null!=r?(kt(this,t,r),n.updateOffset(this,e),this):St(this,t)}}function St(t,e){return t.isValid()?t._d["get"+(t._isUTC?"UTC":"")+e]():NaN}function kt(t,e,r){t.isValid()&&!isNaN(r)&&("FullYear"===e&&_t(t.year())&&1===t.month()&&29===t.date()?t._d["set"+(t._isUTC?"UTC":"")+e](r,t.month(),Ot(r,t.month())):t._d["set"+(t._isUTC?"UTC":"")+e](r))}function Ot(t,e){if(isNaN(t)||isNaN(e))return NaN;var r,n=(e%(r=12)+r)%r;return t+=(e-n)/12,1===n?_t(t)?29:28:31-n%7%2}gt=Array.prototype.indexOf?Array.prototype.indexOf:function(t){var e;for(e=0;e<this.length;++e)if(this[e]===t)return e;return-1},V("M",["MM",2],"Mo",(function(){return this.month()+1})),V("MMM",0,0,(function(t){return this.localeData().monthsShort(this,t)})),V("MMMM",0,0,(function(t){return this.localeData().months(this,t)})),I("month","M"),R("month",8),lt("M",X),lt("MM",X,$),lt("MMM",(function(t,e){return e.monthsShortRegex(t)})),lt("MMMM",(function(t,e){return e.monthsRegex(t)})),pt(["M","MM"],(function(t,e){e[1]=k(t)-1})),pt(["MMM","MMMM"],(function(t,e,r,n){var i=r._locale.monthsParse(t,n,r._strict);null!=i?e[1]=i:p(r).invalidMonth=t}));var Dt=/D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/,Mt="January_February_March_April_May_June_July_August_September_October_November_December".split("_"),xt="Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_");function Yt(t,e,r){var n,i,a,o=t.toLocaleLowerCase();if(!this._monthsParse)for(this._monthsParse=[],this._longMonthsParse=[],this._shortMonthsParse=[],n=0;n<12;++n)a=d([2e3,n]),this._shortMonthsParse[n]=this.monthsShort(a,"").toLocaleLowerCase(),this._longMonthsParse[n]=this.months(a,"").toLocaleLowerCase();return r?"MMM"===e?-1!==(i=gt.call(this._shortMonthsParse,o))?i:null:-1!==(i=gt.call(this._longMonthsParse,o))?i:null:"MMM"===e?-1!==(i=gt.call(this._shortMonthsParse,o))||-1!==(i=gt.call(this._longMonthsParse,o))?i:null:-1!==(i=gt.call(this._longMonthsParse,o))||-1!==(i=gt.call(this._shortMonthsParse,o))?i:null}function Tt(t,e){var r;if(!t.isValid())return t;if("string"==typeof e)if(/^\d+$/.test(e))e=k(e);else if(!u(e=t.localeData().monthsParse(e)))return t;return r=Math.min(t.date(),Ot(t.year(),e)),t._d["set"+(t._isUTC?"UTC":"")+"Month"](e,r),t}function Pt(t){return null!=t?(Tt(this,t),n.updateOffset(this,!0),this):St(this,"Month")}var jt=ut,At=ut;function Et(){function t(t,e){return e.length-t.length}var e,r,n=[],i=[],a=[];for(e=0;e<12;e++)r=d([2e3,e]),n.push(this.monthsShort(r,"")),i.push(this.months(r,"")),a.push(this.months(r,"")),a.push(this.monthsShort(r,""));for(n.sort(t),i.sort(t),a.sort(t),e=0;e<12;e++)n[e]=ht(n[e]),i[e]=ht(i[e]);for(e=0;e<24;e++)a[e]=ht(a[e]);this._monthsRegex=new RegExp("^("+a.join("|")+")","i"),this._monthsShortRegex=this._monthsRegex,this._monthsStrictRegex=new RegExp("^("+i.join("|")+")","i"),this._monthsShortStrictRegex=new RegExp("^("+n.join("|")+")","i")}function It(t,e,r,n,i,a,o){var s;return t<100&&t>=0?(s=new Date(t+400,e,r,n,i,a,o),isFinite(s.getFullYear())&&s.setFullYear(t)):s=new Date(t,e,r,n,i,a,o),s}function Lt(t){var e;if(t<100&&t>=0){var r=Array.prototype.slice.call(arguments);r[0]=t+400,e=new Date(Date.UTC.apply(null,r)),isFinite(e.getUTCFullYear())&&e.setUTCFullYear(t)}else e=new Date(Date.UTC.apply(null,arguments));return e}function Ct(t,e,r){var n=7+e-r;return-(7+Lt(t,0,n).getUTCDay()-e)%7+n-1}function Ft(t,e,r,n,i){var a,o,s=1+7*(e-1)+(7+r-n)%7+Ct(t,n,i);return s<=0?o=mt(a=t-1)+s:s>mt(t)?(a=t+1,o=s-mt(t)):(a=t,o=s),{year:a,dayOfYear:o}}function Rt(t,e,r){var n,i,a=Ct(t.year(),e,r),o=Math.floor((t.dayOfYear()-a-1)/7)+1;return o<1?n=o+Nt(i=t.year()-1,e,r):o>Nt(t.year(),e,r)?(n=o-Nt(t.year(),e,r),i=t.year()+1):(i=t.year(),n=o),{week:n,year:i}}function Nt(t,e,r){var n=Ct(t,e,r),i=Ct(t+1,e,r);return(mt(t)-n+i)/7}function Wt(t,e){return t.slice(e,7).concat(t.slice(0,e))}V("w",["ww",2],"wo","week"),V("W",["WW",2],"Wo","isoWeek"),I("week","w"),I("isoWeek","W"),R("week",5),R("isoWeek",5),lt("w",X),lt("ww",X,$),lt("W",X),lt("WW",X,$),yt(["w","ww","W","WW"],(function(t,e,r,n){e[n.substr(0,1)]=k(t)})),V("d",0,"do","day"),V("dd",0,0,(function(t){return this.localeData().weekdaysMin(this,t)})),V("ddd",0,0,(function(t){return this.localeData().weekdaysShort(this,t)})),V("dddd",0,0,(function(t){return this.localeData().weekdays(this,t)})),V("e",0,0,"weekday"),V("E",0,0,"isoWeekday"),I("day","d"),I("weekday","e"),I("isoWeekday","E"),R("day",11),R("weekday",11),R("isoWeekday",11),lt("d",X),lt("e",X),lt("E",X),lt("dd",(function(t,e){return e.weekdaysMinRegex(t)})),lt("ddd",(function(t,e){return e.weekdaysShortRegex(t)})),lt("dddd",(function(t,e){return e.weekdaysRegex(t)})),yt(["dd","ddd","dddd"],(function(t,e,r,n){var i=r._locale.weekdaysParse(t,n,r._strict);null!=i?e.d=i:p(r).invalidWeekday=t})),yt(["d","e","E"],(function(t,e,r,n){e[n]=k(t)}));var Ut="Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),Ht="Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),Gt="Su_Mo_Tu_We_Th_Fr_Sa".split("_");function Vt(t,e,r){var n,i,a,o=t.toLocaleLowerCase();if(!this._weekdaysParse)for(this._weekdaysParse=[],this._shortWeekdaysParse=[],this._minWeekdaysParse=[],n=0;n<7;++n)a=d([2e3,1]).day(n),this._minWeekdaysParse[n]=this.weekdaysMin(a,"").toLocaleLowerCase(),this._shortWeekdaysParse[n]=this.weekdaysShort(a,"").toLocaleLowerCase(),this._weekdaysParse[n]=this.weekdays(a,"").toLocaleLowerCase();return r?"dddd"===e?-1!==(i=gt.call(this._weekdaysParse,o))?i:null:"ddd"===e?-1!==(i=gt.call(this._shortWeekdaysParse,o))?i:null:-1!==(i=gt.call(this._minWeekdaysParse,o))?i:null:"dddd"===e?-1!==(i=gt.call(this._weekdaysParse,o))||-1!==(i=gt.call(this._shortWeekdaysParse,o))||-1!==(i=gt.call(this._minWeekdaysParse,o))?i:null:"ddd"===e?-1!==(i=gt.call(this._shortWeekdaysParse,o))||-1!==(i=gt.call(this._weekdaysParse,o))||-1!==(i=gt.call(this._minWeekdaysParse,o))?i:null:-1!==(i=gt.call(this._minWeekdaysParse,o))||-1!==(i=gt.call(this._weekdaysParse,o))||-1!==(i=gt.call(this._shortWeekdaysParse,o))?i:null}var zt=ut,qt=ut,Zt=ut;function $t(){function t(t,e){return e.length-t.length}var e,r,n,i,a,o=[],s=[],u=[],c=[];for(e=0;e<7;e++)r=d([2e3,1]).day(e),n=this.weekdaysMin(r,""),i=this.weekdaysShort(r,""),a=this.weekdays(r,""),o.push(n),s.push(i),u.push(a),c.push(n),c.push(i),c.push(a);for(o.sort(t),s.sort(t),u.sort(t),c.sort(t),e=0;e<7;e++)s[e]=ht(s[e]),u[e]=ht(u[e]),c[e]=ht(c[e]);this._weekdaysRegex=new RegExp("^("+c.join("|")+")","i"),this._weekdaysShortRegex=this._weekdaysRegex,this._weekdaysMinRegex=this._weekdaysRegex,this._weekdaysStrictRegex=new RegExp("^("+u.join("|")+")","i"),this._weekdaysShortStrictRegex=new RegExp("^("+s.join("|")+")","i"),this._weekdaysMinStrictRegex=new RegExp("^("+o.join("|")+")","i")}function Jt(){return this.hours()%12||12}function Bt(t,e){V(t,0,0,(function(){return this.localeData().meridiem(this.hours(),this.minutes(),e)}))}function Qt(t,e){return e._meridiemParse}V("H",["HH",2],0,"hour"),V("h",["hh",2],0,Jt),V("k",["kk",2],0,(function(){return this.hours()||24})),V("hmm",0,0,(function(){return""+Jt.apply(this)+N(this.minutes(),2)})),V("hmmss",0,0,(function(){return""+Jt.apply(this)+N(this.minutes(),2)+N(this.seconds(),2)})),V("Hmm",0,0,(function(){return""+this.hours()+N(this.minutes(),2)})),V("Hmmss",0,0,(function(){return""+this.hours()+N(this.minutes(),2)+N(this.seconds(),2)})),Bt("a",!0),Bt("A",!1),I("hour","h"),R("hour",13),lt("a",Qt),lt("A",Qt),lt("H",X),lt("h",X),lt("k",X),lt("HH",X,$),lt("hh",X,$),lt("kk",X,$),lt("hmm",K),lt("hmmss",tt),lt("Hmm",K),lt("Hmmss",tt),pt(["H","HH"],3),pt(["k","kk"],(function(t,e,r){var n=k(t);e[3]=24===n?0:n})),pt(["a","A"],(function(t,e,r){r._isPm=r._locale.isPM(t),r._meridiem=t})),pt(["h","hh"],(function(t,e,r){e[3]=k(t),p(r).bigHour=!0})),pt("hmm",(function(t,e,r){var n=t.length-2;e[3]=k(t.substr(0,n)),e[4]=k(t.substr(n)),p(r).bigHour=!0})),pt("hmmss",(function(t,e,r){var n=t.length-4,i=t.length-2;e[3]=k(t.substr(0,n)),e[4]=k(t.substr(n,2)),e[5]=k(t.substr(i)),p(r).bigHour=!0})),pt("Hmm",(function(t,e,r){var n=t.length-2;e[3]=k(t.substr(0,n)),e[4]=k(t.substr(n))})),pt("Hmmss",(function(t,e,r){var n=t.length-4,i=t.length-2;e[3]=k(t.substr(0,n)),e[4]=k(t.substr(n,2)),e[5]=k(t.substr(i))}));var Xt,Kt=bt("Hours",!0),te={calendar:{sameDay:"[Today at] LT",nextDay:"[Tomorrow at] LT",nextWeek:"dddd [at] LT",lastDay:"[Yesterday at] LT",lastWeek:"[Last] dddd [at] LT",sameElse:"L"},longDateFormat:{LTS:"h:mm:ss A",LT:"h:mm A",L:"MM/DD/YYYY",LL:"MMMM D, YYYY",LLL:"MMMM D, YYYY h:mm A",LLLL:"dddd, MMMM D, YYYY h:mm A"},invalidDate:"Invalid date",ordinal:"%d",dayOfMonthOrdinalParse:/\d{1,2}/,relativeTime:{future:"in %s",past:"%s ago",s:"a few seconds",ss:"%d seconds",m:"a minute",mm:"%d minutes",h:"an hour",hh:"%d hours",d:"a day",dd:"%d days",M:"a month",MM:"%d months",y:"a year",yy:"%d years"},months:Mt,monthsShort:xt,week:{dow:0,doy:6},weekdays:Ut,weekdaysMin:Gt,weekdaysShort:Ht,meridiemParse:/[ap]\.?m?\.?/i},ee={},re={};function ne(t){return t?t.toLowerCase().replace("_","-"):t}function ie(e){var r=null;if(!ee[e]&&t&&t.exports)try{r=Xt._abbr,i(),ae(r)}catch(t){}return ee[e]}function ae(t,e){var r;return t&&((r=s(e)?se(t):oe(t,e))?Xt=r:"undefined"!=typeof console&&console.warn&&console.warn("Locale "+t+" not found. Did you forget to load it?")),Xt._abbr}function oe(t,e){if(null!==e){var r,n=te;if(e.abbr=t,null!=ee[t])T("defineLocaleOverride","use moment.updateLocale(localeName, config) to change an existing locale. moment.defineLocale(localeName, config) should only be used for creating a new locale See http://momentjs.com/guides/#/warnings/define-locale/ for more info."),n=ee[t]._config;else if(null!=e.parentLocale)if(null!=ee[e.parentLocale])n=ee[e.parentLocale]._config;else{if(null==(r=ie(e.parentLocale)))return re[e.parentLocale]||(re[e.parentLocale]=[]),re[e.parentLocale].push({name:t,config:e}),null;n=r._config}return ee[t]=new A(j(n,e)),re[t]&&re[t].forEach((function(t){oe(t.name,t.config)})),ae(t),ee[t]}return delete ee[t],null}function se(t){var e;if(t&&t._locale&&t._locale._abbr&&(t=t._locale._abbr),!t)return Xt;if(!a(t)){if(e=ie(t))return e;t=[t]}return function(t){for(var e,r,n,i,a=0;a<t.length;){for(e=(i=ne(t[a]).split("-")).length,r=(r=ne(t[a+1]))?r.split("-"):null;e>0;){if(n=ie(i.slice(0,e).join("-")))return n;if(r&&r.length>=e&&O(i,r,!0)>=e-1)break;e--}a++}return Xt}(t)}function ue(t){var e,r=t._a;return r&&-2===p(t).overflow&&(e=r[1]<0||r[1]>11?1:r[2]<1||r[2]>Ot(r[0],r[1])?2:r[3]<0||r[3]>24||24===r[3]&&(0!==r[4]||0!==r[5]||0!==r[6])?3:r[4]<0||r[4]>59?4:r[5]<0||r[5]>59?5:r[6]<0||r[6]>999?6:-1,p(t)._overflowDayOfYear&&(e<0||e>2)&&(e=2),p(t)._overflowWeeks&&-1===e&&(e=7),p(t)._overflowWeekday&&-1===e&&(e=8),p(t).overflow=e),t}function ce(t,e,r){return null!=t?t:null!=e?e:r}function le(t){var e,r,i,a,o,s=[];if(!t._d){for(i=function(t){var e=new Date(n.now());return t._useUTC?[e.getUTCFullYear(),e.getUTCMonth(),e.getUTCDate()]:[e.getFullYear(),e.getMonth(),e.getDate()]}(t),t._w&&null==t._a[2]&&null==t._a[1]&&function(t){var e,r,n,i,a,o,s,u;if(null!=(e=t._w).GG||null!=e.W||null!=e.E)a=1,o=4,r=ce(e.GG,t._a[0],Rt(De(),1,4).year),n=ce(e.W,1),((i=ce(e.E,1))<1||i>7)&&(u=!0);else{a=t._locale._week.dow,o=t._locale._week.doy;var c=Rt(De(),a,o);r=ce(e.gg,t._a[0],c.year),n=ce(e.w,c.week),null!=e.d?((i=e.d)<0||i>6)&&(u=!0):null!=e.e?(i=e.e+a,(e.e<0||e.e>6)&&(u=!0)):i=a}n<1||n>Nt(r,a,o)?p(t)._overflowWeeks=!0:null!=u?p(t)._overflowWeekday=!0:(s=Ft(r,n,i,a,o),t._a[0]=s.year,t._dayOfYear=s.dayOfYear)}(t),null!=t._dayOfYear&&(o=ce(t._a[0],i[0]),(t._dayOfYear>mt(o)||0===t._dayOfYear)&&(p(t)._overflowDayOfYear=!0),r=Lt(o,0,t._dayOfYear),t._a[1]=r.getUTCMonth(),t._a[2]=r.getUTCDate()),e=0;e<3&&null==t._a[e];++e)t._a[e]=s[e]=i[e];for(;e<7;e++)t._a[e]=s[e]=null==t._a[e]?2===e?1:0:t._a[e];24===t._a[3]&&0===t._a[4]&&0===t._a[5]&&0===t._a[6]&&(t._nextDay=!0,t._a[3]=0),t._d=(t._useUTC?Lt:It).apply(null,s),a=t._useUTC?t._d.getUTCDay():t._d.getDay(),null!=t._tzm&&t._d.setUTCMinutes(t._d.getUTCMinutes()-t._tzm),t._nextDay&&(t._a[3]=24),t._w&&void 0!==t._w.d&&t._w.d!==a&&(p(t).weekdayMismatch=!0)}}var fe=/^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/,he=/^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/,de=/Z|[+-]\d\d(?::?\d\d)?/,pe=[["YYYYYY-MM-DD",/[+-]\d{6}-\d\d-\d\d/],["YYYY-MM-DD",/\d{4}-\d\d-\d\d/],["GGGG-[W]WW-E",/\d{4}-W\d\d-\d/],["GGGG-[W]WW",/\d{4}-W\d\d/,!1],["YYYY-DDD",/\d{4}-\d{3}/],["YYYY-MM",/\d{4}-\d\d/,!1],["YYYYYYMMDD",/[+-]\d{10}/],["YYYYMMDD",/\d{8}/],["GGGG[W]WWE",/\d{4}W\d{3}/],["GGGG[W]WW",/\d{4}W\d{2}/,!1],["YYYYDDD",/\d{7}/]],ye=[["HH:mm:ss.SSSS",/\d\d:\d\d:\d\d\.\d+/],["HH:mm:ss,SSSS",/\d\d:\d\d:\d\d,\d+/],["HH:mm:ss",/\d\d:\d\d:\d\d/],["HH:mm",/\d\d:\d\d/],["HHmmss.SSSS",/\d\d\d\d\d\d\.\d+/],["HHmmss,SSSS",/\d\d\d\d\d\d,\d+/],["HHmmss",/\d\d\d\d\d\d/],["HHmm",/\d\d\d\d/],["HH",/\d\d/]],ve=/^\/?Date\((\-?\d+)/i;function me(t){var e,r,n,i,a,o,s=t._i,u=fe.exec(s)||he.exec(s);if(u){for(p(t).iso=!0,e=0,r=pe.length;e<r;e++)if(pe[e][1].exec(u[1])){i=pe[e][0],n=!1!==pe[e][2];break}if(null==i)return void(t._isValid=!1);if(u[3]){for(e=0,r=ye.length;e<r;e++)if(ye[e][1].exec(u[3])){a=(u[2]||" ")+ye[e][0];break}if(null==a)return void(t._isValid=!1)}if(!n&&null!=a)return void(t._isValid=!1);if(u[4]){if(!de.exec(u[4]))return void(t._isValid=!1);o="Z"}t._f=i+(a||"")+(o||""),Se(t)}else t._isValid=!1}var _e=/^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/;function ge(t){var e=parseInt(t,10);return e<=49?2e3+e:e<=999?1900+e:e}var we={UT:0,GMT:0,EDT:-240,EST:-300,CDT:-300,CST:-360,MDT:-360,MST:-420,PDT:-420,PST:-480};function be(t){var e,r,n,i,a,o,s,u=_e.exec(t._i.replace(/\([^)]*\)|[\n\t]/g," ").replace(/(\s\s+)/g," ").replace(/^\s\s*/,"").replace(/\s\s*$/,""));if(u){var c=(e=u[4],r=u[3],n=u[2],i=u[5],a=u[6],o=u[7],s=[ge(e),xt.indexOf(r),parseInt(n,10),parseInt(i,10),parseInt(a,10)],o&&s.push(parseInt(o,10)),s);if(!function(t,e,r){return!t||Ht.indexOf(t)===new Date(e[0],e[1],e[2]).getDay()||(p(r).weekdayMismatch=!0,r._isValid=!1,!1)}(u[1],c,t))return;t._a=c,t._tzm=function(t,e,r){if(t)return we[t];if(e)return 0;var n=parseInt(r,10),i=n%100;return(n-i)/100*60+i}(u[8],u[9],u[10]),t._d=Lt.apply(null,t._a),t._d.setUTCMinutes(t._d.getUTCMinutes()-t._tzm),p(t).rfc2822=!0}else t._isValid=!1}function Se(t){if(t._f!==n.ISO_8601)if(t._f!==n.RFC_2822){t._a=[],p(t).empty=!0;var e,r,i,a,o,s=""+t._i,u=s.length,c=0;for(i=q(t._f,t._locale).match(W)||[],e=0;e<i.length;e++)a=i[e],(r=(s.match(ft(a,t))||[])[0])&&((o=s.substr(0,s.indexOf(r))).length>0&&p(t).unusedInput.push(o),s=s.slice(s.indexOf(r)+r.length),c+=r.length),G[a]?(r?p(t).empty=!1:p(t).unusedTokens.push(a),vt(a,r,t)):t._strict&&!r&&p(t).unusedTokens.push(a);p(t).charsLeftOver=u-c,s.length>0&&p(t).unusedInput.push(s),t._a[3]<=12&&!0===p(t).bigHour&&t._a[3]>0&&(p(t).bigHour=void 0),p(t).parsedDateParts=t._a.slice(0),p(t).meridiem=t._meridiem,t._a[3]=function(t,e,r){var n;return null==r?e:null!=t.meridiemHour?t.meridiemHour(e,r):null!=t.isPM?((n=t.isPM(r))&&e<12&&(e+=12),n||12!==e||(e=0),e):e}(t._locale,t._a[3],t._meridiem),le(t),ue(t)}else be(t);else me(t)}function ke(t){var e=t._i,r=t._f;return t._locale=t._locale||se(t._l),null===e||void 0===r&&""===e?v({nullInput:!0}):("string"==typeof e&&(t._i=e=t._locale.preparse(e)),b(e)?new w(ue(e)):(c(e)?t._d=e:a(r)?function(t){var e,r,n,i,a;if(0===t._f.length)return p(t).invalidFormat=!0,void(t._d=new Date(NaN));for(i=0;i<t._f.length;i++)a=0,e=_({},t),null!=t._useUTC&&(e._useUTC=t._useUTC),e._f=t._f[i],Se(e),y(e)&&(a+=p(e).charsLeftOver,a+=10*p(e).unusedTokens.length,p(e).score=a,(null==n||a<n)&&(n=a,r=e));h(t,r||e)}(t):r?Se(t):function(t){var e=t._i;s(e)?t._d=new Date(n.now()):c(e)?t._d=new Date(e.valueOf()):"string"==typeof e?function(t){var e=ve.exec(t._i);null===e?(me(t),!1===t._isValid&&(delete t._isValid,be(t),!1===t._isValid&&(delete t._isValid,n.createFromInputFallback(t)))):t._d=new Date(+e[1])}(t):a(e)?(t._a=l(e.slice(0),(function(t){return parseInt(t,10)})),le(t)):o(e)?function(t){if(!t._d){var e=C(t._i);t._a=l([e.year,e.month,e.day||e.date,e.hour,e.minute,e.second,e.millisecond],(function(t){return t&&parseInt(t,10)})),le(t)}}(t):u(e)?t._d=new Date(e):n.createFromInputFallback(t)}(t),y(t)||(t._d=null),t))}function Oe(t,e,r,n,i){var s,u={};return!0!==r&&!1!==r||(n=r,r=void 0),(o(t)&&function(t){if(Object.getOwnPropertyNames)return 0===Object.getOwnPropertyNames(t).length;var e;for(e in t)if(t.hasOwnProperty(e))return!1;return!0}(t)||a(t)&&0===t.length)&&(t=void 0),u._isAMomentObject=!0,u._useUTC=u._isUTC=i,u._l=r,u._i=t,u._f=e,u._strict=n,(s=new w(ue(ke(u))))._nextDay&&(s.add(1,"d"),s._nextDay=void 0),s}function De(t,e,r,n){return Oe(t,e,r,n,!1)}n.createFromInputFallback=M("value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are discouraged and will be removed in an upcoming major release. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.",(function(t){t._d=new Date(t._i+(t._useUTC?" UTC":""))})),n.ISO_8601=function(){},n.RFC_2822=function(){};var Me=M("moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/",(function(){var t=De.apply(null,arguments);return this.isValid()&&t.isValid()?t<this?this:t:v()})),xe=M("moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/",(function(){var t=De.apply(null,arguments);return this.isValid()&&t.isValid()?t>this?this:t:v()}));function Ye(t,e){var r,n;if(1===e.length&&a(e[0])&&(e=e[0]),!e.length)return De();for(r=e[0],n=1;n<e.length;++n)e[n].isValid()&&!e[n][t](r)||(r=e[n]);return r}var Te=["year","quarter","month","week","day","hour","minute","second","millisecond"];function Pe(t){var e=C(t),r=e.year||0,n=e.quarter||0,i=e.month||0,a=e.week||e.isoWeek||0,o=e.day||0,s=e.hour||0,u=e.minute||0,c=e.second||0,l=e.millisecond||0;this._isValid=function(t){for(var e in t)if(-1===gt.call(Te,e)||null!=t[e]&&isNaN(t[e]))return!1;for(var r=!1,n=0;n<Te.length;++n)if(t[Te[n]]){if(r)return!1;parseFloat(t[Te[n]])!==k(t[Te[n]])&&(r=!0)}return!0}(e),this._milliseconds=+l+1e3*c+6e4*u+1e3*s*60*60,this._days=+o+7*a,this._months=+i+3*n+12*r,this._data={},this._locale=se(),this._bubble()}function je(t){return t instanceof Pe}function Ae(t){return t<0?-1*Math.round(-1*t):Math.round(t)}function Ee(t,e){V(t,0,0,(function(){var t=this.utcOffset(),r="+";return t<0&&(t=-t,r="-"),r+N(~~(t/60),2)+e+N(~~t%60,2)}))}Ee("Z",":"),Ee("ZZ",""),lt("Z",st),lt("ZZ",st),pt(["Z","ZZ"],(function(t,e,r){r._useUTC=!0,r._tzm=Le(st,t)}));var Ie=/([\+\-]|\d\d)/gi;function Le(t,e){var r=(e||"").match(t);if(null===r)return null;var n=((r[r.length-1]||[])+"").match(Ie)||["-",0,0],i=60*n[1]+k(n[2]);return 0===i?0:"+"===n[0]?i:-i}function Ce(t,e){var r,i;return e._isUTC?(r=e.clone(),i=(b(t)||c(t)?t.valueOf():De(t).valueOf())-r.valueOf(),r._d.setTime(r._d.valueOf()+i),n.updateOffset(r,!1),r):De(t).local()}function Fe(t){return 15*-Math.round(t._d.getTimezoneOffset()/15)}function Re(){return!!this.isValid()&&this._isUTC&&0===this._offset}n.updateOffset=function(){};var Ne=/^(\-|\+)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/,We=/^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;function Ue(t,e){var r,n,i,a,o,s,c=t,l=null;return je(t)?c={ms:t._milliseconds,d:t._days,M:t._months}:u(t)?(c={},e?c[e]=t:c.milliseconds=t):(l=Ne.exec(t))?(r="-"===l[1]?-1:1,c={y:0,d:k(l[2])*r,h:k(l[3])*r,m:k(l[4])*r,s:k(l[5])*r,ms:k(Ae(1e3*l[6]))*r}):(l=We.exec(t))?(r="-"===l[1]?-1:1,c={y:He(l[2],r),M:He(l[3],r),w:He(l[4],r),d:He(l[5],r),h:He(l[6],r),m:He(l[7],r),s:He(l[8],r)}):null==c?c={}:"object"==typeof c&&("from"in c||"to"in c)&&(a=De(c.from),o=De(c.to),i=a.isValid()&&o.isValid()?(o=Ce(o,a),a.isBefore(o)?s=Ge(a,o):((s=Ge(o,a)).milliseconds=-s.milliseconds,s.months=-s.months),s):{milliseconds:0,months:0},(c={}).ms=i.milliseconds,c.M=i.months),n=new Pe(c),je(t)&&f(t,"_locale")&&(n._locale=t._locale),n}function He(t,e){var r=t&&parseFloat(t.replace(",","."));return(isNaN(r)?0:r)*e}function Ge(t,e){var r={};return r.months=e.month()-t.month()+12*(e.year()-t.year()),t.clone().add(r.months,"M").isAfter(e)&&--r.months,r.milliseconds=+e-+t.clone().add(r.months,"M"),r}function Ve(t,e){return function(r,n){var i;return null===n||isNaN(+n)||(T(e,"moment()."+e+"(period, number) is deprecated. Please use moment()."+e+"(number, period). See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info."),i=r,r=n,n=i),ze(this,Ue(r="string"==typeof r?+r:r,n),t),this}}function ze(t,e,r,i){var a=e._milliseconds,o=Ae(e._days),s=Ae(e._months);t.isValid()&&(i=null==i||i,s&&Tt(t,St(t,"Month")+s*r),o&&kt(t,"Date",St(t,"Date")+o*r),a&&t._d.setTime(t._d.valueOf()+a*r),i&&n.updateOffset(t,o||s))}Ue.fn=Pe.prototype,Ue.invalid=function(){return Ue(NaN)};var qe=Ve(1,"add"),Ze=Ve(-1,"subtract");function $e(t,e){var r=12*(e.year()-t.year())+(e.month()-t.month()),n=t.clone().add(r,"months");return-(r+(e-n<0?(e-n)/(n-t.clone().add(r-1,"months")):(e-n)/(t.clone().add(r+1,"months")-n)))||0}function Je(t){var e;return void 0===t?this._locale._abbr:(null!=(e=se(t))&&(this._locale=e),this)}n.defaultFormat="YYYY-MM-DDTHH:mm:ssZ",n.defaultFormatUtc="YYYY-MM-DDTHH:mm:ss[Z]";var Be=M("moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.",(function(t){return void 0===t?this.localeData():this.locale(t)}));function Qe(){return this._locale}function Xe(t,e){return(t%e+e)%e}function Ke(t,e,r){return t<100&&t>=0?new Date(t+400,e,r)-126227808e5:new Date(t,e,r).valueOf()}function tr(t,e,r){return t<100&&t>=0?Date.UTC(t+400,e,r)-126227808e5:Date.UTC(t,e,r)}function er(t,e){V(0,[t,t.length],0,e)}function rr(t,e,r,n,i){var a;return null==t?Rt(this,n,i).year:(e>(a=Nt(t,n,i))&&(e=a),nr.call(this,t,e,r,n,i))}function nr(t,e,r,n,i){var a=Ft(t,e,r,n,i),o=Lt(a.year,0,a.dayOfYear);return this.year(o.getUTCFullYear()),this.month(o.getUTCMonth()),this.date(o.getUTCDate()),this}V(0,["gg",2],0,(function(){return this.weekYear()%100})),V(0,["GG",2],0,(function(){return this.isoWeekYear()%100})),er("gggg","weekYear"),er("ggggg","weekYear"),er("GGGG","isoWeekYear"),er("GGGGG","isoWeekYear"),I("weekYear","gg"),I("isoWeekYear","GG"),R("weekYear",1),R("isoWeekYear",1),lt("G",at),lt("g",at),lt("GG",X,$),lt("gg",X,$),lt("GGGG",rt,B),lt("gggg",rt,B),lt("GGGGG",nt,Q),lt("ggggg",nt,Q),yt(["gggg","ggggg","GGGG","GGGGG"],(function(t,e,r,n){e[n.substr(0,2)]=k(t)})),yt(["gg","GG"],(function(t,e,r,i){e[i]=n.parseTwoDigitYear(t)})),V("Q",0,"Qo","quarter"),I("quarter","Q"),R("quarter",7),lt("Q",Z),pt("Q",(function(t,e){e[1]=3*(k(t)-1)})),V("D",["DD",2],"Do","date"),I("date","D"),R("date",9),lt("D",X),lt("DD",X,$),lt("Do",(function(t,e){return t?e._dayOfMonthOrdinalParse||e._ordinalParse:e._dayOfMonthOrdinalParseLenient})),pt(["D","DD"],2),pt("Do",(function(t,e){e[2]=k(t.match(X)[0])}));var ir=bt("Date",!0);V("DDD",["DDDD",3],"DDDo","dayOfYear"),I("dayOfYear","DDD"),R("dayOfYear",4),lt("DDD",et),lt("DDDD",J),pt(["DDD","DDDD"],(function(t,e,r){r._dayOfYear=k(t)})),V("m",["mm",2],0,"minute"),I("minute","m"),R("minute",14),lt("m",X),lt("mm",X,$),pt(["m","mm"],4);var ar=bt("Minutes",!1);V("s",["ss",2],0,"second"),I("second","s"),R("second",15),lt("s",X),lt("ss",X,$),pt(["s","ss"],5);var or,sr=bt("Seconds",!1);for(V("S",0,0,(function(){return~~(this.millisecond()/100)})),V(0,["SS",2],0,(function(){return~~(this.millisecond()/10)})),V(0,["SSS",3],0,"millisecond"),V(0,["SSSS",4],0,(function(){return 10*this.millisecond()})),V(0,["SSSSS",5],0,(function(){return 100*this.millisecond()})),V(0,["SSSSSS",6],0,(function(){return 1e3*this.millisecond()})),V(0,["SSSSSSS",7],0,(function(){return 1e4*this.millisecond()})),V(0,["SSSSSSSS",8],0,(function(){return 1e5*this.millisecond()})),V(0,["SSSSSSSSS",9],0,(function(){return 1e6*this.millisecond()})),I("millisecond","ms"),R("millisecond",16),lt("S",et,Z),lt("SS",et,$),lt("SSS",et,J),or="SSSS";or.length<=9;or+="S")lt(or,it);function ur(t,e){e[6]=k(1e3*("0."+t))}for(or="S";or.length<=9;or+="S")pt(or,ur);var cr=bt("Milliseconds",!1);V("z",0,0,"zoneAbbr"),V("zz",0,0,"zoneName");var lr=w.prototype;function fr(t){return t}lr.add=qe,lr.calendar=function(t,e){var r=t||De(),i=Ce(r,this).startOf("day"),a=n.calendarFormat(this,i)||"sameElse",o=e&&(P(e[a])?e[a].call(this,r):e[a]);return this.format(o||this.localeData().calendar(a,this,De(r)))},lr.clone=function(){return new w(this)},lr.diff=function(t,e,r){var n,i,a;if(!this.isValid())return NaN;if(!(n=Ce(t,this)).isValid())return NaN;switch(i=6e4*(n.utcOffset()-this.utcOffset()),e=L(e)){case"year":a=$e(this,n)/12;break;case"month":a=$e(this,n);break;case"quarter":a=$e(this,n)/3;break;case"second":a=(this-n)/1e3;break;case"minute":a=(this-n)/6e4;break;case"hour":a=(this-n)/36e5;break;case"day":a=(this-n-i)/864e5;break;case"week":a=(this-n-i)/6048e5;break;default:a=this-n}return r?a:S(a)},lr.endOf=function(t){var e;if(void 0===(t=L(t))||"millisecond"===t||!this.isValid())return this;var r=this._isUTC?tr:Ke;switch(t){case"year":e=r(this.year()+1,0,1)-1;break;case"quarter":e=r(this.year(),this.month()-this.month()%3+3,1)-1;break;case"month":e=r(this.year(),this.month()+1,1)-1;break;case"week":e=r(this.year(),this.month(),this.date()-this.weekday()+7)-1;break;case"isoWeek":e=r(this.year(),this.month(),this.date()-(this.isoWeekday()-1)+7)-1;break;case"day":case"date":e=r(this.year(),this.month(),this.date()+1)-1;break;case"hour":e=this._d.valueOf(),e+=36e5-Xe(e+(this._isUTC?0:6e4*this.utcOffset()),36e5)-1;break;case"minute":e=this._d.valueOf(),e+=6e4-Xe(e,6e4)-1;break;case"second":e=this._d.valueOf(),e+=1e3-Xe(e,1e3)-1}return this._d.setTime(e),n.updateOffset(this,!0),this},lr.format=function(t){t||(t=this.isUtc()?n.defaultFormatUtc:n.defaultFormat);var e=z(this,t);return this.localeData().postformat(e)},lr.from=function(t,e){return this.isValid()&&(b(t)&&t.isValid()||De(t).isValid())?Ue({to:this,from:t}).locale(this.locale()).humanize(!e):this.localeData().invalidDate()},lr.fromNow=function(t){return this.from(De(),t)},lr.to=function(t,e){return this.isValid()&&(b(t)&&t.isValid()||De(t).isValid())?Ue({from:this,to:t}).locale(this.locale()).humanize(!e):this.localeData().invalidDate()},lr.toNow=function(t){return this.to(De(),t)},lr.get=function(t){return P(this[t=L(t)])?this[t]():this},lr.invalidAt=function(){return p(this).overflow},lr.isAfter=function(t,e){var r=b(t)?t:De(t);return!(!this.isValid()||!r.isValid())&&("millisecond"===(e=L(e)||"millisecond")?this.valueOf()>r.valueOf():r.valueOf()<this.clone().startOf(e).valueOf())},lr.isBefore=function(t,e){var r=b(t)?t:De(t);return!(!this.isValid()||!r.isValid())&&("millisecond"===(e=L(e)||"millisecond")?this.valueOf()<r.valueOf():this.clone().endOf(e).valueOf()<r.valueOf())},lr.isBetween=function(t,e,r,n){var i=b(t)?t:De(t),a=b(e)?e:De(e);return!!(this.isValid()&&i.isValid()&&a.isValid())&&("("===(n=n||"()")[0]?this.isAfter(i,r):!this.isBefore(i,r))&&(")"===n[1]?this.isBefore(a,r):!this.isAfter(a,r))},lr.isSame=function(t,e){var r,n=b(t)?t:De(t);return!(!this.isValid()||!n.isValid())&&("millisecond"===(e=L(e)||"millisecond")?this.valueOf()===n.valueOf():(r=n.valueOf(),this.clone().startOf(e).valueOf()<=r&&r<=this.clone().endOf(e).valueOf()))},lr.isSameOrAfter=function(t,e){return this.isSame(t,e)||this.isAfter(t,e)},lr.isSameOrBefore=function(t,e){return this.isSame(t,e)||this.isBefore(t,e)},lr.isValid=function(){return y(this)},lr.lang=Be,lr.locale=Je,lr.localeData=Qe,lr.max=xe,lr.min=Me,lr.parsingFlags=function(){return h({},p(this))},lr.set=function(t,e){if("object"==typeof t)for(var r=function(t){var e=[];for(var r in t)e.push({unit:r,priority:F[r]});return e.sort((function(t,e){return t.priority-e.priority})),e}(t=C(t)),n=0;n<r.length;n++)this[r[n].unit](t[r[n].unit]);else if(P(this[t=L(t)]))return this[t](e);return this},lr.startOf=function(t){var e;if(void 0===(t=L(t))||"millisecond"===t||!this.isValid())return this;var r=this._isUTC?tr:Ke;switch(t){case"year":e=r(this.year(),0,1);break;case"quarter":e=r(this.year(),this.month()-this.month()%3,1);break;case"month":e=r(this.year(),this.month(),1);break;case"week":e=r(this.year(),this.month(),this.date()-this.weekday());break;case"isoWeek":e=r(this.year(),this.month(),this.date()-(this.isoWeekday()-1));break;case"day":case"date":e=r(this.year(),this.month(),this.date());break;case"hour":e=this._d.valueOf(),e-=Xe(e+(this._isUTC?0:6e4*this.utcOffset()),36e5);break;case"minute":e=this._d.valueOf(),e-=Xe(e,6e4);break;case"second":e=this._d.valueOf(),e-=Xe(e,1e3)}return this._d.setTime(e),n.updateOffset(this,!0),this},lr.subtract=Ze,lr.toArray=function(){var t=this;return[t.year(),t.month(),t.date(),t.hour(),t.minute(),t.second(),t.millisecond()]},lr.toObject=function(){var t=this;return{years:t.year(),months:t.month(),date:t.date(),hours:t.hours(),minutes:t.minutes(),seconds:t.seconds(),milliseconds:t.milliseconds()}},lr.toDate=function(){return new Date(this.valueOf())},lr.toISOString=function(t){if(!this.isValid())return null;var e=!0!==t,r=e?this.clone().utc():this;return r.year()<0||r.year()>9999?z(r,e?"YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]":"YYYYYY-MM-DD[T]HH:mm:ss.SSSZ"):P(Date.prototype.toISOString)?e?this.toDate().toISOString():new Date(this.valueOf()+60*this.utcOffset()*1e3).toISOString().replace("Z",z(r,"Z")):z(r,e?"YYYY-MM-DD[T]HH:mm:ss.SSS[Z]":"YYYY-MM-DD[T]HH:mm:ss.SSSZ")},lr.inspect=function(){if(!this.isValid())return"moment.invalid(/* "+this._i+" */)";var t="moment",e="";this.isLocal()||(t=0===this.utcOffset()?"moment.utc":"moment.parseZone",e="Z");var r="["+t+'("]',n=0<=this.year()&&this.year()<=9999?"YYYY":"YYYYYY",i=e+'[")]';return this.format(r+n+"-MM-DD[T]HH:mm:ss.SSS"+i)},lr.toJSON=function(){return this.isValid()?this.toISOString():null},lr.toString=function(){return this.clone().locale("en").format("ddd MMM DD YYYY HH:mm:ss [GMT]ZZ")},lr.unix=function(){return Math.floor(this.valueOf()/1e3)},lr.valueOf=function(){return this._d.valueOf()-6e4*(this._offset||0)},lr.creationData=function(){return{input:this._i,format:this._f,locale:this._locale,isUTC:this._isUTC,strict:this._strict}},lr.year=wt,lr.isLeapYear=function(){return _t(this.year())},lr.weekYear=function(t){return rr.call(this,t,this.week(),this.weekday(),this.localeData()._week.dow,this.localeData()._week.doy)},lr.isoWeekYear=function(t){return rr.call(this,t,this.isoWeek(),this.isoWeekday(),1,4)},lr.quarter=lr.quarters=function(t){return null==t?Math.ceil((this.month()+1)/3):this.month(3*(t-1)+this.month()%3)},lr.month=Pt,lr.daysInMonth=function(){return Ot(this.year(),this.month())},lr.week=lr.weeks=function(t){var e=this.localeData().week(this);return null==t?e:this.add(7*(t-e),"d")},lr.isoWeek=lr.isoWeeks=function(t){var e=Rt(this,1,4).week;return null==t?e:this.add(7*(t-e),"d")},lr.weeksInYear=function(){var t=this.localeData()._week;return Nt(this.year(),t.dow,t.doy)},lr.isoWeeksInYear=function(){return Nt(this.year(),1,4)},lr.date=ir,lr.day=lr.days=function(t){if(!this.isValid())return null!=t?this:NaN;var e=this._isUTC?this._d.getUTCDay():this._d.getDay();return null!=t?(t=function(t,e){return"string"!=typeof t?t:isNaN(t)?"number"==typeof(t=e.weekdaysParse(t))?t:null:parseInt(t,10)}(t,this.localeData()),this.add(t-e,"d")):e},lr.weekday=function(t){if(!this.isValid())return null!=t?this:NaN;var e=(this.day()+7-this.localeData()._week.dow)%7;return null==t?e:this.add(t-e,"d")},lr.isoWeekday=function(t){if(!this.isValid())return null!=t?this:NaN;if(null!=t){var e=function(t,e){return"string"==typeof t?e.weekdaysParse(t)%7||7:isNaN(t)?null:t}(t,this.localeData());return this.day(this.day()%7?e:e-7)}return this.day()||7},lr.dayOfYear=function(t){var e=Math.round((this.clone().startOf("day")-this.clone().startOf("year"))/864e5)+1;return null==t?e:this.add(t-e,"d")},lr.hour=lr.hours=Kt,lr.minute=lr.minutes=ar,lr.second=lr.seconds=sr,lr.millisecond=lr.milliseconds=cr,lr.utcOffset=function(t,e,r){var i,a=this._offset||0;if(!this.isValid())return null!=t?this:NaN;if(null!=t){if("string"==typeof t){if(null===(t=Le(st,t)))return this}else Math.abs(t)<16&&!r&&(t*=60);return!this._isUTC&&e&&(i=Fe(this)),this._offset=t,this._isUTC=!0,null!=i&&this.add(i,"m"),a!==t&&(!e||this._changeInProgress?ze(this,Ue(t-a,"m"),1,!1):this._changeInProgress||(this._changeInProgress=!0,n.updateOffset(this,!0),this._changeInProgress=null)),this}return this._isUTC?a:Fe(this)},lr.utc=function(t){return this.utcOffset(0,t)},lr.local=function(t){return this._isUTC&&(this.utcOffset(0,t),this._isUTC=!1,t&&this.subtract(Fe(this),"m")),this},lr.parseZone=function(){if(null!=this._tzm)this.utcOffset(this._tzm,!1,!0);else if("string"==typeof this._i){var t=Le(ot,this._i);null!=t?this.utcOffset(t):this.utcOffset(0,!0)}return this},lr.hasAlignedHourOffset=function(t){return!!this.isValid()&&(t=t?De(t).utcOffset():0,(this.utcOffset()-t)%60==0)},lr.isDST=function(){return this.utcOffset()>this.clone().month(0).utcOffset()||this.utcOffset()>this.clone().month(5).utcOffset()},lr.isLocal=function(){return!!this.isValid()&&!this._isUTC},lr.isUtcOffset=function(){return!!this.isValid()&&this._isUTC},lr.isUtc=Re,lr.isUTC=Re,lr.zoneAbbr=function(){return this._isUTC?"UTC":""},lr.zoneName=function(){return this._isUTC?"Coordinated Universal Time":""},lr.dates=M("dates accessor is deprecated. Use date instead.",ir),lr.months=M("months accessor is deprecated. Use month instead",Pt),lr.years=M("years accessor is deprecated. Use year instead",wt),lr.zone=M("moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/",(function(t,e){return null!=t?("string"!=typeof t&&(t=-t),this.utcOffset(t,e),this):-this.utcOffset()})),lr.isDSTShifted=M("isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information",(function(){if(!s(this._isDSTShifted))return this._isDSTShifted;var t={};if(_(t,this),(t=ke(t))._a){var e=t._isUTC?d(t._a):De(t._a);this._isDSTShifted=this.isValid()&&O(t._a,e.toArray())>0}else this._isDSTShifted=!1;return this._isDSTShifted}));var hr=A.prototype;function dr(t,e,r,n){var i=se(),a=d().set(n,e);return i[r](a,t)}function pr(t,e,r){if(u(t)&&(e=t,t=void 0),t=t||"",null!=e)return dr(t,e,r,"month");var n,i=[];for(n=0;n<12;n++)i[n]=dr(t,n,r,"month");return i}function yr(t,e,r,n){"boolean"==typeof t?(u(e)&&(r=e,e=void 0),e=e||""):(r=e=t,t=!1,u(e)&&(r=e,e=void 0),e=e||"");var i,a=se(),o=t?a._week.dow:0;if(null!=r)return dr(e,(r+o)%7,n,"day");var s=[];for(i=0;i<7;i++)s[i]=dr(e,(i+o)%7,n,"day");return s}hr.calendar=function(t,e,r){var n=this._calendar[t]||this._calendar.sameElse;return P(n)?n.call(e,r):n},hr.longDateFormat=function(t){var e=this._longDateFormat[t],r=this._longDateFormat[t.toUpperCase()];return e||!r?e:(this._longDateFormat[t]=r.replace(/MMMM|MM|DD|dddd/g,(function(t){return t.slice(1)})),this._longDateFormat[t])},hr.invalidDate=function(){return this._invalidDate},hr.ordinal=function(t){return this._ordinal.replace("%d",t)},hr.preparse=fr,hr.postformat=fr,hr.relativeTime=function(t,e,r,n){var i=this._relativeTime[r];return P(i)?i(t,e,r,n):i.replace(/%d/i,t)},hr.pastFuture=function(t,e){var r=this._relativeTime[t>0?"future":"past"];return P(r)?r(e):r.replace(/%s/i,e)},hr.set=function(t){var e,r;for(r in t)P(e=t[r])?this[r]=e:this["_"+r]=e;this._config=t,this._dayOfMonthOrdinalParseLenient=new RegExp((this._dayOfMonthOrdinalParse.source||this._ordinalParse.source)+"|"+/\d{1,2}/.source)},hr.months=function(t,e){return t?a(this._months)?this._months[t.month()]:this._months[(this._months.isFormat||Dt).test(e)?"format":"standalone"][t.month()]:a(this._months)?this._months:this._months.standalone},hr.monthsShort=function(t,e){return t?a(this._monthsShort)?this._monthsShort[t.month()]:this._monthsShort[Dt.test(e)?"format":"standalone"][t.month()]:a(this._monthsShort)?this._monthsShort:this._monthsShort.standalone},hr.monthsParse=function(t,e,r){var n,i,a;if(this._monthsParseExact)return Yt.call(this,t,e,r);for(this._monthsParse||(this._monthsParse=[],this._longMonthsParse=[],this._shortMonthsParse=[]),n=0;n<12;n++){if(i=d([2e3,n]),r&&!this._longMonthsParse[n]&&(this._longMonthsParse[n]=new RegExp("^"+this.months(i,"").replace(".","")+"$","i"),this._shortMonthsParse[n]=new RegExp("^"+this.monthsShort(i,"").replace(".","")+"$","i")),r||this._monthsParse[n]||(a="^"+this.months(i,"")+"|^"+this.monthsShort(i,""),this._monthsParse[n]=new RegExp(a.replace(".",""),"i")),r&&"MMMM"===e&&this._longMonthsParse[n].test(t))return n;if(r&&"MMM"===e&&this._shortMonthsParse[n].test(t))return n;if(!r&&this._monthsParse[n].test(t))return n}},hr.monthsRegex=function(t){return this._monthsParseExact?(f(this,"_monthsRegex")||Et.call(this),t?this._monthsStrictRegex:this._monthsRegex):(f(this,"_monthsRegex")||(this._monthsRegex=At),this._monthsStrictRegex&&t?this._monthsStrictRegex:this._monthsRegex)},hr.monthsShortRegex=function(t){return this._monthsParseExact?(f(this,"_monthsRegex")||Et.call(this),t?this._monthsShortStrictRegex:this._monthsShortRegex):(f(this,"_monthsShortRegex")||(this._monthsShortRegex=jt),this._monthsShortStrictRegex&&t?this._monthsShortStrictRegex:this._monthsShortRegex)},hr.week=function(t){return Rt(t,this._week.dow,this._week.doy).week},hr.firstDayOfYear=function(){return this._week.doy},hr.firstDayOfWeek=function(){return this._week.dow},hr.weekdays=function(t,e){var r=a(this._weekdays)?this._weekdays:this._weekdays[t&&!0!==t&&this._weekdays.isFormat.test(e)?"format":"standalone"];return!0===t?Wt(r,this._week.dow):t?r[t.day()]:r},hr.weekdaysMin=function(t){return!0===t?Wt(this._weekdaysMin,this._week.dow):t?this._weekdaysMin[t.day()]:this._weekdaysMin},hr.weekdaysShort=function(t){return!0===t?Wt(this._weekdaysShort,this._week.dow):t?this._weekdaysShort[t.day()]:this._weekdaysShort},hr.weekdaysParse=function(t,e,r){var n,i,a;if(this._weekdaysParseExact)return Vt.call(this,t,e,r);for(this._weekdaysParse||(this._weekdaysParse=[],this._minWeekdaysParse=[],this._shortWeekdaysParse=[],this._fullWeekdaysParse=[]),n=0;n<7;n++){if(i=d([2e3,1]).day(n),r&&!this._fullWeekdaysParse[n]&&(this._fullWeekdaysParse[n]=new RegExp("^"+this.weekdays(i,"").replace(".","\\.?")+"$","i"),this._shortWeekdaysParse[n]=new RegExp("^"+this.weekdaysShort(i,"").replace(".","\\.?")+"$","i"),this._minWeekdaysParse[n]=new RegExp("^"+this.weekdaysMin(i,"").replace(".","\\.?")+"$","i")),this._weekdaysParse[n]||(a="^"+this.weekdays(i,"")+"|^"+this.weekdaysShort(i,"")+"|^"+this.weekdaysMin(i,""),this._weekdaysParse[n]=new RegExp(a.replace(".",""),"i")),r&&"dddd"===e&&this._fullWeekdaysParse[n].test(t))return n;if(r&&"ddd"===e&&this._shortWeekdaysParse[n].test(t))return n;if(r&&"dd"===e&&this._minWeekdaysParse[n].test(t))return n;if(!r&&this._weekdaysParse[n].test(t))return n}},hr.weekdaysRegex=function(t){return this._weekdaysParseExact?(f(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysStrictRegex:this._weekdaysRegex):(f(this,"_weekdaysRegex")||(this._weekdaysRegex=zt),this._weekdaysStrictRegex&&t?this._weekdaysStrictRegex:this._weekdaysRegex)},hr.weekdaysShortRegex=function(t){return this._weekdaysParseExact?(f(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysShortStrictRegex:this._weekdaysShortRegex):(f(this,"_weekdaysShortRegex")||(this._weekdaysShortRegex=qt),this._weekdaysShortStrictRegex&&t?this._weekdaysShortStrictRegex:this._weekdaysShortRegex)},hr.weekdaysMinRegex=function(t){return this._weekdaysParseExact?(f(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysMinStrictRegex:this._weekdaysMinRegex):(f(this,"_weekdaysMinRegex")||(this._weekdaysMinRegex=Zt),this._weekdaysMinStrictRegex&&t?this._weekdaysMinStrictRegex:this._weekdaysMinRegex)},hr.isPM=function(t){return"p"===(t+"").toLowerCase().charAt(0)},hr.meridiem=function(t,e,r){return t>11?r?"pm":"PM":r?"am":"AM"},ae("en",{dayOfMonthOrdinalParse:/\d{1,2}(th|st|nd|rd)/,ordinal:function(t){var e=t%10;return t+(1===k(t%100/10)?"th":1===e?"st":2===e?"nd":3===e?"rd":"th")}}),n.lang=M("moment.lang is deprecated. Use moment.locale instead.",ae),n.langData=M("moment.langData is deprecated. Use moment.localeData instead.",se);var vr=Math.abs;function mr(t,e,r,n){var i=Ue(e,r);return t._milliseconds+=n*i._milliseconds,t._days+=n*i._days,t._months+=n*i._months,t._bubble()}function _r(t){return t<0?Math.floor(t):Math.ceil(t)}function gr(t){return 4800*t/146097}function wr(t){return 146097*t/4800}function br(t){return function(){return this.as(t)}}var Sr=br("ms"),kr=br("s"),Or=br("m"),Dr=br("h"),Mr=br("d"),xr=br("w"),Yr=br("M"),Tr=br("Q"),Pr=br("y");function jr(t){return function(){return this.isValid()?this._data[t]:NaN}}var Ar=jr("milliseconds"),Er=jr("seconds"),Ir=jr("minutes"),Lr=jr("hours"),Cr=jr("days"),Fr=jr("months"),Rr=jr("years"),Nr=Math.round,Wr={ss:44,s:45,m:45,h:22,d:26,M:11};function Ur(t,e,r,n,i){return i.relativeTime(e||1,!!r,t,n)}var Hr=Math.abs;function Gr(t){return(t>0)-(t<0)||+t}function Vr(){if(!this.isValid())return this.localeData().invalidDate();var t,e,r=Hr(this._milliseconds)/1e3,n=Hr(this._days),i=Hr(this._months);t=S(r/60),e=S(t/60),r%=60,t%=60;var a=S(i/12),o=i%=12,s=n,u=e,c=t,l=r?r.toFixed(3).replace(/\.?0+$/,""):"",f=this.asSeconds();if(!f)return"P0D";var h=f<0?"-":"",d=Gr(this._months)!==Gr(f)?"-":"",p=Gr(this._days)!==Gr(f)?"-":"",y=Gr(this._milliseconds)!==Gr(f)?"-":"";return h+"P"+(a?d+a+"Y":"")+(o?d+o+"M":"")+(s?p+s+"D":"")+(u||c||l?"T":"")+(u?y+u+"H":"")+(c?y+c+"M":"")+(l?y+l+"S":"")}var zr=Pe.prototype;return zr.isValid=function(){return this._isValid},zr.abs=function(){var t=this._data;return this._milliseconds=vr(this._milliseconds),this._days=vr(this._days),this._months=vr(this._months),t.milliseconds=vr(t.milliseconds),t.seconds=vr(t.seconds),t.minutes=vr(t.minutes),t.hours=vr(t.hours),t.months=vr(t.months),t.years=vr(t.years),this},zr.add=function(t,e){return mr(this,t,e,1)},zr.subtract=function(t,e){return mr(this,t,e,-1)},zr.as=function(t){if(!this.isValid())return NaN;var e,r,n=this._milliseconds;if("month"===(t=L(t))||"quarter"===t||"year"===t)switch(e=this._days+n/864e5,r=this._months+gr(e),t){case"month":return r;case"quarter":return r/3;case"year":return r/12}else switch(e=this._days+Math.round(wr(this._months)),t){case"week":return e/7+n/6048e5;case"day":return e+n/864e5;case"hour":return 24*e+n/36e5;case"minute":return 1440*e+n/6e4;case"second":return 86400*e+n/1e3;case"millisecond":return Math.floor(864e5*e)+n;default:throw new Error("Unknown unit "+t)}},zr.asMilliseconds=Sr,zr.asSeconds=kr,zr.asMinutes=Or,zr.asHours=Dr,zr.asDays=Mr,zr.asWeeks=xr,zr.asMonths=Yr,zr.asQuarters=Tr,zr.asYears=Pr,zr.valueOf=function(){return this.isValid()?this._milliseconds+864e5*this._days+this._months%12*2592e6+31536e6*k(this._months/12):NaN},zr._bubble=function(){var t,e,r,n,i,a=this._milliseconds,o=this._days,s=this._months,u=this._data;return a>=0&&o>=0&&s>=0||a<=0&&o<=0&&s<=0||(a+=864e5*_r(wr(s)+o),o=0,s=0),u.milliseconds=a%1e3,t=S(a/1e3),u.seconds=t%60,e=S(t/60),u.minutes=e%60,r=S(e/60),u.hours=r%24,o+=S(r/24),i=S(gr(o)),s+=i,o-=_r(wr(i)),n=S(s/12),s%=12,u.days=o,u.months=s,u.years=n,this},zr.clone=function(){return Ue(this)},zr.get=function(t){return t=L(t),this.isValid()?this[t+"s"]():NaN},zr.milliseconds=Ar,zr.seconds=Er,zr.minutes=Ir,zr.hours=Lr,zr.days=Cr,zr.weeks=function(){return S(this.days()/7)},zr.months=Fr,zr.years=Rr,zr.humanize=function(t){if(!this.isValid())return this.localeData().invalidDate();var e=this.localeData(),r=function(t,e,r){var n=Ue(t).abs(),i=Nr(n.as("s")),a=Nr(n.as("m")),o=Nr(n.as("h")),s=Nr(n.as("d")),u=Nr(n.as("M")),c=Nr(n.as("y")),l=i<=Wr.ss&&["s",i]||i<Wr.s&&["ss",i]||a<=1&&["m"]||a<Wr.m&&["mm",a]||o<=1&&["h"]||o<Wr.h&&["hh",o]||s<=1&&["d"]||s<Wr.d&&["dd",s]||u<=1&&["M"]||u<Wr.M&&["MM",u]||c<=1&&["y"]||["yy",c];return l[2]=e,l[3]=+t>0,l[4]=r,Ur.apply(null,l)}(this,!t,e);return t&&(r=e.pastFuture(+this,r)),e.postformat(r)},zr.toISOString=Vr,zr.toString=Vr,zr.toJSON=Vr,zr.locale=Je,zr.localeData=Qe,zr.toIsoString=M("toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)",Vr),zr.lang=Be,V("X",0,0,"unix"),V("x",0,0,"valueOf"),lt("x",at),lt("X",/[+-]?\d+(\.\d{1,3})?/),pt("X",(function(t,e,r){r._d=new Date(1e3*parseFloat(t,10))})),pt("x",(function(t,e,r){r._d=new Date(k(t))})),n.version="2.24.0",e=De,n.fn=lr,n.min=function(){var t=[].slice.call(arguments,0);return Ye("isBefore",t)},n.max=function(){var t=[].slice.call(arguments,0);return Ye("isAfter",t)},n.now=function(){return Date.now?Date.now():+new Date},n.utc=d,n.unix=function(t){return De(1e3*t)},n.months=function(t,e){return pr(t,e,"months")},n.isDate=c,n.locale=ae,n.invalid=v,n.duration=Ue,n.isMoment=b,n.weekdays=function(t,e,r){return yr(t,e,r,"weekdays")},n.parseZone=function(){return De.apply(null,arguments).parseZone()},n.localeData=se,n.isDuration=je,n.monthsShort=function(t,e){return pr(t,e,"monthsShort")},n.weekdaysMin=function(t,e,r){return yr(t,e,r,"weekdaysMin")},n.defineLocale=oe,n.updateLocale=function(t,e){if(null!=e){var r,n,i=te;null!=(n=ie(t))&&(i=n._config),e=j(i,e),(r=new A(e)).parentLocale=ee[t],ee[t]=r,ae(t)}else null!=ee[t]&&(null!=ee[t].parentLocale?ee[t]=ee[t].parentLocale:null!=ee[t]&&delete ee[t]);return ee[t]},n.locales=function(){return x(ee)},n.weekdaysShort=function(t,e,r){return yr(t,e,r,"weekdaysShort")},n.normalizeUnits=L,n.relativeTimeRounding=function(t){return void 0===t?Nr:"function"==typeof t&&(Nr=t,!0)},n.relativeTimeThreshold=function(t,e){return void 0!==Wr[t]&&(void 0===e?Wr[t]:(Wr[t]=e,"s"===t&&(Wr.ss=e-1),!0))},n.calendarFormat=function(t,e){var r=t.diff(e,"days",!0);return r<-6?"sameElse":r<-1?"lastWeek":r<0?"lastDay":r<1?"sameDay":r<2?"nextDay":r<7?"nextWeek":"sameElse"},n.prototype=lr,n.HTML5_FMT={DATETIME_LOCAL:"YYYY-MM-DDTHH:mm",DATETIME_LOCAL_SECONDS:"YYYY-MM-DDTHH:mm:ss",DATETIME_LOCAL_MS:"YYYY-MM-DDTHH:mm:ss.SSS",DATE:"YYYY-MM-DD",TIME:"HH:mm",TIME_SECONDS:"HH:mm:ss",TIME_MS:"HH:mm:ss.SSS",WEEK:"GGGG-[W]WW",MONTH:"YYYY-MM"},n}()})),Ho=/^\/?Date\((-?\d+)/i;function Go(t){return Uo.isMoment(t)}function Vo(t,e){var r;if(void 0!==t){if(null===t)return null;if(!e)return t;if("string"!=typeof e&&!(e instanceof String))throw new Error("Type must be a string");switch(e){case"boolean":case"Boolean":return Boolean(t);case"number":case"Number":return Fo(t)&&!isNaN(Date.parse(t))?Uo(t).valueOf():Number(t.valueOf());case"string":case"String":return String(t);case"Date":if(Co(t))return new Date(t);if(t instanceof Date)return new Date(t.valueOf());if(Go(t))return new Date(t.valueOf());if(Fo(t))return(r=Ho.exec(t))?new Date(Number(r[1])):Uo(new Date(t)).toDate();throw new Error("Cannot convert object of type "+Wo(t)+" to type Date");case"Moment":if(Co(t))return Uo(t);if(t instanceof Date)return Uo(t.valueOf());if(Go(t))return Uo(t);if(Fo(t))return r=Ho.exec(t),Uo(r?Number(r[1]):t);throw new Error("Cannot convert object of type "+Wo(t)+" to type Date");case"ISODate":if(Co(t))return new Date(t);if(t instanceof Date)return t.toISOString();if(Go(t))return t.toDate().toISOString();if(Fo(t))return(r=Ho.exec(t))?new Date(Number(r[1])).toISOString():Uo(t).format();throw new Error("Cannot convert object of type "+Wo(t)+" to type ISODate");case"ASPDate":if(Co(t))return"/Date("+t+")/";if(t instanceof Date||Go(t))return"/Date("+t.valueOf()+")/";if(Fo(t))return"/Date("+((r=Ho.exec(t))?new Date(Number(r[1])).valueOf():new Date(t).valueOf())+")/";throw new Error("Cannot convert object of type "+Wo(t)+" to type ASPDate");default:throw new Error("Unknown type ".concat(e))}}}function zo(t){return"string"==typeof t||"number"==typeof t}var qo=jt("splice"),Zo=Lt("splice",{ACCESSORS:!0,0:0,1:2}),$o=Math.max,Jo=Math.min;z({target:"Array",proto:!0,forced:!qo||!Zo},{splice:function(t,e){var r,n,i,a,o,s,u=tt(this),c=Q(u.length),l=ge(t,c),f=arguments.length;if(0===f?r=n=0:1===f?(r=0,n=c-l):(r=f-2,n=Jo($o(J(e),0),c-l)),c+r-n>9007199254740991)throw TypeError("Maximum allowed length exceeded");for(i=dt(u,n),a=0;a<n;a++)(o=l+a)in u&&Ee(i,a,u[o]);if(i.length=n,r<n){for(a=l;a<c-n;a++)s=a+r,(o=a+n)in u?u[s]=u[o]:delete u[s];for(a=c;a>c-n+r;a--)delete u[a-1]}else if(r>n)for(a=c-n;a>l;a--)s=a+r-1,(o=a+n-1)in u?u[s]=u[o]:delete u[s];for(a=0;a<r;a++)u[a+l]=arguments[a+2];return u.length=c-n+r,i}});var Bo=vt("Array").splice,Qo=Array.prototype,Xo=function(t){var e=t.splice;return t===Qo||t instanceof Array&&e===Qo.splice?Bo:e},Ko=[].slice,ts=/MSIE .\./.test(Dt),es=function(t){return function(e,r){var n=arguments.length>2,i=n?Ko.call(arguments,2):void 0;return t(n?function(){("function"==typeof e?e:Function(e)).apply(this,i)}:e,r)}};z({global:!0,bind:!0,forced:ts},{setTimeout:es(o.setTimeout),setInterval:es(o.setInterval)});var rs=C.setTimeout,ns=function(){function t(e){ce(this,t),this._queue=[],this._timeout=null,this._extended=null,this.delay=null,this.max=1/0,this.setOptions(e)}return de(t,[{key:"setOptions",value:function(t){t&&void 0!==t.delay&&(this.delay=t.delay),t&&void 0!==t.max&&(this.max=t.max),this._flushIfNeeded()}},{key:"destroy",value:function(){if(this.flush(),this._extended){for(var t=this._extended.object,e=this._extended.methods,r=0;r<e.length;r++){var n=e[r];n.original?t[n.name]=n.original:delete t[n.name]}this._extended=null}}},{key:"replace",value:function(t,e){var r=this,n=t[e];if(!n)throw new Error("Method "+e+" undefined");t[e]=function(){for(var t=arguments.length,e=new Array(t),i=0;i<t;i++)e[i]=arguments[i];r.queue({args:e,fn:n,context:this})}}},{key:"queue",value:function(t){"function"==typeof t?this._queue.push({fn:t}):this._queue.push(t),this._flushIfNeeded()}},{key:"_flushIfNeeded",value:function(){var t=this;this._queue.length>this.max&&this.flush(),null!=this._timeout&&(clearTimeout(this._timeout),this._timeout=null),this.queue.length>0&&"number"==typeof this.delay&&(this._timeout=rs((function(){t.flush()}),this.delay))}},{key:"flush",value:function(){var t,e;zr(t=Xo(e=this._queue).call(e,0)).call(t,(function(t){t.fn.apply(t.context||t.fn,t.args||[])}))}}],[{key:"extend",value:function(e,r){var n=new t(r);if(void 0!==e.flush)throw new Error("Target object already has a property flush");e.flush=function(){n.flush()};var i=[{name:"flush",original:void 0}];if(r&&r.replace)for(var a=0;a<r.replace.length;a++){var o=r.replace[a];i.push({name:o,original:e[o]}),n.replace(e,o)}return n._extended={object:e,methods:i},n}}]),t}(),is=function(){function t(){ce(this,t),this._subscribers={"*":[],add:[],remove:[],update:[]},this.subscribe=t.prototype.on,this.unsubscribe=t.prototype.off}return de(t,[{key:"_trigger",value:function(t,e,r){var n,i;if("*"===t)throw new Error("Cannot trigger event *");zr(n=ha(i=[]).call(i,ca(this._subscribers[t]),ca(this._subscribers["*"]))).call(n,(function(n){n(t,e,null!=r?r:null)}))}},{key:"on",value:function(t,e){"function"==typeof e&&this._subscribers[t].push(e)}},{key:"off",value:function(t,e){var r;this._subscribers[t]=Zt(r=this._subscribers[t]).call(r,(function(t){return t!==e}))}}]),t}(),as=(La("Set",(function(t){return function(){return t(this,arguments.length?arguments[0]:void 0)}}),Ha),C.Set);function os(t){if(void 0===$n||null==Wn(t)){if(Va(t)||(t=function(t,e){var r;if(!t)return;if("string"==typeof t)return ss(t,e);var n=pi(r=Object.prototype.toString.call(t)).call(r,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return ai(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return ss(t,e)}(t))){var e=0,r=function(){};return{s:r,n:function(){return e>=t.length?{done:!0}:{done:!1,value:t[e++]}},e:function(t){throw t},f:r}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var n,i,a=!0,o=!1;return{s:function(){n=Nn(t)},n:function(){var t=n.next();return a=t.done,t},e:function(t){o=!0,i=t},f:function(){try{a||null==n.return||n.return()}finally{if(o)throw i}}}}function ss(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n}var us=function(){function t(e){ce(this,t),this._pairs=e}return de(t,[{key:Mi,value:Oi.mark((function t(){var e,r,n,i,a;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=os(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=Lo(r.value,2),i=n[0],a=n[1],t.next=7,[i,a];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"entries",value:Oi.mark((function t(){var e,r,n,i,a;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=os(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=Lo(r.value,2),i=n[0],a=n[1],t.next=7,[i,a];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"keys",value:Oi.mark((function t(){var e,r,n,i;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=os(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=Lo(r.value,1),i=n[0],t.next=7,i;case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"values",value:Oi.mark((function t(){var e,r,n,i;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=os(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=Lo(r.value,2),i=n[1],t.next=7,i;case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"toIdArray",value:function(){var t;return Ut(t=ca(this._pairs)).call(t,(function(t){return t[0]}))}},{key:"toItemArray",value:function(){var t;return Ut(t=ca(this._pairs)).call(t,(function(t){return t[1]}))}},{key:"toEntryArray",value:function(){return ca(this._pairs)}},{key:"toObjectMap",value:function(){var t,e=lo(null),r=os(this._pairs);try{for(r.s();!(t=r.n()).done;){var n=Lo(t.value,2),i=n[0],a=n[1];e[i]=a}}catch(t){r.e(t)}finally{r.f()}return e}},{key:"toMap",value:function(){return new Ga(this._pairs)}},{key:"toIdSet",value:function(){return new as(this.toIdArray())}},{key:"toItemSet",value:function(){return new as(this.toItemArray())}},{key:"cache",value:function(){return new t(ca(this._pairs))}},{key:"distinct",value:function(t){var e,r=new as,n=os(this._pairs);try{for(n.s();!(e=n.n()).done;){var i=Lo(e.value,2),a=i[0],o=i[1];r.add(t(o,a))}}catch(t){n.e(t)}finally{n.f()}return r}},{key:"filter",value:function(e){var r=this._pairs;return new t(Ii({},Mi,Oi.mark((function t(){var n,i,a,o,s;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:n=os(r),t.prev=1,n.s();case 3:if((i=n.n()).done){t.next=10;break}if(a=Lo(i.value,2),o=a[0],s=a[1],!e(s,o)){t.next=8;break}return t.next=8,[o,s];case 8:t.next=3;break;case 10:t.next=15;break;case 12:t.prev=12,t.t0=t.catch(1),n.e(t.t0);case 15:return t.prev=15,n.f(),t.finish(15);case 18:case"end":return t.stop()}}),t,null,[[1,12,15,18]])}))))}},{key:"forEach",value:function(t){var e,r=os(this._pairs);try{for(r.s();!(e=r.n()).done;){var n=Lo(e.value,2),i=n[0];t(n[1],i)}}catch(t){r.e(t)}finally{r.f()}}},{key:"map",value:function(e){var r=this._pairs;return new t(Ii({},Mi,Oi.mark((function t(){var n,i,a,o,s;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:n=os(r),t.prev=1,n.s();case 3:if((i=n.n()).done){t.next=9;break}return a=Lo(i.value,2),o=a[0],s=a[1],t.next=7,[o,e(s,o)];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),n.e(t.t0);case 14:return t.prev=14,n.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,null,[[1,11,14,17]])}))))}},{key:"max",value:function(t){var e=Nn(this._pairs),r=e.next();if(r.done)return null;for(var n=r.value[1],i=t(r.value[1],r.value[0]);!(r=e.next()).done;){var a=Lo(r.value,2),o=a[0],s=a[1],u=t(s,o);u>i&&(i=u,n=s)}return n}},{key:"min",value:function(t){var e=Nn(this._pairs),r=e.next();if(r.done)return null;for(var n=r.value[1],i=t(r.value[1],r.value[0]);!(r=e.next()).done;){var a=Lo(r.value,2),o=a[0],s=a[1],u=t(s,o);u<i&&(i=u,n=s)}return n}},{key:"reduce",value:function(t,e){var r,n=os(this._pairs);try{for(n.s();!(r=n.n()).done;){var i=Lo(r.value,2),a=i[0];e=t(e,i[1],a)}}catch(t){n.e(t)}finally{n.f()}return e}},{key:"sort",value:function(e){var r=this;return new t(Ii({},Mi,(function(){var t;return Nn(qi(t=ca(r._pairs)).call(t,(function(t,r){var n=Lo(t,2),i=n[0],a=n[1],o=Lo(r,2),s=o[0],u=o[1];return e(a,u,i,s)})))})))}}]),t}();function cs(t,e){var r=Ma(t);if(An){var n=An(t);e&&(n=Zt(n).call(n,(function(e){return $r(t,e).enumerable}))),r.push.apply(r,n)}return r}function ls(t){if(void 0===$n||null==Wn(t)){if(Va(t)||(t=function(t,e){var r;if(!t)return;if("string"==typeof t)return fs(t,e);var n=pi(r=Object.prototype.toString.call(t)).call(r,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return ai(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return fs(t,e)}(t))){var e=0,r=function(){};return{s:r,n:function(){return e>=t.length?{done:!0}:{done:!1,value:t[e++]}},e:function(t){throw t},f:r}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var n,i,a=!0,o=!1;return{s:function(){n=Nn(t)},n:function(){var t=n.next();return a=t.done,t},e:function(t){o=!0,i=t},f:function(){try{a||null==n.return||n.return()}finally{if(o)throw i}}}}function fs(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n}function hs(t){var e=function(){if("undefined"==typeof Reflect||!gi)return!1;if(gi.sham)return!1;if("function"==typeof Proxy)return!0;try{return Date.prototype.toString.call(gi(Date,[],(function(){}))),!0}catch(t){return!1}}();return function(){var r,n=ro(t);if(e){var i=ro(this).constructor;r=gi(n,arguments,i)}else r=n.apply(this,arguments);return Xa(this,r)}}var ds=function(){console.warn("Type coercion has been deprecated. Please, use data pipes instead. See https://visjs.github.io/vis-data/data/datapipe.html#TypeCoercion for more details with working migration example.")},ps=function(t){Ba(r,t);var e=hs(r);function r(t,n){var i;if(ce(this,r),i=e.call(this),t&&!Va(t)&&(n=t,t=[]),i._options=n||{},i._data=new Ga,i.length=0,i._idProp=i._options.fieldId||"id",i._type={},i._options.type){ds();for(var a=Ma(i._options.type),o=0,s=a.length;o<s;o++){var u=a[o],c=i._options.type[u];i._type[u]="Date"==c||"ISODate"==c||"ASPDate"==c?"Date":c}}return t&&t.length&&i.add(t),i.setOptions(n),i}return de(r,[{key:"setOptions",value:function(t){t&&void 0!==t.queue&&(!1===t.queue?this._queue&&(this._queue.destroy(),delete this._queue):(this._queue||(this._queue=ns.extend(this,{replace:["add","update","remove"]})),t.queue&&"object"===Oa(t.queue)&&this._queue.setOptions(t.queue)))}},{key:"add",value:function(t,e){var r,n=this,i=[];if(Va(t)){var a=Ut(t).call(t,(function(t){return t[n._idProp]}));if(Sa(a).call(a,(function(t){return n._data.has(t)})))throw new Error("A duplicate id was found in the parameter array.");for(var o=0,s=t.length;o<s;o++)r=this._addItem(t[o]),i.push(r)}else{if(!t||"object"!==Oa(t))throw new Error("Unknown dataType");r=this._addItem(t),i.push(r)}return i.length&&this._trigger("add",{items:i},e),i}},{key:"update",value:function(t,e){var r=this,n=[],i=[],a=[],o=[],s=this._idProp,u=function(t){var e=t[s];if(null!=e&&r._data.has(e)){var u=t,c=va({},r._data.get(e)),l=r._updateItem(u);i.push(l),o.push(u),a.push(c)}else{var f=r._addItem(t);n.push(f)}};if(Va(t))for(var c=0,l=t.length;c<l;c++)t[c]&&"object"===Oa(t[c])?u(t[c]):console.warn("Ignoring input item, which is not an object at index "+c);else{if(!t||"object"!==Oa(t))throw new Error("Unknown dataType");u(t)}if(n.length&&this._trigger("add",{items:n},e),i.length){var f={items:i,oldData:a,data:o};this._trigger("update",f,e)}return ha(n).call(n,i)}},{key:"updateOnly",value:function(t,e){var r,n=this;Va(t)||(t=[t]);var i=Ut(r=Ut(t).call(t,(function(t){var e=n._data.get(t[n._idProp]);if(null==e)throw new Error("Updating non-existent items is not allowed.");return{oldData:e,update:t}}))).call(r,(function(t){var e=t.oldData,r=t.update,i=e[n._idProp],a=No(No({},e),r);return n._data.set(i,a),{id:i,oldData:e,updatedData:a}}));if(i.length){var a={items:Ut(i).call(i,(function(t){return t.id})),oldData:Ut(i).call(i,(function(t){return t.oldData})),data:Ut(i).call(i,(function(t){return t.updatedData}))};return this._trigger("update",a,e),a.items}return[]}},{key:"get",value:function(t,e){var r=void 0,n=void 0,i=void 0;zo(t)?(r=t,i=e):Va(t)?(n=t,i=e):i=t;var a=i&&"Object"===i.returnType?"Object":"Array",o=i&&i.type||this._options.type,s=i&&Zt(i),u=[],c=null,l=null,f=null;if(null!=r)(c=this._getItem(r,o))&&s&&!s(c)&&(c=null);else if(null!=n)for(var h=0,d=n.length;h<d;h++)null==(c=this._getItem(n[h],o))||s&&!s(c)||u.push(c);else for(var p,y=0,v=(l=ca(Bi(p=this._data).call(p))).length;y<v;y++)f=l[y],null==(c=this._getItem(f,o))||s&&!s(c)||u.push(c);if(i&&i.order&&null==r&&this._sort(u,i.order),i&&i.fields){var m=i.fields;if(null!=r&&null!=c)c=this._filterFields(c,m);else for(var _=0,g=u.length;_<g;_++)u[_]=this._filterFields(u[_],m)}if("Object"==a){for(var w={},b=0,S=u.length;b<S;b++){var k=u[b];w[k[this._idProp]]=k}return w}return null!=r?c:u}},{key:"getIds",value:function(t){var e,r,n=this._data,i=t&&Zt(t),a=t&&t.order,o=t&&t.type||this._options.type,s=ca(Bi(n).call(n)),u=[];if(i)if(a){r=[];for(var c=0,l=s.length;c<l;c++){var f=s[c];i(e=this._getItem(f,o))&&r.push(e)}this._sort(r,a);for(var h=0,d=r.length;h<d;h++)u.push(r[h][this._idProp])}else for(var p=0,y=s.length;p<y;p++){var v=s[p];i(e=this._getItem(v,o))&&u.push(e[this._idProp])}else if(a){r=[];for(var m=0,_=s.length;m<_;m++){var g=s[m];r.push(n.get(g))}this._sort(r,a);for(var w=0,b=r.length;w<b;w++)u.push(r[w][this._idProp])}else for(var S=0,k=s.length;S<k;S++){var O=s[S];e=n.get(O),u.push(e[this._idProp])}return u}},{key:"getDataSet",value:function(){return this}},{key:"forEach",value:function(t,e){var r=e&&Zt(e),n=e&&e.type||this._options.type,i=this._data,a=ca(Bi(i).call(i));if(e&&e.order)for(var o=this.get(e),s=0,u=o.length;s<u;s++){var c=o[s];t(c,c[this._idProp])}else for(var l=0,f=a.length;l<f;l++){var h=a[l],d=this._getItem(h,n);r&&!r(d)||t(d,h)}}},{key:"map",value:function(t,e){for(var r=e&&Zt(e),n=e&&e.type||this._options.type,i=[],a=this._data,o=ca(Bi(a).call(a)),s=0,u=o.length;s<u;s++){var c=o[s],l=this._getItem(c,n);r&&!r(l)||i.push(t(l,c))}return e&&e.order&&this._sort(i,e.order),i}},{key:"_filterFields",value:function(t,e){var r;return t?ee(r=Va(e)?e:Ma(e)).call(r,(function(e,r){return e[r]=t[r],e}),{}):t}},{key:"_sort",value:function(t,e){if("string"==typeof e){var r=e;qi(t).call(t,(function(t,e){var n=t[r],i=e[r];return n>i?1:n<i?-1:0}))}else{if("function"!=typeof e)throw new TypeError("Order must be a function or a string");qi(t).call(t,e)}}},{key:"remove",value:function(t,e){for(var r=[],n=[],i=Va(t)?t:[t],a=0,o=i.length;a<o;a++){var s=this._remove(i[a]);if(s){var u=s[this._idProp];null!=u&&(r.push(u),n.push(s))}}return r.length&&this._trigger("remove",{items:r,oldData:n},e),r}},{key:"_remove",value:function(t){var e;if(zo(t)?e=t:t&&"object"===Oa(t)&&(e=t[this._idProp]),null!=e&&this._data.has(e)){var r=this._data.get(e)||null;return this._data.delete(e),--this.length,r}return null}},{key:"clear",value:function(t){for(var e,r=ca(Bi(e=this._data).call(e)),n=[],i=0,a=r.length;i<a;i++)n.push(this._data.get(r[i]));return this._data.clear(),this.length=0,this._trigger("remove",{items:r,oldData:n},t),r}},{key:"max",value:function(t){var e,r,n=null,i=null,a=ls(Ri(e=this._data).call(e));try{for(a.s();!(r=a.n()).done;){var o=r.value,s=o[t];"number"==typeof s&&(null==i||s>i)&&(n=o,i=s)}}catch(t){a.e(t)}finally{a.f()}return n||null}},{key:"min",value:function(t){var e,r,n=null,i=null,a=ls(Ri(e=this._data).call(e));try{for(a.s();!(r=a.n()).done;){var o=r.value,s=o[t];"number"==typeof s&&(null==i||s<i)&&(n=o,i=s)}}catch(t){a.e(t)}finally{a.f()}return n||null}},{key:"distinct",value:function(t){for(var e=this._data,r=ca(Bi(e).call(e)),n=[],i=this._options.type&&this._options.type[t]||null,a=0,o=0,s=r.length;o<s;o++){for(var u=r[o],c=e.get(u)[t],l=!1,f=0;f<a;f++)if(n[f]==c){l=!0;break}l||void 0===c||(n[a]=c,a++)}if(i)for(var h=0,d=n.length;h<d;h++)n[h]=Vo(n[h],i);return n}},{key:"_addItem",value:function(t){var e=t[this._idProp];if(null!=e){if(this._data.has(e))throw new Error("Cannot add item: item with id "+e+" already exists")}else e=uo(),t[this._idProp]=e;for(var r={},n=Ma(t),i=0,a=n.length;i<a;i++){var o=n[i],s=this._type[o];r[o]=Vo(t[o],s)}return this._data.set(e,r),++this.length,e}},{key:"_getItem",value:function(t,e){var r,n=this._data.get(t);if(!n)return null;var i=Ma(n);if(e){ds(),r={};for(var a=0,o=i.length;a<o;a++){var s=i[a],u=n[s];r[s]=Vo(u,e[s])}}else r=function(t){for(var e=1;e<arguments.length;e++){var r,n=null!=arguments[e]?arguments[e]:{};if(e%2)zr(r=cs(Object(n),!0)).call(r,(function(e){Ii(t,e,n[e])}));else if(Ie)Ye(t,Ie(n));else{var i;zr(i=cs(Object(n))).call(i,(function(e){ve(t,e,$r(n,e))}))}}return t}({},n);return null==r[this._idProp]&&(r[this._idProp]=n.id),r}},{key:"_updateItem",value:function(t){var e=t[this._idProp];if(null==e)throw new Error("Cannot update item: item has no id (item: "+Ei(t)+")");var r=this._data.get(e);if(!r)throw new Error("Cannot update item: no item with id "+e+" found");for(var n=Ma(t),i=0,a=n.length;i<a;i++){var o=n[i],s=this._type[o];r[o]=Vo(t[o],s)}return e}},{key:"stream",value:function(t){if(t){var e=this._data;return new us(Ii({},Mi,Oi.mark((function r(){var n,i,a,o;return Oi.wrap((function(r){for(;;)switch(r.prev=r.next){case 0:n=ls(t),r.prev=1,n.s();case 3:if((i=n.n()).done){r.next=11;break}if(a=i.value,null==(o=e.get(a))){r.next=9;break}return r.next=9,[a,o];case 9:r.next=3;break;case 11:r.next=16;break;case 13:r.prev=13,r.t0=r.catch(1),n.e(r.t0);case 16:return r.prev=16,n.f(),r.finish(16);case 19:case"end":return r.stop()}}),r,null,[[1,13,16,19]])}))))}var r;return new us(Ii({},Mi,ue(r=ki(this._data)).call(r,this._data)))}}]),r}(is);function ys(t){var e=function(){if("undefined"==typeof Reflect||!gi)return!1;if(gi.sham)return!1;if("function"==typeof Proxy)return!0;try{return Date.prototype.toString.call(gi(Date,[],(function(){}))),!0}catch(t){return!1}}();return function(){var r,n=ro(t);if(e){var i=ro(this).constructor;r=gi(n,arguments,i)}else r=n.apply(this,arguments);return Xa(this,r)}}var vs=function(t){Ba(r,t);var e=ys(r);function r(t,n){var i,a;return ce(this,r),(a=e.call(this)).length=0,a._ids=new as,a._options=n||{},a._listener=ue(i=a._onEvent).call(i,Qa(a)),a.setData(t),a}return de(r,[{key:"setData",value:function(t){if(this._data){this._data.off&&this._data.off("*",this._listener);var e=this._data.getIds({filter:Zt(this._options)}),r=this._data.get(e);this._ids.clear(),this.length=0,this._trigger("remove",{items:e,oldData:r})}if(null!=t){this._data=t;for(var n=this._data.getIds({filter:Zt(this._options)}),i=0,a=n.length;i<a;i++){var o=n[i];this._ids.add(o)}this.length=n.length,this._trigger("add",{items:n})}else this._data=new ps;this._data.on&&this._data.on("*",this._listener)}},{key:"refresh",value:function(){for(var t=this._data.getIds({filter:Zt(this._options)}),e=ca(this._ids),r={},n=[],i=[],a=[],o=0,s=t.length;o<s;o++){var u=t[o];r[u]=!0,this._ids.has(u)||(n.push(u),this._ids.add(u))}for(var c=0,l=e.length;c<l;c++){var f=e[c],h=this._data.get(f);null==h?console.error("If you see this, report it please."):r[f]||(i.push(f),a.push(h),this._ids.delete(f))}this.length+=n.length-i.length,n.length&&this._trigger("add",{items:n}),i.length&&this._trigger("remove",{items:i,oldData:a})}},{key:"get",value:function(t,e){if(null==this._data)return null;var r,n=null;zo(t)||Va(t)?(n=t,r=e):r=t;var i=va({},this._options,r),a=Zt(this._options),o=r&&Zt(r);return a&&o&&(i.filter=function(t){return a(t)&&o(t)}),null==n?this._data.get(i):this._data.get(n,i)}},{key:"getIds",value:function(t){if(this._data.length){var e,r=Zt(this._options),n=null!=t?Zt(t):null;return e=n?r?function(t){return r(t)&&n(t)}:n:r,this._data.getIds({filter:e,order:t&&t.order})}return[]}},{key:"forEach",value:function(t,e){if(this._data){var r,n,i=Zt(this._options),a=e&&Zt(e);n=a?i?function(t){return i(t)&&a(t)}:a:i,zr(r=this._data).call(r,t,{filter:n,order:e&&e.order})}}},{key:"map",value:function(t,e){if(this._data){var r,n,i=Zt(this._options),a=e&&Zt(e);return n=a?i?function(t){return i(t)&&a(t)}:a:i,Ut(r=this._data).call(r,t,{filter:n,order:e&&e.order})}return[]}},{key:"getDataSet",value:function(){return this._data.getDataSet()}},{key:"stream",value:function(t){var e;return this._data.stream(t||Ii({},Mi,ue(e=Bi(this._ids)).call(e,this._ids)))}},{key:"dispose",value:function(){var t;(null===(t=this._data)||void 0===t?void 0:t.off)&&this._data.off("*",this._listener);var e="This data view has already been disposed of.";ve(this,"_data",{get:function(){throw new Error(e)},set:function(){throw new Error(e)},configurable:!1})}},{key:"_onEvent",value:function(t,e,r){if(e&&e.items&&this._data){var n=e.items,i=[],a=[],o=[],s=[],u=[],c=[];switch(t){case"add":for(var l=0,f=n.length;l<f;l++){var h=n[l];this.get(h)&&(this._ids.add(h),i.push(h))}break;case"update":for(var d=0,p=n.length;d<p;d++){var y=n[d];this.get(y)?this._ids.has(y)?(a.push(y),u.push(e.data[d]),s.push(e.oldData[d])):(this._ids.add(y),i.push(y)):this._ids.has(y)&&(this._ids.delete(y),o.push(y),c.push(e.oldData[d]))}break;case"remove":for(var v=0,m=n.length;v<m;v++){var _=n[v];this._ids.has(_)&&(this._ids.delete(_),o.push(_),c.push(e.oldData[v]))}}this.length+=i.length-o.length,i.length&&this._trigger("add",{items:i},r),a.length&&this._trigger("update",{items:a,oldData:s,data:u},r),o.length&&this._trigger("remove",{items:o,oldData:c},r)}}}]),r}(is);t.DataSet=ps,t.DataStream=us,t.DataView=vs,t.Queue=ns,t.createNewDataPipeFrom=function(t){return new ye(t)},Object.defineProperty(t,"__esModule",{value:!0})}));
+!function(t,e){ true?e(exports):undefined}(this,(function(t){var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{};function r(t,e,r){return t(r={path:e,exports:{},require:function(t,e){return i(null==e&&r.path)}},r.exports),r.exports}function n(t){return t&&t.default||t}function i(){throw new Error("Dynamic requires are not currently supported by @rollup/plugin-commonjs")}var a=function(t){return t&&t.Math==Math&&t},o=a("object"==typeof globalThis&&globalThis)||a("object"==typeof window&&window)||a("object"==typeof self&&self)||a("object"==typeof e&&e)||Function("return this")(),s=function(t){try{return!!t()}catch(t){return!0}},u=!s((function(){return 7!=Object.defineProperty({},1,{get:function(){return 7}})[1]})),c={}.propertyIsEnumerable,l=Object.getOwnPropertyDescriptor,f={f:l&&!c.call({1:2},1)?function(t){var e=l(this,t);return!!e&&e.enumerable}:c},h=function(t,e){return{enumerable:!(1&t),configurable:!(2&t),writable:!(4&t),value:e}},d={}.toString,p=function(t){return d.call(t).slice(8,-1)},y="".split,v=s((function(){return!Object("z").propertyIsEnumerable(0)}))?function(t){return"String"==p(t)?y.call(t,""):Object(t)}:Object,m=function(t){if(null==t)throw TypeError("Can't call method on "+t);return t},g=function(t){return v(m(t))},_=function(t){return"object"==typeof t?null!==t:"function"==typeof t},w=function(t,e){if(!_(t))return t;var r,n;if(e&&"function"==typeof(r=t.toString)&&!_(n=r.call(t)))return n;if("function"==typeof(r=t.valueOf)&&!_(n=r.call(t)))return n;if(!e&&"function"==typeof(r=t.toString)&&!_(n=r.call(t)))return n;throw TypeError("Can't convert object to primitive value")},b={}.hasOwnProperty,S=function(t,e){return b.call(t,e)},k=o.document,O=_(k)&&_(k.createElement),D=function(t){return O?k.createElement(t):{}},x=!u&&!s((function(){return 7!=Object.defineProperty(D("div"),"a",{get:function(){return 7}}).a})),M=Object.getOwnPropertyDescriptor,Y={f:u?M:function(t,e){if(t=g(t),e=w(e,!0),x)try{return M(t,e)}catch(t){}if(S(t,e))return h(!f.f.call(t,e),t[e])}},T=/#|\.prototype\./,P=function(t,e){var r=A[j(t)];return r==E||r!=N&&("function"==typeof e?s(e):!!e)},j=P.normalize=function(t){return String(t).replace(T,".").toLowerCase()},A=P.data={},N=P.NATIVE="N",E=P.POLYFILL="P",I=P,C={},R=function(t){if("function"!=typeof t)throw TypeError(String(t)+" is not a function");return t},L=function(t,e,r){if(R(t),void 0===e)return t;switch(r){case 0:return function(){return t.call(e)};case 1:return function(r){return t.call(e,r)};case 2:return function(r,n){return t.call(e,r,n)};case 3:return function(r,n,i){return t.call(e,r,n,i)}}return function(){return t.apply(e,arguments)}},F=function(t){if(!_(t))throw TypeError(String(t)+" is not an object");return t},W=Object.defineProperty,U={f:u?W:function(t,e,r){if(F(t),e=w(e,!0),F(r),x)try{return W(t,e,r)}catch(t){}if("get"in r||"set"in r)throw TypeError("Accessors not supported");return"value"in r&&(t[e]=r.value),t}},H=u?function(t,e,r){return U.f(t,e,h(1,r))}:function(t,e,r){return t[e]=r,t},G=Y.f,V=function(t){var e=function(e,r,n){if(this instanceof t){switch(arguments.length){case 0:return new t;case 1:return new t(e);case 2:return new t(e,r)}return new t(e,r,n)}return t.apply(this,arguments)};return e.prototype=t.prototype,e},z=function(t,e){var r,n,i,a,s,u,c,l,f=t.target,h=t.global,d=t.stat,p=t.proto,y=h?o:d?o[f]:(o[f]||{}).prototype,v=h?C:C[f]||(C[f]={}),m=v.prototype;for(i in e)r=!I(h?i:f+(d?".":"#")+i,t.forced)&&y&&S(y,i),s=v[i],r&&(u=t.noTargetGet?(l=G(y,i))&&l.value:y[i]),a=r&&u?u:e[i],r&&typeof s==typeof a||(c=t.bind&&r?L(a,o):t.wrap&&r?V(a):p&&"function"==typeof a?L(Function.call,a):a,(t.sham||a&&a.sham||s&&s.sham)&&H(c,"sham",!0),v[i]=c,p&&(S(C,n=f+"Prototype")||H(C,n,{}),C[n][i]=a,t.real&&m&&!m[i]&&H(m,i,a)))},q=Array.isArray||function(t){return"Array"==p(t)},Z=Math.ceil,$=Math.floor,B=function(t){return isNaN(t=+t)?0:(t>0?$:Z)(t)},J=Math.min,Q=function(t){return t>0?J(B(t),9007199254740991):0},K=function(t,e,r,n,i,a,o,s){for(var u,c=i,l=0,f=!!o&&L(o,s,3);l<n;){if(l in r){if(u=f?f(r[l],l,e):r[l],a>0&&q(u))c=K(t,e,u,Q(u.length),c,a-1)-1;else{if(c>=9007199254740991)throw TypeError("Exceed the acceptable array length");t[c]=u}c++}l++}return c},X=K,tt=function(t){return Object(m(t))},et=o["__core-js_shared__"]||function(t,e){try{H(o,t,e)}catch(r){o[t]=e}return e}("__core-js_shared__",{}),rt=r((function(t){(t.exports=function(t,e){return et[t]||(et[t]=void 0!==e?e:{})})("versions",[]).push({version:"3.6.4",mode:"pure",copyright:"© 2020 Denis Pushkarev (zloirock.ru)"})})),nt=0,it=Math.random(),at=function(t){return"Symbol("+String(void 0===t?"":t)+")_"+(++nt+it).toString(36)},ot=!!Object.getOwnPropertySymbols&&!s((function(){return!String(Symbol())})),st=ot&&!Symbol.sham&&"symbol"==typeof Symbol.iterator,ut=rt("wks"),ct=o.Symbol,lt=st?ct:ct&&ct.withoutSetter||at,ft=function(t){return S(ut,t)||(ot&&S(ct,t)?ut[t]=ct[t]:ut[t]=lt("Symbol."+t)),ut[t]},ht=ft("species"),dt=function(t,e){var r;return q(t)&&("function"!=typeof(r=t.constructor)||r!==Array&&!q(r.prototype)?_(r)&&null===(r=r[ht])&&(r=void 0):r=void 0),new(void 0===r?Array:r)(0===e?0:e)};z({target:"Array",proto:!0},{flatMap:function(t){var e,r=tt(this),n=Q(r.length);return R(t),(e=dt(r,0)).length=X(e,r,r,n,0,1,t,arguments.length>1?arguments[1]:void 0),e}});var pt,yt,vt=function(t){return C[t+"Prototype"]},mt=vt("Array").flatMap,gt=Array.prototype,_t=function(t){var e=t.flatMap;return t===gt||t instanceof Array&&e===gt.flatMap?mt:e},wt=[].push,bt=function(t){var e=1==t,r=2==t,n=3==t,i=4==t,a=6==t,o=5==t||a;return function(s,u,c,l){for(var f,h,d=tt(s),p=v(d),y=L(u,c,3),m=Q(p.length),g=0,_=l||dt,w=e?_(s,m):r?_(s,0):void 0;m>g;g++)if((o||g in p)&&(h=y(f=p[g],g,d),t))if(e)w[g]=h;else if(h)switch(t){case 3:return!0;case 5:return f;case 6:return g;case 2:wt.call(w,f)}else if(i)return!1;return a?-1:n||i?i:w}},St={forEach:bt(0),map:bt(1),filter:bt(2),some:bt(3),every:bt(4),find:bt(5),findIndex:bt(6)},kt=function(t){return"function"==typeof t?t:void 0},Ot=function(t,e){return arguments.length<2?kt(C[t])||kt(o[t]):C[t]&&C[t][e]||o[t]&&o[t][e]},Dt=Ot("navigator","userAgent")||"",xt=o.process,Mt=xt&&xt.versions,Yt=Mt&&Mt.v8;Yt?yt=(pt=Yt.split("."))[0]+pt[1]:Dt&&(!(pt=Dt.match(/Edge\/(\d+)/))||pt[1]>=74)&&(pt=Dt.match(/Chrome\/(\d+)/))&&(yt=pt[1]);var Tt=yt&&+yt,Pt=ft("species"),jt=function(t){return Tt>=51||!s((function(){var e=[];return(e.constructor={})[Pt]=function(){return{foo:1}},1!==e[t](Boolean).foo}))},At=Object.defineProperty,Nt={},Et=function(t){throw t},It=function(t,e){if(S(Nt,t))return Nt[t];e||(e={});var r=[][t],n=!!S(e,"ACCESSORS")&&e.ACCESSORS,i=S(e,0)?e[0]:Et,a=S(e,1)?e[1]:void 0;return Nt[t]=!!r&&!s((function(){if(n&&!u)return!0;var t={length:-1};n?At(t,1,{enumerable:!0,get:Et}):t[1]=1,r.call(t,i,a)}))},Ct=St.map,Rt=jt("map"),Lt=It("map");z({target:"Array",proto:!0,forced:!Rt||!Lt},{map:function(t){return Ct(this,t,arguments.length>1?arguments[1]:void 0)}});var Ft=vt("Array").map,Wt=Array.prototype,Ut=function(t){var e=t.map;return t===Wt||t instanceof Array&&e===Wt.map?Ft:e},Ht=St.filter,Gt=jt("filter"),Vt=It("filter");z({target:"Array",proto:!0,forced:!Gt||!Vt},{filter:function(t){return Ht(this,t,arguments.length>1?arguments[1]:void 0)}});var zt=vt("Array").filter,qt=Array.prototype,Zt=function(t){var e=t.filter;return t===qt||t instanceof Array&&e===qt.filter?zt:e},$t=function(t){return function(e,r,n,i){R(r);var a=tt(e),o=v(a),s=Q(a.length),u=t?s-1:0,c=t?-1:1;if(n<2)for(;;){if(u in o){i=o[u],u+=c;break}if(u+=c,t?u<0:s<=u)throw TypeError("Reduce of empty array with no initial value")}for(;t?u>=0:s>u;u+=c)u in o&&(i=r(i,o[u],u,a));return i}},Bt=function(t,e){var r=[][t];return!!r&&s((function(){r.call(null,e||function(){throw 1},1)}))},Jt={left:$t(!1),right:$t(!0)}.left,Qt=Bt("reduce"),Kt=It("reduce",{1:0});z({target:"Array",proto:!0,forced:!Qt||!Kt},{reduce:function(t){return Jt(this,t,arguments.length,arguments.length>1?arguments[1]:void 0)}});var Xt=vt("Array").reduce,te=Array.prototype,ee=function(t){var e=t.reduce;return t===te||t instanceof Array&&e===te.reduce?Xt:e},re=[].slice,ne={},ie=function(t,e,r){if(!(e in ne)){for(var n=[],i=0;i<e;i++)n[i]="a["+i+"]";ne[e]=Function("C,a","return new C("+n.join(",")+")")}return ne[e](t,r)},ae=Function.bind||function(t){var e=R(this),r=re.call(arguments,1),n=function(){var i=r.concat(re.call(arguments));return this instanceof n?ie(e,i.length,i):e.apply(t,i)};return _(e.prototype)&&(n.prototype=e.prototype),n};z({target:"Function",proto:!0},{bind:ae});var oe=vt("Function").bind,se=Function.prototype,ue=function(t){var e=t.bind;return t===se||t instanceof Function&&e===se.bind?oe:e};var ce=function(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")};z({target:"Object",stat:!0,forced:!u,sham:!u},{defineProperty:U.f});var le=r((function(t){var e=C.Object,r=t.exports=function(t,r,n){return e.defineProperty(t,r,n)};e.defineProperty.sham&&(r.sham=!0)})),fe=le;function he(t,e){for(var r=0;r<e.length;r++){var n=e[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),fe(t,n.key,n)}}var de=function(t,e,r){return e&&he(t.prototype,e),r&&he(t,r),t};var pe=function(){function t(e,r,n){var i,a,o;ce(this,t),this._source=e,this._transformers=r,this._target=n,this._listeners={add:ue(i=this._add).call(i,this),remove:ue(a=this._remove).call(a,this),update:ue(o=this._update).call(o,this)}}return de(t,[{key:"all",value:function(){return this._target.update(this._transformItems(this._source.get())),this}},{key:"start",value:function(){return this._source.on("add",this._listeners.add),this._source.on("remove",this._listeners.remove),this._source.on("update",this._listeners.update),this}},{key:"stop",value:function(){return this._source.off("add",this._listeners.add),this._source.off("remove",this._listeners.remove),this._source.off("update",this._listeners.update),this}},{key:"_transformItems",value:function(t){var e;return ee(e=this._transformers).call(e,(function(t,e){return e(t)}),t)}},{key:"_add",value:function(t,e){null!=e&&this._target.add(this._transformItems(this._source.get(e.items)))}},{key:"_update",value:function(t,e){null!=e&&this._target.update(this._transformItems(this._source.get(e.items)))}},{key:"_remove",value:function(t,e){null!=e&&this._target.remove(this._transformItems(e.oldData))}}]),t}(),ye=function(){function t(e){ce(this,t),this._source=e,this._transformers=[]}return de(t,[{key:"filter",value:function(t){return this._transformers.push((function(e){return Zt(e).call(e,t)})),this}},{key:"map",value:function(t){return this._transformers.push((function(e){return Ut(e).call(e,t)})),this}},{key:"flatMap",value:function(t){return this._transformers.push((function(e){return _t(e).call(e,t)})),this}},{key:"to",value:function(t){return new pe(this._source,this._transformers,t)}}]),t}(),ve=le,me=Math.max,ge=Math.min,_e=function(t,e){var r=B(t);return r<0?me(r+e,0):ge(r,e)},we=function(t){return function(e,r,n){var i,a=g(e),o=Q(a.length),s=_e(n,o);if(t&&r!=r){for(;o>s;)if((i=a[s++])!=i)return!0}else for(;o>s;s++)if((t||s in a)&&a[s]===r)return t||s||0;return!t&&-1}},be={includes:we(!0),indexOf:we(!1)},Se={},ke=be.indexOf,Oe=function(t,e){var r,n=g(t),i=0,a=[];for(r in n)!S(Se,r)&&S(n,r)&&a.push(r);for(;e.length>i;)S(n,r=e[i++])&&(~ke(a,r)||a.push(r));return a},De=["constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","toLocaleString","toString","valueOf"],xe=Object.keys||function(t){return Oe(t,De)},Me=u?Object.defineProperties:function(t,e){F(t);for(var r,n=xe(e),i=n.length,a=0;i>a;)U.f(t,r=n[a++],e[r]);return t};z({target:"Object",stat:!0,forced:!u,sham:!u},{defineProperties:Me});var Ye=r((function(t){var e=C.Object,r=t.exports=function(t,r){return e.defineProperties(t,r)};e.defineProperties.sham&&(r.sham=!0)})),Te=De.concat("length","prototype"),Pe={f:Object.getOwnPropertyNames||function(t){return Oe(t,Te)}},je={f:Object.getOwnPropertySymbols},Ae=Ot("Reflect","ownKeys")||function(t){var e=Pe.f(F(t)),r=je.f;return r?e.concat(r(t)):e},Ne=function(t,e,r){var n=w(e);n in t?U.f(t,n,h(0,r)):t[n]=r};z({target:"Object",stat:!0,sham:!u},{getOwnPropertyDescriptors:function(t){for(var e,r,n=g(t),i=Y.f,a=Ae(n),o={},s=0;a.length>s;)void 0!==(r=i(n,e=a[s++]))&&Ne(o,e,r);return o}});var Ee=C.Object.getOwnPropertyDescriptors,Ie={},Ce=Function.toString;"function"!=typeof et.inspectSource&&(et.inspectSource=function(t){return Ce.call(t)});var Re,Le,Fe,We=et.inspectSource,Ue=o.WeakMap,He="function"==typeof Ue&&/native code/.test(We(Ue)),Ge=rt("keys"),Ve=function(t){return Ge[t]||(Ge[t]=at(t))},ze=o.WeakMap;if(He){var qe=new ze,Ze=qe.get,$e=qe.has,Be=qe.set;Re=function(t,e){return Be.call(qe,t,e),e},Le=function(t){return Ze.call(qe,t)||{}},Fe=function(t){return $e.call(qe,t)}}else{var Je=Ve("state");Se[Je]=!0,Re=function(t,e){return H(t,Je,e),e},Le=function(t){return S(t,Je)?t[Je]:{}},Fe=function(t){return S(t,Je)}}var Qe,Ke,Xe,tr={set:Re,get:Le,has:Fe,enforce:function(t){return Fe(t)?Le(t):Re(t,{})},getterFor:function(t){return function(e){var r;if(!_(e)||(r=Le(e)).type!==t)throw TypeError("Incompatible receiver, "+t+" required");return r}}},er=!s((function(){function t(){}return t.prototype.constructor=null,Object.getPrototypeOf(new t)!==t.prototype})),rr=Ve("IE_PROTO"),nr=Object.prototype,ir=er?Object.getPrototypeOf:function(t){return t=tt(t),S(t,rr)?t[rr]:"function"==typeof t.constructor&&t instanceof t.constructor?t.constructor.prototype:t instanceof Object?nr:null},ar=(ft("iterator"),!1);[].keys&&("next"in(Xe=[].keys())?(Ke=ir(ir(Xe)))!==Object.prototype&&(Qe=Ke):ar=!0),null==Qe&&(Qe={});var or,sr={IteratorPrototype:Qe,BUGGY_SAFARI_ITERATORS:ar},ur=Ot("document","documentElement"),cr=Ve("IE_PROTO"),lr=function(){},fr=function(t){return"<script>"+t+"<\/script>"},hr=function(){try{or=document.domain&&new ActiveXObject("htmlfile")}catch(t){}var t,e;hr=or?function(t){t.write(fr("")),t.close();var e=t.parentWindow.Object;return t=null,e}(or):((e=D("iframe")).style.display="none",ur.appendChild(e),e.src=String("javascript:"),(t=e.contentWindow.document).open(),t.write(fr("document.F=Object")),t.close(),t.F);for(var r=De.length;r--;)delete hr.prototype[De[r]];return hr()};Se[cr]=!0;var dr=Object.create||function(t,e){var r;return null!==t?(lr.prototype=F(t),r=new lr,lr.prototype=null,r[cr]=t):r=hr(),void 0===e?r:Me(r,e)},pr={};pr[ft("toStringTag")]="z";var yr="[object z]"===String(pr),vr=ft("toStringTag"),mr="Arguments"==p(function(){return arguments}()),gr=yr?p:function(t){var e,r,n;return void 0===t?"Undefined":null===t?"Null":"string"==typeof(r=function(t,e){try{return t[e]}catch(t){}}(e=Object(t),vr))?r:mr?p(e):"Object"==(n=p(e))&&"function"==typeof e.callee?"Arguments":n},_r=yr?{}.toString:function(){return"[object "+gr(this)+"]"},wr=U.f,br=ft("toStringTag"),Sr=function(t,e,r,n){if(t){var i=r?t:t.prototype;S(i,br)||wr(i,br,{configurable:!0,value:e}),n&&!yr&&H(i,"toString",_r)}},kr=sr.IteratorPrototype,Or=function(){return this},Dr=Object.setPrototypeOf||("__proto__"in{}?function(){var t,e=!1,r={};try{(t=Object.getOwnPropertyDescriptor(Object.prototype,"__proto__").set).call(r,[]),e=r instanceof Array}catch(t){}return function(r,n){return F(r),function(t){if(!_(t)&&null!==t)throw TypeError("Can't set "+String(t)+" as a prototype")}(n),e?t.call(r,n):r.__proto__=n,r}}():void 0),xr=function(t,e,r,n){n&&n.enumerable?t[e]=r:H(t,e,r)},Mr=sr.IteratorPrototype,Yr=sr.BUGGY_SAFARI_ITERATORS,Tr=ft("iterator"),Pr=function(){return this},jr=function(t,e,r,n,i,a,o){!function(t,e,r){var n=e+" Iterator";t.prototype=dr(kr,{next:h(1,r)}),Sr(t,n,!1,!0),Ie[n]=Or}(r,e,n);var s,u,c,l=function(t){if(t===i&&v)return v;if(!Yr&&t in p)return p[t];switch(t){case"keys":case"values":case"entries":return function(){return new r(this,t)}}return function(){return new r(this)}},f=e+" Iterator",d=!1,p=t.prototype,y=p[Tr]||p["@@iterator"]||i&&p[i],v=!Yr&&y||l(i),m="Array"==e&&p.entries||y;if(m&&(s=ir(m.call(new t)),Mr!==Object.prototype&&s.next&&(Sr(s,f,!0,!0),Ie[f]=Pr)),"values"==i&&y&&"values"!==y.name&&(d=!0,v=function(){return y.call(this)}),o&&p[Tr]!==v&&H(p,Tr,v),Ie[e]=v,i)if(u={values:l("values"),keys:a?v:l("keys"),entries:l("entries")},o)for(c in u)(Yr||d||!(c in p))&&xr(p,c,u[c]);else z({target:e,proto:!0,forced:Yr||d},u);return u},Ar=tr.set,Nr=tr.getterFor("Array Iterator");jr(Array,"Array",(function(t,e){Ar(this,{type:"Array Iterator",target:g(t),index:0,kind:e})}),(function(){var t=Nr(this),e=t.target,r=t.kind,n=t.index++;return!e||n>=e.length?(t.target=void 0,{value:void 0,done:!0}):"keys"==r?{value:n,done:!1}:"values"==r?{value:e[n],done:!1}:{value:[n,e[n]],done:!1}}),"values");Ie.Arguments=Ie.Array;var Er=ft("toStringTag");for(var Ir in{CSSRuleList:0,CSSStyleDeclaration:0,CSSValueList:0,ClientRectList:0,DOMRectList:0,DOMStringList:0,DOMTokenList:1,DataTransferItemList:0,FileList:0,HTMLAllCollection:0,HTMLCollection:0,HTMLFormElement:0,HTMLSelectElement:0,MediaList:0,MimeTypeArray:0,NamedNodeMap:0,NodeList:1,PaintRequestList:0,Plugin:0,PluginArray:0,SVGLengthList:0,SVGNumberList:0,SVGPathSegList:0,SVGPointList:0,SVGStringList:0,SVGTransformList:0,SourceBufferList:0,StyleSheetList:0,TextTrackCueList:0,TextTrackList:0,TouchList:0}){var Cr=o[Ir],Rr=Cr&&Cr.prototype;Rr&&gr(Rr)!==Er&&H(Rr,Er,Ir),Ie[Ir]=Ie.Array}var Lr=St.forEach,Fr=Bt("forEach"),Wr=It("forEach"),Ur=Fr&&Wr?[].forEach:function(t){return Lr(this,t,arguments.length>1?arguments[1]:void 0)};z({target:"Array",proto:!0,forced:[].forEach!=Ur},{forEach:Ur});var Hr=vt("Array").forEach,Gr=Array.prototype,Vr={DOMTokenList:!0,NodeList:!0},zr=function(t){var e=t.forEach;return t===Gr||t instanceof Array&&e===Gr.forEach||Vr.hasOwnProperty(gr(t))?Hr:e},qr=Y.f,Zr=s((function(){qr(1)}));z({target:"Object",stat:!0,forced:!u||Zr,sham:!u},{getOwnPropertyDescriptor:function(t,e){return qr(g(t),e)}});var $r=r((function(t){var e=C.Object,r=t.exports=function(t,r){return e.getOwnPropertyDescriptor(t,r)};e.getOwnPropertyDescriptor.sham&&(r.sham=!0)})),Br=Pe.f,Jr={}.toString,Qr="object"==typeof window&&window&&Object.getOwnPropertyNames?Object.getOwnPropertyNames(window):[],Kr={f:function(t){return Qr&&"[object Window]"==Jr.call(t)?function(t){try{return Br(t)}catch(t){return Qr.slice()}}(t):Br(g(t))}},Xr={f:ft},tn=U.f,en=function(t){var e=C.Symbol||(C.Symbol={});S(e,t)||tn(e,t,{value:Xr.f(t)})},rn=St.forEach,nn=Ve("hidden"),an=ft("toPrimitive"),on=tr.set,sn=tr.getterFor("Symbol"),un=Object.prototype,cn=o.Symbol,ln=Ot("JSON","stringify"),fn=Y.f,hn=U.f,dn=Kr.f,pn=f.f,yn=rt("symbols"),vn=rt("op-symbols"),mn=rt("string-to-symbol-registry"),gn=rt("symbol-to-string-registry"),_n=rt("wks"),wn=o.QObject,bn=!wn||!wn.prototype||!wn.prototype.findChild,Sn=u&&s((function(){return 7!=dr(hn({},"a",{get:function(){return hn(this,"a",{value:7}).a}})).a}))?function(t,e,r){var n=fn(un,e);n&&delete un[e],hn(t,e,r),n&&t!==un&&hn(un,e,n)}:hn,kn=function(t,e){var r=yn[t]=dr(cn.prototype);return on(r,{type:"Symbol",tag:t,description:e}),u||(r.description=e),r},On=st?function(t){return"symbol"==typeof t}:function(t){return Object(t)instanceof cn},Dn=function(t,e,r){t===un&&Dn(vn,e,r),F(t);var n=w(e,!0);return F(r),S(yn,n)?(r.enumerable?(S(t,nn)&&t[nn][n]&&(t[nn][n]=!1),r=dr(r,{enumerable:h(0,!1)})):(S(t,nn)||hn(t,nn,h(1,{})),t[nn][n]=!0),Sn(t,n,r)):hn(t,n,r)},xn=function(t,e){F(t);var r=g(e),n=xe(r).concat(Pn(r));return rn(n,(function(e){u&&!Mn.call(r,e)||Dn(t,e,r[e])})),t},Mn=function(t){var e=w(t,!0),r=pn.call(this,e);return!(this===un&&S(yn,e)&&!S(vn,e))&&(!(r||!S(this,e)||!S(yn,e)||S(this,nn)&&this[nn][e])||r)},Yn=function(t,e){var r=g(t),n=w(e,!0);if(r!==un||!S(yn,n)||S(vn,n)){var i=fn(r,n);return!i||!S(yn,n)||S(r,nn)&&r[nn][n]||(i.enumerable=!0),i}},Tn=function(t){var e=dn(g(t)),r=[];return rn(e,(function(t){S(yn,t)||S(Se,t)||r.push(t)})),r},Pn=function(t){var e=t===un,r=dn(e?vn:g(t)),n=[];return rn(r,(function(t){!S(yn,t)||e&&!S(un,t)||n.push(yn[t])})),n};if(ot||(xr((cn=function(){if(this instanceof cn)throw TypeError("Symbol is not a constructor");var t=arguments.length&&void 0!==arguments[0]?String(arguments[0]):void 0,e=at(t),r=function(t){this===un&&r.call(vn,t),S(this,nn)&&S(this[nn],e)&&(this[nn][e]=!1),Sn(this,e,h(1,t))};return u&&bn&&Sn(un,e,{configurable:!0,set:r}),kn(e,t)}).prototype,"toString",(function(){return sn(this).tag})),xr(cn,"withoutSetter",(function(t){return kn(at(t),t)})),f.f=Mn,U.f=Dn,Y.f=Yn,Pe.f=Kr.f=Tn,je.f=Pn,Xr.f=function(t){return kn(ft(t),t)},u&&hn(cn.prototype,"description",{configurable:!0,get:function(){return sn(this).description}})),z({global:!0,wrap:!0,forced:!ot,sham:!ot},{Symbol:cn}),rn(xe(_n),(function(t){en(t)})),z({target:"Symbol",stat:!0,forced:!ot},{for:function(t){var e=String(t);if(S(mn,e))return mn[e];var r=cn(e);return mn[e]=r,gn[r]=e,r},keyFor:function(t){if(!On(t))throw TypeError(t+" is not a symbol");if(S(gn,t))return gn[t]},useSetter:function(){bn=!0},useSimple:function(){bn=!1}}),z({target:"Object",stat:!0,forced:!ot,sham:!u},{create:function(t,e){return void 0===e?dr(t):xn(dr(t),e)},defineProperty:Dn,defineProperties:xn,getOwnPropertyDescriptor:Yn}),z({target:"Object",stat:!0,forced:!ot},{getOwnPropertyNames:Tn,getOwnPropertySymbols:Pn}),z({target:"Object",stat:!0,forced:s((function(){je.f(1)}))},{getOwnPropertySymbols:function(t){return je.f(tt(t))}}),ln){var jn=!ot||s((function(){var t=cn();return"[null]"!=ln([t])||"{}"!=ln({a:t})||"{}"!=ln(Object(t))}));z({target:"JSON",stat:!0,forced:jn},{stringify:function(t,e,r){for(var n,i=[t],a=1;arguments.length>a;)i.push(arguments[a++]);if(n=e,(_(e)||void 0!==t)&&!On(t))return q(e)||(e=function(t,e){if("function"==typeof n&&(e=n.call(this,t,e)),!On(e))return e}),i[1]=e,ln.apply(null,i)}})}cn.prototype[an]||H(cn.prototype,an,cn.prototype.valueOf),Sr(cn,"Symbol"),Se[nn]=!0;var An=C.Object.getOwnPropertySymbols,Nn=function(t){return function(e,r){var n,i,a=String(m(e)),o=B(r),s=a.length;return o<0||o>=s?t?"":void 0:(n=a.charCodeAt(o))<55296||n>56319||o+1===s||(i=a.charCodeAt(o+1))<56320||i>57343?t?a.charAt(o):n:t?a.slice(o,o+2):i-56320+(n-55296<<10)+65536}},En={codeAt:Nn(!1),charAt:Nn(!0)}.charAt,In=tr.set,Cn=tr.getterFor("String Iterator");jr(String,"String",(function(t){In(this,{type:"String Iterator",string:String(t),index:0})}),(function(){var t,e=Cn(this),r=e.string,n=e.index;return n>=r.length?{value:void 0,done:!0}:(t=En(r,n),e.index+=t.length,{value:t,done:!1})}));var Rn=ft("iterator"),Ln=function(t){if(null!=t)return t[Rn]||t["@@iterator"]||Ie[gr(t)]},Fn=function(t){var e=Ln(t);if("function"!=typeof e)throw TypeError(String(t)+" is not iterable");return F(e.call(t))},Wn=Ln,Un=ft("isConcatSpreadable"),Hn=Tt>=51||!s((function(){var t=[];return t[Un]=!1,t.concat()[0]!==t})),Gn=jt("concat"),Vn=function(t){if(!_(t))return!1;var e=t[Un];return void 0!==e?!!e:q(t)};z({target:"Array",proto:!0,forced:!Hn||!Gn},{concat:function(t){var e,r,n,i,a,o=tt(this),s=dt(o,0),u=0;for(e=-1,n=arguments.length;e<n;e++)if(Vn(a=-1===e?o:arguments[e])){if(u+(i=Q(a.length))>9007199254740991)throw TypeError("Maximum allowed index exceeded");for(r=0;r<i;r++,u++)r in a&&Ne(s,u,a[r])}else{if(u>=9007199254740991)throw TypeError("Maximum allowed index exceeded");Ne(s,u++,a)}return s.length=u,s}});var zn=Object.freeze({__proto__:null});en("asyncIterator");var qn=Object.freeze({__proto__:null});en("hasInstance"),en("isConcatSpreadable"),en("iterator"),en("match"),en("matchAll"),en("replace"),en("search"),en("species"),en("split"),en("toPrimitive"),en("toStringTag"),en("unscopables"),Sr(Math,"Math",!0),Sr(o.JSON,"JSON",!0),n(zn),n(qn);var Zn=C.Symbol,$n=Zn,Bn=function(t,e,r,n){try{return n?e(F(r)[0],r[1]):e(r)}catch(e){var i=t.return;throw void 0!==i&&F(i.call(t)),e}},Jn=ft("iterator"),Qn=Array.prototype,Kn=function(t){return void 0!==t&&(Ie.Array===t||Qn[Jn]===t)},Xn=ft("iterator"),ti=!1;try{var ei=0,ri={next:function(){return{done:!!ei++}},return:function(){ti=!0}};ri[Xn]=function(){return this},Array.from(ri,(function(){throw 2}))}catch(t){}var ni=!function(t,e){if(!e&&!ti)return!1;var r=!1;try{var n={};n[Xn]=function(){return{next:function(){return{done:r=!0}}}},t(n)}catch(t){}return r}((function(t){Array.from(t)}));z({target:"Array",stat:!0,forced:ni},{from:function(t){var e,r,n,i,a,o,s=tt(t),u="function"==typeof this?this:Array,c=arguments.length,l=c>1?arguments[1]:void 0,f=void 0!==l,h=Ln(s),d=0;if(f&&(l=L(l,c>2?arguments[2]:void 0,2)),null==h||u==Array&&Kn(h))for(r=new u(e=Q(s.length));e>d;d++)o=f?l(s[d],d):s[d],Ne(r,d,o);else for(a=(i=h.call(s)).next,r=new u;!(n=a.call(i)).done;d++)o=f?Bn(i,l,[n.value,d],!0):n.value,Ne(r,d,o);return r.length=d,r}});var ii=C.Array.from,ai=ii,oi=jt("slice"),si=It("slice",{ACCESSORS:!0,0:0,1:2}),ui=ft("species"),ci=[].slice,li=Math.max;z({target:"Array",proto:!0,forced:!oi||!si},{slice:function(t,e){var r,n,i,a=g(this),o=Q(a.length),s=_e(t,o),u=_e(void 0===e?o:e,o);if(q(a)&&("function"!=typeof(r=a.constructor)||r!==Array&&!q(r.prototype)?_(r)&&null===(r=r[ui])&&(r=void 0):r=void 0,r===Array||void 0===r))return ci.call(a,s,u);for(n=new(void 0===r?Array:r)(li(u-s,0)),i=0;s<u;s++,i++)s in a&&Ne(n,i,a[s]);return n.length=i,n}});var fi=vt("Array").slice,hi=Array.prototype,di=function(t){var e=t.slice;return t===hi||t instanceof Array&&e===hi.slice?fi:e},pi=di,yi=Ot("Reflect","construct"),vi=s((function(){function t(){}return!(yi((function(){}),[],t)instanceof t)})),mi=!s((function(){yi((function(){}))})),gi=vi||mi;z({target:"Reflect",stat:!0,forced:gi,sham:gi},{construct:function(t,e){R(t),F(e);var r=arguments.length<3?t:R(arguments[2]);if(mi&&!vi)return yi(t,e,r);if(t==r){switch(e.length){case 0:return new t;case 1:return new t(e[0]);case 2:return new t(e[0],e[1]);case 3:return new t(e[0],e[1],e[2]);case 4:return new t(e[0],e[1],e[2],e[3])}var n=[null];return n.push.apply(n,e),new(ae.apply(t,n))}var i=r.prototype,a=dr(_(i)?i:Object.prototype),o=Function.apply.call(t,a,e);return _(o)?o:a}});var _i=C.Reflect.construct,wi=vt("Array").entries,bi=Array.prototype,Si={DOMTokenList:!0,NodeList:!0},ki=function(t){var e=t.entries;return t===bi||t instanceof Array&&e===bi.entries||Si.hasOwnProperty(gr(t))?wi:e},Oi=r((function(t){var e=function(t){var e=Object.prototype,r=e.hasOwnProperty,n="function"==typeof Symbol?Symbol:{},i=n.iterator||"@@iterator",a=n.asyncIterator||"@@asyncIterator",o=n.toStringTag||"@@toStringTag";function s(t,e,r,n){var i=e&&e.prototype instanceof l?e:l,a=Object.create(i.prototype),o=new S(n||[]);return a._invoke=function(t,e,r){var n="suspendedStart";return function(i,a){if("executing"===n)throw new Error("Generator is already running");if("completed"===n){if("throw"===i)throw a;return O()}for(r.method=i,r.arg=a;;){var o=r.delegate;if(o){var s=_(o,r);if(s){if(s===c)continue;return s}}if("next"===r.method)r.sent=r._sent=r.arg;else if("throw"===r.method){if("suspendedStart"===n)throw n="completed",r.arg;r.dispatchException(r.arg)}else"return"===r.method&&r.abrupt("return",r.arg);n="executing";var l=u(t,e,r);if("normal"===l.type){if(n=r.done?"completed":"suspendedYield",l.arg===c)continue;return{value:l.arg,done:r.done}}"throw"===l.type&&(n="completed",r.method="throw",r.arg=l.arg)}}}(t,r,o),a}function u(t,e,r){try{return{type:"normal",arg:t.call(e,r)}}catch(t){return{type:"throw",arg:t}}}t.wrap=s;var c={};function l(){}function f(){}function h(){}var d={};d[i]=function(){return this};var p=Object.getPrototypeOf,y=p&&p(p(k([])));y&&y!==e&&r.call(y,i)&&(d=y);var v=h.prototype=l.prototype=Object.create(d);function m(t){["next","throw","return"].forEach((function(e){t[e]=function(t){return this._invoke(e,t)}}))}function g(t,e){var n;this._invoke=function(i,a){function o(){return new e((function(n,o){!function n(i,a,o,s){var c=u(t[i],t,a);if("throw"!==c.type){var l=c.arg,f=l.value;return f&&"object"==typeof f&&r.call(f,"__await")?e.resolve(f.__await).then((function(t){n("next",t,o,s)}),(function(t){n("throw",t,o,s)})):e.resolve(f).then((function(t){l.value=t,o(l)}),(function(t){return n("throw",t,o,s)}))}s(c.arg)}(i,a,n,o)}))}return n=n?n.then(o,o):o()}}function _(t,e){var r=t.iterator[e.method];if(void 0===r){if(e.delegate=null,"throw"===e.method){if(t.iterator.return&&(e.method="return",e.arg=void 0,_(t,e),"throw"===e.method))return c;e.method="throw",e.arg=new TypeError("The iterator does not provide a 'throw' method")}return c}var n=u(r,t.iterator,e.arg);if("throw"===n.type)return e.method="throw",e.arg=n.arg,e.delegate=null,c;var i=n.arg;return i?i.done?(e[t.resultName]=i.value,e.next=t.nextLoc,"return"!==e.method&&(e.method="next",e.arg=void 0),e.delegate=null,c):i:(e.method="throw",e.arg=new TypeError("iterator result is not an object"),e.delegate=null,c)}function w(t){var e={tryLoc:t[0]};1 in t&&(e.catchLoc=t[1]),2 in t&&(e.finallyLoc=t[2],e.afterLoc=t[3]),this.tryEntries.push(e)}function b(t){var e=t.completion||{};e.type="normal",delete e.arg,t.completion=e}function S(t){this.tryEntries=[{tryLoc:"root"}],t.forEach(w,this),this.reset(!0)}function k(t){if(t){var e=t[i];if(e)return e.call(t);if("function"==typeof t.next)return t;if(!isNaN(t.length)){var n=-1,a=function e(){for(;++n<t.length;)if(r.call(t,n))return e.value=t[n],e.done=!1,e;return e.value=void 0,e.done=!0,e};return a.next=a}}return{next:O}}function O(){return{value:void 0,done:!0}}return f.prototype=v.constructor=h,h.constructor=f,h[o]=f.displayName="GeneratorFunction",t.isGeneratorFunction=function(t){var e="function"==typeof t&&t.constructor;return!!e&&(e===f||"GeneratorFunction"===(e.displayName||e.name))},t.mark=function(t){return Object.setPrototypeOf?Object.setPrototypeOf(t,h):(t.__proto__=h,o in t||(t[o]="GeneratorFunction")),t.prototype=Object.create(v),t},t.awrap=function(t){return{__await:t}},m(g.prototype),g.prototype[a]=function(){return this},t.AsyncIterator=g,t.async=function(e,r,n,i,a){void 0===a&&(a=Promise);var o=new g(s(e,r,n,i),a);return t.isGeneratorFunction(r)?o:o.next().then((function(t){return t.done?t.value:o.next()}))},m(v),v[o]="Generator",v[i]=function(){return this},v.toString=function(){return"[object Generator]"},t.keys=function(t){var e=[];for(var r in t)e.push(r);return e.reverse(),function r(){for(;e.length;){var n=e.pop();if(n in t)return r.value=n,r.done=!1,r}return r.done=!0,r}},t.values=k,S.prototype={constructor:S,reset:function(t){if(this.prev=0,this.next=0,this.sent=this._sent=void 0,this.done=!1,this.delegate=null,this.method="next",this.arg=void 0,this.tryEntries.forEach(b),!t)for(var e in this)"t"===e.charAt(0)&&r.call(this,e)&&!isNaN(+e.slice(1))&&(this[e]=void 0)},stop:function(){this.done=!0;var t=this.tryEntries[0].completion;if("throw"===t.type)throw t.arg;return this.rval},dispatchException:function(t){if(this.done)throw t;var e=this;function n(r,n){return o.type="throw",o.arg=t,e.next=r,n&&(e.method="next",e.arg=void 0),!!n}for(var i=this.tryEntries.length-1;i>=0;--i){var a=this.tryEntries[i],o=a.completion;if("root"===a.tryLoc)return n("end");if(a.tryLoc<=this.prev){var s=r.call(a,"catchLoc"),u=r.call(a,"finallyLoc");if(s&&u){if(this.prev<a.catchLoc)return n(a.catchLoc,!0);if(this.prev<a.finallyLoc)return n(a.finallyLoc)}else if(s){if(this.prev<a.catchLoc)return n(a.catchLoc,!0)}else{if(!u)throw new Error("try statement without catch or finally");if(this.prev<a.finallyLoc)return n(a.finallyLoc)}}}},abrupt:function(t,e){for(var n=this.tryEntries.length-1;n>=0;--n){var i=this.tryEntries[n];if(i.tryLoc<=this.prev&&r.call(i,"finallyLoc")&&this.prev<i.finallyLoc){var a=i;break}}a&&("break"===t||"continue"===t)&&a.tryLoc<=e&&e<=a.finallyLoc&&(a=null);var o=a?a.completion:{};return o.type=t,o.arg=e,a?(this.method="next",this.next=a.finallyLoc,c):this.complete(o)},complete:function(t,e){if("throw"===t.type)throw t.arg;return"break"===t.type||"continue"===t.type?this.next=t.arg:"return"===t.type?(this.rval=this.arg=t.arg,this.method="return",this.next="end"):"normal"===t.type&&e&&(this.next=e),c},finish:function(t){for(var e=this.tryEntries.length-1;e>=0;--e){var r=this.tryEntries[e];if(r.finallyLoc===t)return this.complete(r.completion,r.afterLoc),b(r),c}},catch:function(t){for(var e=this.tryEntries.length-1;e>=0;--e){var r=this.tryEntries[e];if(r.tryLoc===t){var n=r.completion;if("throw"===n.type){var i=n.arg;b(r)}return i}}throw new Error("illegal catch attempt")},delegateYield:function(t,e,r){return this.delegate={iterator:k(t),resultName:e,nextLoc:r},"next"===this.method&&(this.arg=void 0),c}},t}(t.exports);try{regeneratorRuntime=e}catch(t){Function("r","regeneratorRuntime = r")(e)}})),Di=Xr.f("iterator"),xi=Di,Mi=Ot("JSON","stringify"),Yi=/[\uD800-\uDFFF]/g,Ti=/^[\uD800-\uDBFF]$/,Pi=/^[\uDC00-\uDFFF]$/,ji=function(t,e,r){var n=r.charAt(e-1),i=r.charAt(e+1);return Ti.test(t)&&!Pi.test(i)||Pi.test(t)&&!Ti.test(n)?"\\u"+t.charCodeAt(0).toString(16):t},Ai=s((function(){return'"\\udf06\\ud834"'!==Mi("\udf06\ud834")||'"\\udead"'!==Mi("\udead")}));Mi&&z({target:"JSON",stat:!0,forced:Ai},{stringify:function(t,e,r){var n=Mi.apply(null,arguments);return"string"==typeof n?n.replace(Yi,ji):n}}),C.JSON||(C.JSON={stringify:JSON.stringify});var Ni=function(t,e,r){return C.JSON.stringify.apply(null,arguments)};var Ei=function(t,e,r){return e in t?fe(t,e,{value:r,enumerable:!0,configurable:!0,writable:!0}):t[e]=r,t},Ii=vt("Array").values,Ci=Array.prototype,Ri={DOMTokenList:!0,NodeList:!0},Li=function(t){var e=t.values;return t===Ci||t instanceof Array&&e===Ci.values||Ri.hasOwnProperty(gr(t))?Ii:e},Fi=[],Wi=Fi.sort,Ui=s((function(){Fi.sort(void 0)})),Hi=s((function(){Fi.sort(null)})),Gi=Bt("sort");z({target:"Array",proto:!0,forced:Ui||!Hi||!Gi},{sort:function(t){return void 0===t?Wi.call(tt(this)):Wi.call(tt(this),R(t))}});var Vi=vt("Array").sort,zi=Array.prototype,qi=function(t){var e=t.sort;return t===zi||t instanceof Array&&e===zi.sort?Vi:e},Zi=vt("Array").keys,$i=Array.prototype,Bi={DOMTokenList:!0,NodeList:!0},Ji=function(t){var e=t.keys;return t===$i||t instanceof Array&&e===$i.keys||Bi.hasOwnProperty(gr(t))?Zi:e};z({target:"Array",stat:!0},{isArray:q});var Qi=C.Array.isArray,Ki=Qi;var Xi=function(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n};var ta=function(t){if(Ki(t))return Xi(t)},ea=ii,ra=ft("iterator"),na=function(t){var e=Object(t);return void 0!==e[ra]||"@@iterator"in e||Ie.hasOwnProperty(gr(e))};en("asyncDispose"),en("dispose"),en("observable"),en("patternMatch"),en("replaceAll");var ia=Zn;var aa=function(t){if(void 0!==ia&&na(Object(t)))return ea(t)},oa=di;var sa=function(t,e){var r;if(t){if("string"==typeof t)return Xi(t,e);var n=oa(r=Object.prototype.toString.call(t)).call(r,8,-1);return"Object"===n&&t.constructor&&(n=t.constructor.name),"Map"===n||"Set"===n?ea(t):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?Xi(t,e):void 0}};var ua=function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var ca=function(t){return ta(t)||aa(t)||sa(t)||ua()},la=vt("Array").concat,fa=Array.prototype,ha=function(t){var e=t.concat;return t===fa||t instanceof Array&&e===fa.concat?la:e},da=Object.assign,pa=Object.defineProperty,ya=!da||s((function(){if(u&&1!==da({b:1},da(pa({},"a",{enumerable:!0,get:function(){pa(this,"b",{value:3,enumerable:!1})}}),{b:2})).b)return!0;var t={},e={},r=Symbol();return t[r]=7,"abcdefghijklmnopqrst".split("").forEach((function(t){e[t]=t})),7!=da({},t)[r]||"abcdefghijklmnopqrst"!=xe(da({},e)).join("")}))?function(t,e){for(var r=tt(t),n=arguments.length,i=1,a=je.f,o=f.f;n>i;)for(var s,c=v(arguments[i++]),l=a?xe(c).concat(a(c)):xe(c),h=l.length,d=0;h>d;)s=l[d++],u&&!o.call(c,s)||(r[s]=c[s]);return r}:da;z({target:"Object",stat:!0,forced:Object.assign!==ya},{assign:ya});var va=C.Object.assign,ma=St.some,ga=Bt("some"),_a=It("some");z({target:"Array",proto:!0,forced:!ga||!_a},{some:function(t){return ma(this,t,arguments.length>1?arguments[1]:void 0)}});var wa=vt("Array").some,ba=Array.prototype,Sa=function(t){var e=t.some;return t===ba||t instanceof Array&&e===ba.some?wa:e},ka=Di,Oa=r((function(t){function e(r){return t.exports=e="function"==typeof ia&&"symbol"==typeof ka?function(t){return typeof t}:function(t){return t&&"function"==typeof ia&&t.constructor===ia&&t!==ia.prototype?"symbol":typeof t},e(r)}t.exports=e})),Da=s((function(){xe(1)}));z({target:"Object",stat:!0,forced:Da},{keys:function(t){return xe(tt(t))}});var xa=C.Object.keys,Ma=!s((function(){return Object.isExtensible(Object.preventExtensions({}))})),Ya=r((function(t){var e=U.f,r=at("meta"),n=0,i=Object.isExtensible||function(){return!0},a=function(t){e(t,r,{value:{objectID:"O"+ ++n,weakData:{}}})},o=t.exports={REQUIRED:!1,fastKey:function(t,e){if(!_(t))return"symbol"==typeof t?t:("string"==typeof t?"S":"P")+t;if(!S(t,r)){if(!i(t))return"F";if(!e)return"E";a(t)}return t[r].objectID},getWeakData:function(t,e){if(!S(t,r)){if(!i(t))return!0;if(!e)return!1;a(t)}return t[r].weakData},onFreeze:function(t){return Ma&&o.REQUIRED&&i(t)&&!S(t,r)&&a(t),t}};Se[r]=!0})),Ta=r((function(t){var e=function(t,e){this.stopped=t,this.result=e};(t.exports=function(t,r,n,i,a){var o,s,u,c,l,f,h,d=L(r,n,i?2:1);if(a)o=t;else{if("function"!=typeof(s=Ln(t)))throw TypeError("Target is not iterable");if(Kn(s)){for(u=0,c=Q(t.length);c>u;u++)if((l=i?d(F(h=t[u])[0],h[1]):d(t[u]))&&l instanceof e)return l;return new e(!1)}o=s.call(t)}for(f=o.next;!(h=f.call(o)).done;)if("object"==typeof(l=Bn(o,d,h.value,i))&&l&&l instanceof e)return l;return new e(!1)}).stop=function(t){return new e(!0,t)}})),Pa=function(t,e,r){if(!(t instanceof e))throw TypeError("Incorrect "+(r?r+" ":"")+"invocation");return t},ja=U.f,Aa=St.forEach,Na=tr.set,Ea=tr.getterFor,Ia=function(t,e,r){var n,i=-1!==t.indexOf("Map"),a=-1!==t.indexOf("Weak"),c=i?"set":"add",l=o[t],f=l&&l.prototype,h={};if(u&&"function"==typeof l&&(a||f.forEach&&!s((function(){(new l).entries().next()})))){n=e((function(e,r){Na(Pa(e,n,t),{type:t,collection:new l}),null!=r&&Ta(r,e[c],e,i)}));var d=Ea(t);Aa(["add","clear","delete","forEach","get","has","set","keys","values","entries"],(function(t){var e="add"==t||"set"==t;!(t in f)||a&&"clear"==t||H(n.prototype,t,(function(r,n){var i=d(this).collection;if(!e&&a&&!_(r))return"get"==t&&void 0;var o=i[t](0===r?0:r,n);return e?this:o}))})),a||ja(n.prototype,"size",{configurable:!0,get:function(){return d(this).collection.size}})}else n=r.getConstructor(e,t,i,c),Ya.REQUIRED=!0;return Sr(n,t,!1,!0),h[t]=n,z({global:!0,forced:!0},h),a||r.setStrong(n,t,i),n},Ca=function(t,e,r){for(var n in e)r&&r.unsafe&&t[n]?t[n]=e[n]:xr(t,n,e[n],r);return t},Ra=ft("species"),La=U.f,Fa=Ya.fastKey,Wa=tr.set,Ua=tr.getterFor,Ha={getConstructor:function(t,e,r,n){var i=t((function(t,a){Pa(t,i,e),Wa(t,{type:e,index:dr(null),first:void 0,last:void 0,size:0}),u||(t.size=0),null!=a&&Ta(a,t[n],t,r)})),a=Ua(e),o=function(t,e,r){var n,i,o=a(t),c=s(t,e);return c?c.value=r:(o.last=c={index:i=Fa(e,!0),key:e,value:r,previous:n=o.last,next:void 0,removed:!1},o.first||(o.first=c),n&&(n.next=c),u?o.size++:t.size++,"F"!==i&&(o.index[i]=c)),t},s=function(t,e){var r,n=a(t),i=Fa(e);if("F"!==i)return n.index[i];for(r=n.first;r;r=r.next)if(r.key==e)return r};return Ca(i.prototype,{clear:function(){for(var t=a(this),e=t.index,r=t.first;r;)r.removed=!0,r.previous&&(r.previous=r.previous.next=void 0),delete e[r.index],r=r.next;t.first=t.last=void 0,u?t.size=0:this.size=0},delete:function(t){var e=a(this),r=s(this,t);if(r){var n=r.next,i=r.previous;delete e.index[r.index],r.removed=!0,i&&(i.next=n),n&&(n.previous=i),e.first==r&&(e.first=n),e.last==r&&(e.last=i),u?e.size--:this.size--}return!!r},forEach:function(t){for(var e,r=a(this),n=L(t,arguments.length>1?arguments[1]:void 0,3);e=e?e.next:r.first;)for(n(e.value,e.key,this);e&&e.removed;)e=e.previous},has:function(t){return!!s(this,t)}}),Ca(i.prototype,r?{get:function(t){var e=s(this,t);return e&&e.value},set:function(t,e){return o(this,0===t?0:t,e)}}:{add:function(t){return o(this,t=0===t?0:t,t)}}),u&&La(i.prototype,"size",{get:function(){return a(this).size}}),i},setStrong:function(t,e,r){var n=e+" Iterator",i=Ua(e),a=Ua(n);jr(t,e,(function(t,e){Wa(this,{type:n,target:t,state:i(t),kind:e,last:void 0})}),(function(){for(var t=a(this),e=t.kind,r=t.last;r&&r.removed;)r=r.previous;return t.target&&(t.last=r=r?r.next:t.state.first)?"keys"==e?{value:r.key,done:!1}:"values"==e?{value:r.value,done:!1}:{value:[r.key,r.value],done:!1}:(t.target=void 0,{value:void 0,done:!0})}),r?"entries":"values",!r,!0),function(t){var e=Ot(t),r=U.f;u&&e&&!e[Ra]&&r(e,Ra,{configurable:!0,get:function(){return this}})}(e)}},Ga=(Ia("Map",(function(t){return function(){return t(this,arguments.length?arguments[0]:void 0)}}),Ha),C.Map),Va=Qi;z({target:"Object",stat:!0,sham:!u},{create:dr});var za=C.Object,qa=function(t,e){return za.create(t,e)},Za=qa;z({target:"Object",stat:!0},{setPrototypeOf:Dr});var $a=C.Object.setPrototypeOf,Ba=r((function(t){function e(r,n){return t.exports=e=$a||function(t,e){return t.__proto__=e,t},e(r,n)}t.exports=e}));var Ja=function(t,e){if("function"!=typeof e&&null!==e)throw new TypeError("Super expression must either be null or a function");t.prototype=Za(e&&e.prototype,{constructor:{value:t,writable:!0,configurable:!0}}),e&&Ba(t,e)};var Qa=function(t){if(void 0===t)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return t};var Ka=function(t,e){return!e||"object"!==Oa(e)&&"function"!=typeof e?Qa(t):e},Xa=s((function(){ir(1)}));z({target:"Object",stat:!0,forced:Xa,sham:!er},{getPrototypeOf:function(t){return ir(tt(t))}});var to=C.Object.getPrototypeOf,eo=r((function(t){function e(r){return t.exports=e=$a?to:function(t){return t.__proto__||to(t)},e(r)}t.exports=e})),ro="undefined"!=typeof crypto&&crypto.getRandomValues&&crypto.getRandomValues.bind(crypto)||"undefined"!=typeof msCrypto&&"function"==typeof msCrypto.getRandomValues&&msCrypto.getRandomValues.bind(msCrypto),no=new Uint8Array(16);function io(){if(!ro)throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");return ro(no)}for(var ao=[],oo=0;oo<256;++oo)ao.push((oo+256).toString(16).substr(1));function so(t,e,r){"string"==typeof t&&(e="binary"===t?new Uint8Array(16):null,t=null);var n=(t=t||{}).random||(t.rng||io)();if(n[6]=15&n[6]|64,n[8]=63&n[8]|128,e){for(var i=r||0,a=0;a<16;++a)e[i+a]=n[a];return e}return function(t,e){var r=e||0,n=ao;return(n[t[r+0]]+n[t[r+1]]+n[t[r+2]]+n[t[r+3]]+"-"+n[t[r+4]]+n[t[r+5]]+"-"+n[t[r+6]]+n[t[r+7]]+"-"+n[t[r+8]]+n[t[r+9]]+"-"+n[t[r+10]]+n[t[r+11]]+n[t[r+12]]+n[t[r+13]]+n[t[r+14]]+n[t[r+15]]).toLowerCase()}(n)}var uo,co=qa,lo="\t\n\v\f\r                　\u2028\u2029\ufeff",fo="["+lo+"]",ho=RegExp("^"+fo+fo+"*"),po=RegExp(fo+fo+"*$"),yo=function(t){return function(e){var r=String(m(e));return 1&t&&(r=r.replace(ho,"")),2&t&&(r=r.replace(po,"")),r}},vo={start:yo(1),end:yo(2),trim:yo(3)},mo=vo.trim;z({target:"String",proto:!0,forced:(uo="trim",s((function(){return!!lo[uo]()||"​᠎"!="​᠎"[uo]()||lo[uo].name!==uo})))},{trim:function(){return mo(this)}});vt("String").trim;var go=vo.trim,_o=o.parseInt,wo=/^[+-]?0[Xx]/,bo=8!==_o(lo+"08")||22!==_o(lo+"0x16")?function(t,e){var r=go(String(t));return _o(r,e>>>0||(wo.test(r)?16:10))}:_o;z({global:!0,forced:parseInt!=bo},{parseInt:bo});var So=f.f,ko=function(t){return function(e){for(var r,n=g(e),i=xe(n),a=i.length,o=0,s=[];a>o;)r=i[o++],u&&!So.call(n,r)||s.push(t?[r,n[r]]:n[r]);return s}},Oo={entries:ko(!0),values:ko(!1)}.values;z({target:"Object",stat:!0},{values:function(t){return Oo(t)}});C.Object.values;var Do=be.indexOf,xo=[].indexOf,Mo=!!xo&&1/[1].indexOf(1,-0)<0,Yo=Bt("indexOf"),To=It("indexOf",{ACCESSORS:!0,1:0});z({target:"Array",proto:!0,forced:Mo||!Yo||!To},{indexOf:function(t){return Mo?xo.apply(this,arguments)||0:Do(this,t,arguments.length>1?arguments[1]:void 0)}});vt("Array").indexOf;var Po=function(t){if(Ki(t))return t};var jo=function(t,e){if(void 0!==ia&&na(Object(t))){var r=[],n=!0,i=!1,a=void 0;try{for(var o,s=Fn(t);!(n=(o=s.next()).done)&&(r.push(o.value),!e||r.length!==e);n=!0);}catch(t){i=!0,a=t}finally{try{n||null==s.return||s.return()}finally{if(i)throw a}}return r}};var Ao=function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var No=function(t,e){return Po(t)||jo(t,e)||sa(t,e)||Ao()};z({target:"Date",stat:!0},{now:function(){return(new Date).getTime()}});C.Date.now;z({target:"Reflect",stat:!0},{ownKeys:Ae});var Eo=C.Reflect.ownKeys;function Io(t,e){var r;if(void 0===$n||null==Wn(t)){if(Va(t)||(r=function(t,e){var r;if(!t)return;if("string"==typeof t)return Co(t,e);var n=pi(r=Object.prototype.toString.call(t)).call(r,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return ai(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return Co(t,e)}(t))||e&&t&&"number"==typeof t.length){r&&(t=r);var n=0,i=function(){};return{s:i,n:function(){return n>=t.length?{done:!0}:{done:!1,value:t[n++]}},e:function(t){throw t},f:i}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var a,o=!0,s=!1;return{s:function(){r=Fn(t)},n:function(){var t=r.next();return o=t.done,t},e:function(t){s=!0,a=t},f:function(){try{o||null==r.return||r.return()}finally{if(s)throw a}}}}function Co(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n}
+/**
+	 * vis-util
+	 * https://github.com/visjs/vis-util
+	 *
+	 * utilitie collection for visjs
+	 *
+	 * @version 4.3.1
+	 * @date    2020-06-15T12:58:12.015Z
+	 *
+	 * @copyright (c) 2011-2017 Almende B.V, http://almende.com
+	 * @copyright (c) 2017-2019 visjs contributors, https://github.com/visjs
+	 *
+	 * @license
+	 * vis.js is dual licensed under both
+	 *
+	 *   1. The Apache 2.0 License
+	 *      http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 *   and
+	 *
+	 *   2. The MIT License
+	 *      http://opensource.org/licenses/MIT
+	 *
+	 * vis.js may be distributed under either license.
+	 */var Ro=$n("DELETE");function Lo(){var t=Fo.apply(void 0,arguments);return Uo(t),console.log(t),t}function Fo(){for(var t=arguments.length,e=new Array(t),r=0;r<t;r++)e[r]=arguments[r];if(e.length<2)return e[0];var n;if(e.length>2)return Fo.apply(void 0,ha(n=[Lo(e[0],e[1])]).call(n,ca(pi(e).call(e,2))));var i,a=e[0],o=e[1],s=Io(Eo(o));try{for(s.s();!(i=s.n()).done;){var u=i.value;Object.prototype.propertyIsEnumerable.call(o,o[u])||(o[u]===Ro?delete a[u]:null===a[u]||null===o[u]||"object"!==Oa(a[u])||"object"!==Oa(o[u])||Va(a[u])||Va(o[u])?a[u]=Wo(o[u]):a[u]=Fo(a[u],o[u]))}}catch(t){s.e(t)}finally{s.f()}return a}function Wo(t){return Va(t)?Ut(t).call(t,(function(t){return Wo(t)})):"object"===Oa(t)&&null!==t?Fo({},t):t}function Uo(t){for(var e=0,r=xa(t);e<r.length;e++){var n=r[e];t[n]===Ro?delete t[n]:"object"===Oa(t[n])&&null!==t[n]&&Uo(t[n])}}function Ho(t){return t instanceof Number||"number"==typeof t}function Go(t){return t instanceof String||"string"==typeof t}function Vo(t){var e=Oa(t);return"object"===e?null===t?"null":t instanceof Boolean?"Boolean":t instanceof Number?"Number":t instanceof String?"String":Va(t)?"Array":t instanceof Date?"Date":"Object":"number"===e?"Number":"boolean"===e?"Boolean":"string"===e?"String":void 0===e?"undefined":e}var zo=r((function(t,e){t.exports=function(){var e,r;function n(){return e.apply(null,arguments)}function a(t){return t instanceof Array||"[object Array]"===Object.prototype.toString.call(t)}function o(t){return null!=t&&"[object Object]"===Object.prototype.toString.call(t)}function s(t,e){return Object.prototype.hasOwnProperty.call(t,e)}function u(t){if(Object.getOwnPropertyNames)return 0===Object.getOwnPropertyNames(t).length;var e;for(e in t)if(s(t,e))return!1;return!0}function c(t){return void 0===t}function l(t){return"number"==typeof t||"[object Number]"===Object.prototype.toString.call(t)}function f(t){return t instanceof Date||"[object Date]"===Object.prototype.toString.call(t)}function h(t,e){var r,n=[];for(r=0;r<t.length;++r)n.push(e(t[r],r));return n}function d(t,e){for(var r in e)s(e,r)&&(t[r]=e[r]);return s(e,"toString")&&(t.toString=e.toString),s(e,"valueOf")&&(t.valueOf=e.valueOf),t}function p(t,e,r,n){return De(t,e,r,n,!0).utc()}function y(t){return null==t._pf&&(t._pf={empty:!1,unusedTokens:[],unusedInput:[],overflow:-2,charsLeftOver:0,nullInput:!1,invalidEra:null,invalidMonth:null,invalidFormat:!1,userInvalidated:!1,iso:!1,parsedDateParts:[],era:null,meridiem:null,rfc2822:!1,weekdayMismatch:!1}),t._pf}function v(t){if(null==t._isValid){var e=y(t),n=r.call(e.parsedDateParts,(function(t){return null!=t})),i=!isNaN(t._d.getTime())&&e.overflow<0&&!e.empty&&!e.invalidEra&&!e.invalidMonth&&!e.invalidWeekday&&!e.weekdayMismatch&&!e.nullInput&&!e.invalidFormat&&!e.userInvalidated&&(!e.meridiem||e.meridiem&&n);if(t._strict&&(i=i&&0===e.charsLeftOver&&0===e.unusedTokens.length&&void 0===e.bigHour),null!=Object.isFrozen&&Object.isFrozen(t))return i;t._isValid=i}return t._isValid}function m(t){var e=p(NaN);return null!=t?d(y(e),t):y(e).userInvalidated=!0,e}r=Array.prototype.some?Array.prototype.some:function(t){var e,r=Object(this),n=r.length>>>0;for(e=0;e<n;e++)if(e in r&&t.call(this,r[e],e,r))return!0;return!1};var g=n.momentProperties=[],_=!1;function w(t,e){var r,n,i;if(c(e._isAMomentObject)||(t._isAMomentObject=e._isAMomentObject),c(e._i)||(t._i=e._i),c(e._f)||(t._f=e._f),c(e._l)||(t._l=e._l),c(e._strict)||(t._strict=e._strict),c(e._tzm)||(t._tzm=e._tzm),c(e._isUTC)||(t._isUTC=e._isUTC),c(e._offset)||(t._offset=e._offset),c(e._pf)||(t._pf=y(e)),c(e._locale)||(t._locale=e._locale),g.length>0)for(r=0;r<g.length;r++)c(i=e[n=g[r]])||(t[n]=i);return t}function b(t){w(this,t),this._d=new Date(null!=t._d?t._d.getTime():NaN),this.isValid()||(this._d=new Date(NaN)),!1===_&&(_=!0,n.updateOffset(this),_=!1)}function S(t){return t instanceof b||null!=t&&null!=t._isAMomentObject}function k(t){!1===n.suppressDeprecationWarnings&&"undefined"!=typeof console&&console.warn&&console.warn("Deprecation warning: "+t)}function O(t,e){var r=!0;return d((function(){if(null!=n.deprecationHandler&&n.deprecationHandler(null,t),r){var i,a,o,u=[];for(a=0;a<arguments.length;a++){if(i="","object"==typeof arguments[a]){for(o in i+="\n["+a+"] ",arguments[0])s(arguments[0],o)&&(i+=o+": "+arguments[0][o]+", ");i=i.slice(0,-2)}else i=arguments[a];u.push(i)}k(t+"\nArguments: "+Array.prototype.slice.call(u).join("")+"\n"+(new Error).stack),r=!1}return e.apply(this,arguments)}),e)}var D,x={};function M(t,e){null!=n.deprecationHandler&&n.deprecationHandler(t,e),x[t]||(k(e),x[t]=!0)}function Y(t){return"undefined"!=typeof Function&&t instanceof Function||"[object Function]"===Object.prototype.toString.call(t)}function T(t,e){var r,n=d({},t);for(r in e)s(e,r)&&(o(t[r])&&o(e[r])?(n[r]={},d(n[r],t[r]),d(n[r],e[r])):null!=e[r]?n[r]=e[r]:delete n[r]);for(r in t)s(t,r)&&!s(e,r)&&o(t[r])&&(n[r]=d({},n[r]));return n}function P(t){null!=t&&this.set(t)}function j(t,e,r){var n=""+Math.abs(t),i=e-n.length;return(t>=0?r?"+":"":"-")+Math.pow(10,Math.max(0,i)).toString().substr(1)+n}n.suppressDeprecationWarnings=!1,n.deprecationHandler=null,D=Object.keys?Object.keys:function(t){var e,r=[];for(e in t)s(t,e)&&r.push(e);return r};var A=/(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g,N=/(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,E={},I={};function C(t,e,r,n){var i=n;"string"==typeof n&&(i=function(){return this[n]()}),t&&(I[t]=i),e&&(I[e[0]]=function(){return j(i.apply(this,arguments),e[1],e[2])}),r&&(I[r]=function(){return this.localeData().ordinal(i.apply(this,arguments),t)})}function R(t,e){return t.isValid()?(e=L(e,t.localeData()),E[e]=E[e]||function(t){var e,r,n,i=t.match(A);for(e=0,r=i.length;e<r;e++)I[i[e]]?i[e]=I[i[e]]:i[e]=(n=i[e]).match(/\[[\s\S]/)?n.replace(/^\[|\]$/g,""):n.replace(/\\/g,"");return function(e){var n,a="";for(n=0;n<r;n++)a+=Y(i[n])?i[n].call(e,t):i[n];return a}}(e),E[e](t)):t.localeData().invalidDate()}function L(t,e){var r=5;function n(t){return e.longDateFormat(t)||t}for(N.lastIndex=0;r>=0&&N.test(t);)t=t.replace(N,n),N.lastIndex=0,r-=1;return t}var F={};function W(t,e){var r=t.toLowerCase();F[r]=F[r+"s"]=F[e]=t}function U(t){return"string"==typeof t?F[t]||F[t.toLowerCase()]:void 0}function H(t){var e,r,n={};for(r in t)s(t,r)&&(e=U(r))&&(n[e]=t[r]);return n}var G={};function V(t,e){G[t]=e}function z(t){return t%4==0&&t%100!=0||t%400==0}function q(t){return t<0?Math.ceil(t)||0:Math.floor(t)}function Z(t){var e=+t,r=0;return 0!==e&&isFinite(e)&&(r=q(e)),r}function $(t,e){return function(r){return null!=r?(J(this,t,r),n.updateOffset(this,e),this):B(this,t)}}function B(t,e){return t.isValid()?t._d["get"+(t._isUTC?"UTC":"")+e]():NaN}function J(t,e,r){t.isValid()&&!isNaN(r)&&("FullYear"===e&&z(t.year())&&1===t.month()&&29===t.date()?(r=Z(r),t._d["set"+(t._isUTC?"UTC":"")+e](r,t.month(),St(r,t.month()))):t._d["set"+(t._isUTC?"UTC":"")+e](r))}var Q,K=/\d/,X=/\d\d/,tt=/\d{3}/,et=/\d{4}/,rt=/[+-]?\d{6}/,nt=/\d\d?/,it=/\d\d\d\d?/,at=/\d\d\d\d\d\d?/,ot=/\d{1,3}/,st=/\d{1,4}/,ut=/[+-]?\d{1,6}/,ct=/\d+/,lt=/[+-]?\d+/,ft=/Z|[+-]\d\d:?\d\d/gi,ht=/Z|[+-]\d\d(?::?\d\d)?/gi,dt=/[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i;function pt(t,e,r){Q[t]=Y(e)?e:function(t,n){return t&&r?r:e}}function yt(t,e){return s(Q,t)?Q[t](e._strict,e._locale):new RegExp(vt(t.replace("\\","").replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g,(function(t,e,r,n,i){return e||r||n||i}))))}function vt(t){return t.replace(/[-\/\\^$*+?.()|[\]{}]/g,"\\$&")}Q={};var mt,gt={};function _t(t,e){var r,n=e;for("string"==typeof t&&(t=[t]),l(e)&&(n=function(t,r){r[e]=Z(t)}),r=0;r<t.length;r++)gt[t[r]]=n}function wt(t,e){_t(t,(function(t,r,n,i){n._w=n._w||{},e(t,n._w,n,i)}))}function bt(t,e,r){null!=e&&s(gt,t)&&gt[t](e,r._a,r,t)}function St(t,e){if(isNaN(t)||isNaN(e))return NaN;var r,n=(e%(r=12)+r)%r;return t+=(e-n)/12,1===n?z(t)?29:28:31-n%7%2}mt=Array.prototype.indexOf?Array.prototype.indexOf:function(t){var e;for(e=0;e<this.length;++e)if(this[e]===t)return e;return-1},C("M",["MM",2],"Mo",(function(){return this.month()+1})),C("MMM",0,0,(function(t){return this.localeData().monthsShort(this,t)})),C("MMMM",0,0,(function(t){return this.localeData().months(this,t)})),W("month","M"),V("month",8),pt("M",nt),pt("MM",nt,X),pt("MMM",(function(t,e){return e.monthsShortRegex(t)})),pt("MMMM",(function(t,e){return e.monthsRegex(t)})),_t(["M","MM"],(function(t,e){e[1]=Z(t)-1})),_t(["MMM","MMMM"],(function(t,e,r,n){var i=r._locale.monthsParse(t,n,r._strict);null!=i?e[1]=i:y(r).invalidMonth=t}));var kt="January_February_March_April_May_June_July_August_September_October_November_December".split("_"),Ot="Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),Dt=/D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/,xt=dt,Mt=dt;function Yt(t,e,r){var n,i,a,o=t.toLocaleLowerCase();if(!this._monthsParse)for(this._monthsParse=[],this._longMonthsParse=[],this._shortMonthsParse=[],n=0;n<12;++n)a=p([2e3,n]),this._shortMonthsParse[n]=this.monthsShort(a,"").toLocaleLowerCase(),this._longMonthsParse[n]=this.months(a,"").toLocaleLowerCase();return r?"MMM"===e?-1!==(i=mt.call(this._shortMonthsParse,o))?i:null:-1!==(i=mt.call(this._longMonthsParse,o))?i:null:"MMM"===e?-1!==(i=mt.call(this._shortMonthsParse,o))||-1!==(i=mt.call(this._longMonthsParse,o))?i:null:-1!==(i=mt.call(this._longMonthsParse,o))||-1!==(i=mt.call(this._shortMonthsParse,o))?i:null}function Tt(t,e){var r;if(!t.isValid())return t;if("string"==typeof e)if(/^\d+$/.test(e))e=Z(e);else if(!l(e=t.localeData().monthsParse(e)))return t;return r=Math.min(t.date(),St(t.year(),e)),t._d["set"+(t._isUTC?"UTC":"")+"Month"](e,r),t}function Pt(t){return null!=t?(Tt(this,t),n.updateOffset(this,!0),this):B(this,"Month")}function jt(){function t(t,e){return e.length-t.length}var e,r,n=[],i=[],a=[];for(e=0;e<12;e++)r=p([2e3,e]),n.push(this.monthsShort(r,"")),i.push(this.months(r,"")),a.push(this.months(r,"")),a.push(this.monthsShort(r,""));for(n.sort(t),i.sort(t),a.sort(t),e=0;e<12;e++)n[e]=vt(n[e]),i[e]=vt(i[e]);for(e=0;e<24;e++)a[e]=vt(a[e]);this._monthsRegex=new RegExp("^("+a.join("|")+")","i"),this._monthsShortRegex=this._monthsRegex,this._monthsStrictRegex=new RegExp("^("+i.join("|")+")","i"),this._monthsShortStrictRegex=new RegExp("^("+n.join("|")+")","i")}function At(t){return z(t)?366:365}C("Y",0,0,(function(){var t=this.year();return t<=9999?j(t,4):"+"+t})),C(0,["YY",2],0,(function(){return this.year()%100})),C(0,["YYYY",4],0,"year"),C(0,["YYYYY",5],0,"year"),C(0,["YYYYYY",6,!0],0,"year"),W("year","y"),V("year",1),pt("Y",lt),pt("YY",nt,X),pt("YYYY",st,et),pt("YYYYY",ut,rt),pt("YYYYYY",ut,rt),_t(["YYYYY","YYYYYY"],0),_t("YYYY",(function(t,e){e[0]=2===t.length?n.parseTwoDigitYear(t):Z(t)})),_t("YY",(function(t,e){e[0]=n.parseTwoDigitYear(t)})),_t("Y",(function(t,e){e[0]=parseInt(t,10)})),n.parseTwoDigitYear=function(t){return Z(t)+(Z(t)>68?1900:2e3)};var Nt=$("FullYear",!0);function Et(t,e,r,n,i,a,o){var s;return t<100&&t>=0?(s=new Date(t+400,e,r,n,i,a,o),isFinite(s.getFullYear())&&s.setFullYear(t)):s=new Date(t,e,r,n,i,a,o),s}function It(t){var e,r;return t<100&&t>=0?((r=Array.prototype.slice.call(arguments))[0]=t+400,e=new Date(Date.UTC.apply(null,r)),isFinite(e.getUTCFullYear())&&e.setUTCFullYear(t)):e=new Date(Date.UTC.apply(null,arguments)),e}function Ct(t,e,r){var n=7+e-r;return-(7+It(t,0,n).getUTCDay()-e)%7+n-1}function Rt(t,e,r,n,i){var a,o,s=1+7*(e-1)+(7+r-n)%7+Ct(t,n,i);return s<=0?o=At(a=t-1)+s:s>At(t)?(a=t+1,o=s-At(t)):(a=t,o=s),{year:a,dayOfYear:o}}function Lt(t,e,r){var n,i,a=Ct(t.year(),e,r),o=Math.floor((t.dayOfYear()-a-1)/7)+1;return o<1?n=o+Ft(i=t.year()-1,e,r):o>Ft(t.year(),e,r)?(n=o-Ft(t.year(),e,r),i=t.year()+1):(i=t.year(),n=o),{week:n,year:i}}function Ft(t,e,r){var n=Ct(t,e,r),i=Ct(t+1,e,r);return(At(t)-n+i)/7}function Wt(t,e){return t.slice(e,7).concat(t.slice(0,e))}C("w",["ww",2],"wo","week"),C("W",["WW",2],"Wo","isoWeek"),W("week","w"),W("isoWeek","W"),V("week",5),V("isoWeek",5),pt("w",nt),pt("ww",nt,X),pt("W",nt),pt("WW",nt,X),wt(["w","ww","W","WW"],(function(t,e,r,n){e[n.substr(0,1)]=Z(t)})),C("d",0,"do","day"),C("dd",0,0,(function(t){return this.localeData().weekdaysMin(this,t)})),C("ddd",0,0,(function(t){return this.localeData().weekdaysShort(this,t)})),C("dddd",0,0,(function(t){return this.localeData().weekdays(this,t)})),C("e",0,0,"weekday"),C("E",0,0,"isoWeekday"),W("day","d"),W("weekday","e"),W("isoWeekday","E"),V("day",11),V("weekday",11),V("isoWeekday",11),pt("d",nt),pt("e",nt),pt("E",nt),pt("dd",(function(t,e){return e.weekdaysMinRegex(t)})),pt("ddd",(function(t,e){return e.weekdaysShortRegex(t)})),pt("dddd",(function(t,e){return e.weekdaysRegex(t)})),wt(["dd","ddd","dddd"],(function(t,e,r,n){var i=r._locale.weekdaysParse(t,n,r._strict);null!=i?e.d=i:y(r).invalidWeekday=t})),wt(["d","e","E"],(function(t,e,r,n){e[n]=Z(t)}));var Ut="Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),Ht="Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),Gt="Su_Mo_Tu_We_Th_Fr_Sa".split("_"),Vt=dt,zt=dt,qt=dt;function Zt(t,e,r){var n,i,a,o=t.toLocaleLowerCase();if(!this._weekdaysParse)for(this._weekdaysParse=[],this._shortWeekdaysParse=[],this._minWeekdaysParse=[],n=0;n<7;++n)a=p([2e3,1]).day(n),this._minWeekdaysParse[n]=this.weekdaysMin(a,"").toLocaleLowerCase(),this._shortWeekdaysParse[n]=this.weekdaysShort(a,"").toLocaleLowerCase(),this._weekdaysParse[n]=this.weekdays(a,"").toLocaleLowerCase();return r?"dddd"===e?-1!==(i=mt.call(this._weekdaysParse,o))?i:null:"ddd"===e?-1!==(i=mt.call(this._shortWeekdaysParse,o))?i:null:-1!==(i=mt.call(this._minWeekdaysParse,o))?i:null:"dddd"===e?-1!==(i=mt.call(this._weekdaysParse,o))||-1!==(i=mt.call(this._shortWeekdaysParse,o))||-1!==(i=mt.call(this._minWeekdaysParse,o))?i:null:"ddd"===e?-1!==(i=mt.call(this._shortWeekdaysParse,o))||-1!==(i=mt.call(this._weekdaysParse,o))||-1!==(i=mt.call(this._minWeekdaysParse,o))?i:null:-1!==(i=mt.call(this._minWeekdaysParse,o))||-1!==(i=mt.call(this._weekdaysParse,o))||-1!==(i=mt.call(this._shortWeekdaysParse,o))?i:null}function $t(){function t(t,e){return e.length-t.length}var e,r,n,i,a,o=[],s=[],u=[],c=[];for(e=0;e<7;e++)r=p([2e3,1]).day(e),n=vt(this.weekdaysMin(r,"")),i=vt(this.weekdaysShort(r,"")),a=vt(this.weekdays(r,"")),o.push(n),s.push(i),u.push(a),c.push(n),c.push(i),c.push(a);o.sort(t),s.sort(t),u.sort(t),c.sort(t),this._weekdaysRegex=new RegExp("^("+c.join("|")+")","i"),this._weekdaysShortRegex=this._weekdaysRegex,this._weekdaysMinRegex=this._weekdaysRegex,this._weekdaysStrictRegex=new RegExp("^("+u.join("|")+")","i"),this._weekdaysShortStrictRegex=new RegExp("^("+s.join("|")+")","i"),this._weekdaysMinStrictRegex=new RegExp("^("+o.join("|")+")","i")}function Bt(){return this.hours()%12||12}function Jt(t,e){C(t,0,0,(function(){return this.localeData().meridiem(this.hours(),this.minutes(),e)}))}function Qt(t,e){return e._meridiemParse}C("H",["HH",2],0,"hour"),C("h",["hh",2],0,Bt),C("k",["kk",2],0,(function(){return this.hours()||24})),C("hmm",0,0,(function(){return""+Bt.apply(this)+j(this.minutes(),2)})),C("hmmss",0,0,(function(){return""+Bt.apply(this)+j(this.minutes(),2)+j(this.seconds(),2)})),C("Hmm",0,0,(function(){return""+this.hours()+j(this.minutes(),2)})),C("Hmmss",0,0,(function(){return""+this.hours()+j(this.minutes(),2)+j(this.seconds(),2)})),Jt("a",!0),Jt("A",!1),W("hour","h"),V("hour",13),pt("a",Qt),pt("A",Qt),pt("H",nt),pt("h",nt),pt("k",nt),pt("HH",nt,X),pt("hh",nt,X),pt("kk",nt,X),pt("hmm",it),pt("hmmss",at),pt("Hmm",it),pt("Hmmss",at),_t(["H","HH"],3),_t(["k","kk"],(function(t,e,r){var n=Z(t);e[3]=24===n?0:n})),_t(["a","A"],(function(t,e,r){r._isPm=r._locale.isPM(t),r._meridiem=t})),_t(["h","hh"],(function(t,e,r){e[3]=Z(t),y(r).bigHour=!0})),_t("hmm",(function(t,e,r){var n=t.length-2;e[3]=Z(t.substr(0,n)),e[4]=Z(t.substr(n)),y(r).bigHour=!0})),_t("hmmss",(function(t,e,r){var n=t.length-4,i=t.length-2;e[3]=Z(t.substr(0,n)),e[4]=Z(t.substr(n,2)),e[5]=Z(t.substr(i)),y(r).bigHour=!0})),_t("Hmm",(function(t,e,r){var n=t.length-2;e[3]=Z(t.substr(0,n)),e[4]=Z(t.substr(n))})),_t("Hmmss",(function(t,e,r){var n=t.length-4,i=t.length-2;e[3]=Z(t.substr(0,n)),e[4]=Z(t.substr(n,2)),e[5]=Z(t.substr(i))}));var Kt,Xt=$("Hours",!0),te={calendar:{sameDay:"[Today at] LT",nextDay:"[Tomorrow at] LT",nextWeek:"dddd [at] LT",lastDay:"[Yesterday at] LT",lastWeek:"[Last] dddd [at] LT",sameElse:"L"},longDateFormat:{LTS:"h:mm:ss A",LT:"h:mm A",L:"MM/DD/YYYY",LL:"MMMM D, YYYY",LLL:"MMMM D, YYYY h:mm A",LLLL:"dddd, MMMM D, YYYY h:mm A"},invalidDate:"Invalid date",ordinal:"%d",dayOfMonthOrdinalParse:/\d{1,2}/,relativeTime:{future:"in %s",past:"%s ago",s:"a few seconds",ss:"%d seconds",m:"a minute",mm:"%d minutes",h:"an hour",hh:"%d hours",d:"a day",dd:"%d days",w:"a week",ww:"%d weeks",M:"a month",MM:"%d months",y:"a year",yy:"%d years"},months:kt,monthsShort:Ot,week:{dow:0,doy:6},weekdays:Ut,weekdaysMin:Gt,weekdaysShort:Ht,meridiemParse:/[ap]\.?m?\.?/i},ee={},re={};function ne(t,e){var r,n=Math.min(t.length,e.length);for(r=0;r<n;r+=1)if(t[r]!==e[r])return r;return n}function ie(t){return t?t.toLowerCase().replace("_","-"):t}function ae(e){var r=null;if(void 0===ee[e]&&t&&t.exports)try{r=Kt._abbr,i(),oe(r)}catch(t){ee[e]=null}return ee[e]}function oe(t,e){var r;return t&&((r=c(e)?ue(t):se(t,e))?Kt=r:"undefined"!=typeof console&&console.warn&&console.warn("Locale "+t+" not found. Did you forget to load it?")),Kt._abbr}function se(t,e){if(null!==e){var r,n=te;if(e.abbr=t,null!=ee[t])M("defineLocaleOverride","use moment.updateLocale(localeName, config) to change an existing locale. moment.defineLocale(localeName, config) should only be used for creating a new locale See http://momentjs.com/guides/#/warnings/define-locale/ for more info."),n=ee[t]._config;else if(null!=e.parentLocale)if(null!=ee[e.parentLocale])n=ee[e.parentLocale]._config;else{if(null==(r=ae(e.parentLocale)))return re[e.parentLocale]||(re[e.parentLocale]=[]),re[e.parentLocale].push({name:t,config:e}),null;n=r._config}return ee[t]=new P(T(n,e)),re[t]&&re[t].forEach((function(t){se(t.name,t.config)})),oe(t),ee[t]}return delete ee[t],null}function ue(t){var e;if(t&&t._locale&&t._locale._abbr&&(t=t._locale._abbr),!t)return Kt;if(!a(t)){if(e=ae(t))return e;t=[t]}return function(t){for(var e,r,n,i,a=0;a<t.length;){for(e=(i=ie(t[a]).split("-")).length,r=(r=ie(t[a+1]))?r.split("-"):null;e>0;){if(n=ae(i.slice(0,e).join("-")))return n;if(r&&r.length>=e&&ne(i,r)>=e-1)break;e--}a++}return Kt}(t)}function ce(t){var e,r=t._a;return r&&-2===y(t).overflow&&(e=r[1]<0||r[1]>11?1:r[2]<1||r[2]>St(r[0],r[1])?2:r[3]<0||r[3]>24||24===r[3]&&(0!==r[4]||0!==r[5]||0!==r[6])?3:r[4]<0||r[4]>59?4:r[5]<0||r[5]>59?5:r[6]<0||r[6]>999?6:-1,y(t)._overflowDayOfYear&&(e<0||e>2)&&(e=2),y(t)._overflowWeeks&&-1===e&&(e=7),y(t)._overflowWeekday&&-1===e&&(e=8),y(t).overflow=e),t}var le=/^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,fe=/^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,he=/Z|[+-]\d\d(?::?\d\d)?/,de=[["YYYYYY-MM-DD",/[+-]\d{6}-\d\d-\d\d/],["YYYY-MM-DD",/\d{4}-\d\d-\d\d/],["GGGG-[W]WW-E",/\d{4}-W\d\d-\d/],["GGGG-[W]WW",/\d{4}-W\d\d/,!1],["YYYY-DDD",/\d{4}-\d{3}/],["YYYY-MM",/\d{4}-\d\d/,!1],["YYYYYYMMDD",/[+-]\d{10}/],["YYYYMMDD",/\d{8}/],["GGGG[W]WWE",/\d{4}W\d{3}/],["GGGG[W]WW",/\d{4}W\d{2}/,!1],["YYYYDDD",/\d{7}/],["YYYYMM",/\d{6}/,!1],["YYYY",/\d{4}/,!1]],pe=[["HH:mm:ss.SSSS",/\d\d:\d\d:\d\d\.\d+/],["HH:mm:ss,SSSS",/\d\d:\d\d:\d\d,\d+/],["HH:mm:ss",/\d\d:\d\d:\d\d/],["HH:mm",/\d\d:\d\d/],["HHmmss.SSSS",/\d\d\d\d\d\d\.\d+/],["HHmmss,SSSS",/\d\d\d\d\d\d,\d+/],["HHmmss",/\d\d\d\d\d\d/],["HHmm",/\d\d\d\d/],["HH",/\d\d/]],ye=/^\/?Date\((-?\d+)/i,ve=/^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/,me={UT:0,GMT:0,EDT:-240,EST:-300,CDT:-300,CST:-360,MDT:-360,MST:-420,PDT:-420,PST:-480};function ge(t){var e,r,n,i,a,o,s=t._i,u=le.exec(s)||fe.exec(s);if(u){for(y(t).iso=!0,e=0,r=de.length;e<r;e++)if(de[e][1].exec(u[1])){i=de[e][0],n=!1!==de[e][2];break}if(null==i)return void(t._isValid=!1);if(u[3]){for(e=0,r=pe.length;e<r;e++)if(pe[e][1].exec(u[3])){a=(u[2]||" ")+pe[e][0];break}if(null==a)return void(t._isValid=!1)}if(!n&&null!=a)return void(t._isValid=!1);if(u[4]){if(!he.exec(u[4]))return void(t._isValid=!1);o="Z"}t._f=i+(a||"")+(o||""),ke(t)}else t._isValid=!1}function _e(t){var e=parseInt(t,10);return e<=49?2e3+e:e<=999?1900+e:e}function we(t){var e,r,n,i,a,o,s,u,c=ve.exec(t._i.replace(/\([^)]*\)|[\n\t]/g," ").replace(/(\s\s+)/g," ").replace(/^\s\s*/,"").replace(/\s\s*$/,""));if(c){if(r=c[4],n=c[3],i=c[2],a=c[5],o=c[6],s=c[7],u=[_e(r),Ot.indexOf(n),parseInt(i,10),parseInt(a,10),parseInt(o,10)],s&&u.push(parseInt(s,10)),e=u,!function(t,e,r){return!t||Ht.indexOf(t)===new Date(e[0],e[1],e[2]).getDay()||(y(r).weekdayMismatch=!0,r._isValid=!1,!1)}(c[1],e,t))return;t._a=e,t._tzm=function(t,e,r){if(t)return me[t];if(e)return 0;var n=parseInt(r,10),i=n%100;return(n-i)/100*60+i}(c[8],c[9],c[10]),t._d=It.apply(null,t._a),t._d.setUTCMinutes(t._d.getUTCMinutes()-t._tzm),y(t).rfc2822=!0}else t._isValid=!1}function be(t,e,r){return null!=t?t:null!=e?e:r}function Se(t){var e,r,i,a,o,s=[];if(!t._d){for(i=function(t){var e=new Date(n.now());return t._useUTC?[e.getUTCFullYear(),e.getUTCMonth(),e.getUTCDate()]:[e.getFullYear(),e.getMonth(),e.getDate()]}(t),t._w&&null==t._a[2]&&null==t._a[1]&&function(t){var e,r,n,i,a,o,s,u,c;null!=(e=t._w).GG||null!=e.W||null!=e.E?(a=1,o=4,r=be(e.GG,t._a[0],Lt(xe(),1,4).year),n=be(e.W,1),((i=be(e.E,1))<1||i>7)&&(u=!0)):(a=t._locale._week.dow,o=t._locale._week.doy,c=Lt(xe(),a,o),r=be(e.gg,t._a[0],c.year),n=be(e.w,c.week),null!=e.d?((i=e.d)<0||i>6)&&(u=!0):null!=e.e?(i=e.e+a,(e.e<0||e.e>6)&&(u=!0)):i=a),n<1||n>Ft(r,a,o)?y(t)._overflowWeeks=!0:null!=u?y(t)._overflowWeekday=!0:(s=Rt(r,n,i,a,o),t._a[0]=s.year,t._dayOfYear=s.dayOfYear)}(t),null!=t._dayOfYear&&(o=be(t._a[0],i[0]),(t._dayOfYear>At(o)||0===t._dayOfYear)&&(y(t)._overflowDayOfYear=!0),r=It(o,0,t._dayOfYear),t._a[1]=r.getUTCMonth(),t._a[2]=r.getUTCDate()),e=0;e<3&&null==t._a[e];++e)t._a[e]=s[e]=i[e];for(;e<7;e++)t._a[e]=s[e]=null==t._a[e]?2===e?1:0:t._a[e];24===t._a[3]&&0===t._a[4]&&0===t._a[5]&&0===t._a[6]&&(t._nextDay=!0,t._a[3]=0),t._d=(t._useUTC?It:Et).apply(null,s),a=t._useUTC?t._d.getUTCDay():t._d.getDay(),null!=t._tzm&&t._d.setUTCMinutes(t._d.getUTCMinutes()-t._tzm),t._nextDay&&(t._a[3]=24),t._w&&void 0!==t._w.d&&t._w.d!==a&&(y(t).weekdayMismatch=!0)}}function ke(t){if(t._f!==n.ISO_8601)if(t._f!==n.RFC_2822){t._a=[],y(t).empty=!0;var e,r,i,a,o,s,u=""+t._i,c=u.length,l=0;for(i=L(t._f,t._locale).match(A)||[],e=0;e<i.length;e++)a=i[e],(r=(u.match(yt(a,t))||[])[0])&&((o=u.substr(0,u.indexOf(r))).length>0&&y(t).unusedInput.push(o),u=u.slice(u.indexOf(r)+r.length),l+=r.length),I[a]?(r?y(t).empty=!1:y(t).unusedTokens.push(a),bt(a,r,t)):t._strict&&!r&&y(t).unusedTokens.push(a);y(t).charsLeftOver=c-l,u.length>0&&y(t).unusedInput.push(u),t._a[3]<=12&&!0===y(t).bigHour&&t._a[3]>0&&(y(t).bigHour=void 0),y(t).parsedDateParts=t._a.slice(0),y(t).meridiem=t._meridiem,t._a[3]=function(t,e,r){var n;return null==r?e:null!=t.meridiemHour?t.meridiemHour(e,r):null!=t.isPM?((n=t.isPM(r))&&e<12&&(e+=12),n||12!==e||(e=0),e):e}(t._locale,t._a[3],t._meridiem),null!==(s=y(t).era)&&(t._a[0]=t._locale.erasConvertYear(s,t._a[0])),Se(t),ce(t)}else we(t);else ge(t)}function Oe(t){var e=t._i,r=t._f;return t._locale=t._locale||ue(t._l),null===e||void 0===r&&""===e?m({nullInput:!0}):("string"==typeof e&&(t._i=e=t._locale.preparse(e)),S(e)?new b(ce(e)):(f(e)?t._d=e:a(r)?function(t){var e,r,n,i,a,o,s=!1;if(0===t._f.length)return y(t).invalidFormat=!0,void(t._d=new Date(NaN));for(i=0;i<t._f.length;i++)a=0,o=!1,e=w({},t),null!=t._useUTC&&(e._useUTC=t._useUTC),e._f=t._f[i],ke(e),v(e)&&(o=!0),a+=y(e).charsLeftOver,a+=10*y(e).unusedTokens.length,y(e).score=a,s?a<n&&(n=a,r=e):(null==n||a<n||o)&&(n=a,r=e,o&&(s=!0));d(t,r||e)}(t):r?ke(t):function(t){var e=t._i;c(e)?t._d=new Date(n.now()):f(e)?t._d=new Date(e.valueOf()):"string"==typeof e?function(t){var e=ye.exec(t._i);null===e?(ge(t),!1===t._isValid&&(delete t._isValid,we(t),!1===t._isValid&&(delete t._isValid,t._strict?t._isValid=!1:n.createFromInputFallback(t)))):t._d=new Date(+e[1])}(t):a(e)?(t._a=h(e.slice(0),(function(t){return parseInt(t,10)})),Se(t)):o(e)?function(t){if(!t._d){var e=H(t._i),r=void 0===e.day?e.date:e.day;t._a=h([e.year,e.month,r,e.hour,e.minute,e.second,e.millisecond],(function(t){return t&&parseInt(t,10)})),Se(t)}}(t):l(e)?t._d=new Date(e):n.createFromInputFallback(t)}(t),v(t)||(t._d=null),t))}function De(t,e,r,n,i){var s,c={};return!0!==e&&!1!==e||(n=e,e=void 0),!0!==r&&!1!==r||(n=r,r=void 0),(o(t)&&u(t)||a(t)&&0===t.length)&&(t=void 0),c._isAMomentObject=!0,c._useUTC=c._isUTC=i,c._l=r,c._i=t,c._f=e,c._strict=n,(s=new b(ce(Oe(c))))._nextDay&&(s.add(1,"d"),s._nextDay=void 0),s}function xe(t,e,r,n){return De(t,e,r,n,!1)}n.createFromInputFallback=O("value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are discouraged and will be removed in an upcoming major release. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.",(function(t){t._d=new Date(t._i+(t._useUTC?" UTC":""))})),n.ISO_8601=function(){},n.RFC_2822=function(){};var Me=O("moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/",(function(){var t=xe.apply(null,arguments);return this.isValid()&&t.isValid()?t<this?this:t:m()})),Ye=O("moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/",(function(){var t=xe.apply(null,arguments);return this.isValid()&&t.isValid()?t>this?this:t:m()}));function Te(t,e){var r,n;if(1===e.length&&a(e[0])&&(e=e[0]),!e.length)return xe();for(r=e[0],n=1;n<e.length;++n)e[n].isValid()&&!e[n][t](r)||(r=e[n]);return r}var Pe=["year","quarter","month","week","day","hour","minute","second","millisecond"];function je(t){var e=H(t),r=e.year||0,n=e.quarter||0,i=e.month||0,a=e.week||e.isoWeek||0,o=e.day||0,u=e.hour||0,c=e.minute||0,l=e.second||0,f=e.millisecond||0;this._isValid=function(t){var e,r,n=!1;for(e in t)if(s(t,e)&&(-1===mt.call(Pe,e)||null!=t[e]&&isNaN(t[e])))return!1;for(r=0;r<Pe.length;++r)if(t[Pe[r]]){if(n)return!1;parseFloat(t[Pe[r]])!==Z(t[Pe[r]])&&(n=!0)}return!0}(e),this._milliseconds=+f+1e3*l+6e4*c+1e3*u*60*60,this._days=+o+7*a,this._months=+i+3*n+12*r,this._data={},this._locale=ue(),this._bubble()}function Ae(t){return t instanceof je}function Ne(t){return t<0?-1*Math.round(-1*t):Math.round(t)}function Ee(t,e){C(t,0,0,(function(){var t=this.utcOffset(),r="+";return t<0&&(t=-t,r="-"),r+j(~~(t/60),2)+e+j(~~t%60,2)}))}Ee("Z",":"),Ee("ZZ",""),pt("Z",ht),pt("ZZ",ht),_t(["Z","ZZ"],(function(t,e,r){r._useUTC=!0,r._tzm=Ce(ht,t)}));var Ie=/([\+\-]|\d\d)/gi;function Ce(t,e){var r,n,i=(e||"").match(t);return null===i?null:0===(n=60*(r=((i[i.length-1]||[])+"").match(Ie)||["-",0,0])[1]+Z(r[2]))?0:"+"===r[0]?n:-n}function Re(t,e){var r,i;return e._isUTC?(r=e.clone(),i=(S(t)||f(t)?t.valueOf():xe(t).valueOf())-r.valueOf(),r._d.setTime(r._d.valueOf()+i),n.updateOffset(r,!1),r):xe(t).local()}function Le(t){return-Math.round(t._d.getTimezoneOffset())}function Fe(){return!!this.isValid()&&this._isUTC&&0===this._offset}n.updateOffset=function(){};var We=/^(-|\+)?(?:(\d*)[. ])?(\d+):(\d+)(?::(\d+)(\.\d*)?)?$/,Ue=/^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;function He(t,e){var r,n,i,a,o,u,c=t,f=null;return Ae(t)?c={ms:t._milliseconds,d:t._days,M:t._months}:l(t)||!isNaN(+t)?(c={},e?c[e]=+t:c.milliseconds=+t):(f=We.exec(t))?(r="-"===f[1]?-1:1,c={y:0,d:Z(f[2])*r,h:Z(f[3])*r,m:Z(f[4])*r,s:Z(f[5])*r,ms:Z(Ne(1e3*f[6]))*r}):(f=Ue.exec(t))?(r="-"===f[1]?-1:1,c={y:Ge(f[2],r),M:Ge(f[3],r),w:Ge(f[4],r),d:Ge(f[5],r),h:Ge(f[6],r),m:Ge(f[7],r),s:Ge(f[8],r)}):null==c?c={}:"object"==typeof c&&("from"in c||"to"in c)&&(a=xe(c.from),o=xe(c.to),i=a.isValid()&&o.isValid()?(o=Re(o,a),a.isBefore(o)?u=Ve(a,o):((u=Ve(o,a)).milliseconds=-u.milliseconds,u.months=-u.months),u):{milliseconds:0,months:0},(c={}).ms=i.milliseconds,c.M=i.months),n=new je(c),Ae(t)&&s(t,"_locale")&&(n._locale=t._locale),Ae(t)&&s(t,"_isValid")&&(n._isValid=t._isValid),n}function Ge(t,e){var r=t&&parseFloat(t.replace(",","."));return(isNaN(r)?0:r)*e}function Ve(t,e){var r={};return r.months=e.month()-t.month()+12*(e.year()-t.year()),t.clone().add(r.months,"M").isAfter(e)&&--r.months,r.milliseconds=+e-+t.clone().add(r.months,"M"),r}function ze(t,e){return function(r,n){var i;return null===n||isNaN(+n)||(M(e,"moment()."+e+"(period, number) is deprecated. Please use moment()."+e+"(number, period). See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info."),i=r,r=n,n=i),qe(this,He(r,n),t),this}}function qe(t,e,r,i){var a=e._milliseconds,o=Ne(e._days),s=Ne(e._months);t.isValid()&&(i=null==i||i,s&&Tt(t,B(t,"Month")+s*r),o&&J(t,"Date",B(t,"Date")+o*r),a&&t._d.setTime(t._d.valueOf()+a*r),i&&n.updateOffset(t,o||s))}He.fn=je.prototype,He.invalid=function(){return He(NaN)};var Ze=ze(1,"add"),$e=ze(-1,"subtract");function Be(t){return"string"==typeof t||t instanceof String}function Je(t){return S(t)||f(t)||Be(t)||l(t)||function(t){var e=a(t),r=!1;return e&&(r=0===t.filter((function(e){return!l(e)&&Be(t)})).length),e&&r}(t)||function(t){var e,r,n=o(t)&&!u(t),i=!1,a=["years","year","y","months","month","M","days","day","d","dates","date","D","hours","hour","h","minutes","minute","m","seconds","second","s","milliseconds","millisecond","ms"];for(e=0;e<a.length;e+=1)r=a[e],i=i||s(t,r);return n&&i}(t)||null==t}function Qe(t){var e,r=o(t)&&!u(t),n=!1,i=["sameDay","nextDay","lastDay","nextWeek","lastWeek","sameElse"];for(e=0;e<i.length;e+=1)n=n||s(t,i[e]);return r&&n}function Ke(t,e){if(t.date()<e.date())return-Ke(e,t);var r=12*(e.year()-t.year())+(e.month()-t.month()),n=t.clone().add(r,"months");return-(r+(e-n<0?(e-n)/(n-t.clone().add(r-1,"months")):(e-n)/(t.clone().add(r+1,"months")-n)))||0}function Xe(t){var e;return void 0===t?this._locale._abbr:(null!=(e=ue(t))&&(this._locale=e),this)}n.defaultFormat="YYYY-MM-DDTHH:mm:ssZ",n.defaultFormatUtc="YYYY-MM-DDTHH:mm:ss[Z]";var tr=O("moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.",(function(t){return void 0===t?this.localeData():this.locale(t)}));function er(){return this._locale}function rr(t,e){return(t%e+e)%e}function nr(t,e,r){return t<100&&t>=0?new Date(t+400,e,r)-126227808e5:new Date(t,e,r).valueOf()}function ir(t,e,r){return t<100&&t>=0?Date.UTC(t+400,e,r)-126227808e5:Date.UTC(t,e,r)}function ar(t,e){return e.erasAbbrRegex(t)}function or(){var t,e,r=[],n=[],i=[],a=[],o=this.eras();for(t=0,e=o.length;t<e;++t)n.push(vt(o[t].name)),r.push(vt(o[t].abbr)),i.push(vt(o[t].narrow)),a.push(vt(o[t].name)),a.push(vt(o[t].abbr)),a.push(vt(o[t].narrow));this._erasRegex=new RegExp("^("+a.join("|")+")","i"),this._erasNameRegex=new RegExp("^("+n.join("|")+")","i"),this._erasAbbrRegex=new RegExp("^("+r.join("|")+")","i"),this._erasNarrowRegex=new RegExp("^("+i.join("|")+")","i")}function sr(t,e){C(0,[t,t.length],0,e)}function ur(t,e,r,n,i){var a;return null==t?Lt(this,n,i).year:(e>(a=Ft(t,n,i))&&(e=a),cr.call(this,t,e,r,n,i))}function cr(t,e,r,n,i){var a=Rt(t,e,r,n,i),o=It(a.year,0,a.dayOfYear);return this.year(o.getUTCFullYear()),this.month(o.getUTCMonth()),this.date(o.getUTCDate()),this}C("N",0,0,"eraAbbr"),C("NN",0,0,"eraAbbr"),C("NNN",0,0,"eraAbbr"),C("NNNN",0,0,"eraName"),C("NNNNN",0,0,"eraNarrow"),C("y",["y",1],"yo","eraYear"),C("y",["yy",2],0,"eraYear"),C("y",["yyy",3],0,"eraYear"),C("y",["yyyy",4],0,"eraYear"),pt("N",ar),pt("NN",ar),pt("NNN",ar),pt("NNNN",(function(t,e){return e.erasNameRegex(t)})),pt("NNNNN",(function(t,e){return e.erasNarrowRegex(t)})),_t(["N","NN","NNN","NNNN","NNNNN"],(function(t,e,r,n){var i=r._locale.erasParse(t,n,r._strict);i?y(r).era=i:y(r).invalidEra=t})),pt("y",ct),pt("yy",ct),pt("yyy",ct),pt("yyyy",ct),pt("yo",(function(t,e){return e._eraYearOrdinalRegex||ct})),_t(["y","yy","yyy","yyyy"],0),_t(["yo"],(function(t,e,r,n){var i;r._locale._eraYearOrdinalRegex&&(i=t.match(r._locale._eraYearOrdinalRegex)),r._locale.eraYearOrdinalParse?e[0]=r._locale.eraYearOrdinalParse(t,i):e[0]=parseInt(t,10)})),C(0,["gg",2],0,(function(){return this.weekYear()%100})),C(0,["GG",2],0,(function(){return this.isoWeekYear()%100})),sr("gggg","weekYear"),sr("ggggg","weekYear"),sr("GGGG","isoWeekYear"),sr("GGGGG","isoWeekYear"),W("weekYear","gg"),W("isoWeekYear","GG"),V("weekYear",1),V("isoWeekYear",1),pt("G",lt),pt("g",lt),pt("GG",nt,X),pt("gg",nt,X),pt("GGGG",st,et),pt("gggg",st,et),pt("GGGGG",ut,rt),pt("ggggg",ut,rt),wt(["gggg","ggggg","GGGG","GGGGG"],(function(t,e,r,n){e[n.substr(0,2)]=Z(t)})),wt(["gg","GG"],(function(t,e,r,i){e[i]=n.parseTwoDigitYear(t)})),C("Q",0,"Qo","quarter"),W("quarter","Q"),V("quarter",7),pt("Q",K),_t("Q",(function(t,e){e[1]=3*(Z(t)-1)})),C("D",["DD",2],"Do","date"),W("date","D"),V("date",9),pt("D",nt),pt("DD",nt,X),pt("Do",(function(t,e){return t?e._dayOfMonthOrdinalParse||e._ordinalParse:e._dayOfMonthOrdinalParseLenient})),_t(["D","DD"],2),_t("Do",(function(t,e){e[2]=Z(t.match(nt)[0])}));var lr=$("Date",!0);C("DDD",["DDDD",3],"DDDo","dayOfYear"),W("dayOfYear","DDD"),V("dayOfYear",4),pt("DDD",ot),pt("DDDD",tt),_t(["DDD","DDDD"],(function(t,e,r){r._dayOfYear=Z(t)})),C("m",["mm",2],0,"minute"),W("minute","m"),V("minute",14),pt("m",nt),pt("mm",nt,X),_t(["m","mm"],4);var fr=$("Minutes",!1);C("s",["ss",2],0,"second"),W("second","s"),V("second",15),pt("s",nt),pt("ss",nt,X),_t(["s","ss"],5);var hr,dr,pr=$("Seconds",!1);for(C("S",0,0,(function(){return~~(this.millisecond()/100)})),C(0,["SS",2],0,(function(){return~~(this.millisecond()/10)})),C(0,["SSS",3],0,"millisecond"),C(0,["SSSS",4],0,(function(){return 10*this.millisecond()})),C(0,["SSSSS",5],0,(function(){return 100*this.millisecond()})),C(0,["SSSSSS",6],0,(function(){return 1e3*this.millisecond()})),C(0,["SSSSSSS",7],0,(function(){return 1e4*this.millisecond()})),C(0,["SSSSSSSS",8],0,(function(){return 1e5*this.millisecond()})),C(0,["SSSSSSSSS",9],0,(function(){return 1e6*this.millisecond()})),W("millisecond","ms"),V("millisecond",16),pt("S",ot,K),pt("SS",ot,X),pt("SSS",ot,tt),hr="SSSS";hr.length<=9;hr+="S")pt(hr,ct);function yr(t,e){e[6]=Z(1e3*("0."+t))}for(hr="S";hr.length<=9;hr+="S")_t(hr,yr);dr=$("Milliseconds",!1),C("z",0,0,"zoneAbbr"),C("zz",0,0,"zoneName");var vr=b.prototype;function mr(t){return t}vr.add=Ze,vr.calendar=function(t,e){1===arguments.length&&(Je(arguments[0])?(t=arguments[0],e=void 0):Qe(arguments[0])&&(e=arguments[0],t=void 0));var r=t||xe(),i=Re(r,this).startOf("day"),a=n.calendarFormat(this,i)||"sameElse",o=e&&(Y(e[a])?e[a].call(this,r):e[a]);return this.format(o||this.localeData().calendar(a,this,xe(r)))},vr.clone=function(){return new b(this)},vr.diff=function(t,e,r){var n,i,a;if(!this.isValid())return NaN;if(!(n=Re(t,this)).isValid())return NaN;switch(i=6e4*(n.utcOffset()-this.utcOffset()),e=U(e)){case"year":a=Ke(this,n)/12;break;case"month":a=Ke(this,n);break;case"quarter":a=Ke(this,n)/3;break;case"second":a=(this-n)/1e3;break;case"minute":a=(this-n)/6e4;break;case"hour":a=(this-n)/36e5;break;case"day":a=(this-n-i)/864e5;break;case"week":a=(this-n-i)/6048e5;break;default:a=this-n}return r?a:q(a)},vr.endOf=function(t){var e,r;if(void 0===(t=U(t))||"millisecond"===t||!this.isValid())return this;switch(r=this._isUTC?ir:nr,t){case"year":e=r(this.year()+1,0,1)-1;break;case"quarter":e=r(this.year(),this.month()-this.month()%3+3,1)-1;break;case"month":e=r(this.year(),this.month()+1,1)-1;break;case"week":e=r(this.year(),this.month(),this.date()-this.weekday()+7)-1;break;case"isoWeek":e=r(this.year(),this.month(),this.date()-(this.isoWeekday()-1)+7)-1;break;case"day":case"date":e=r(this.year(),this.month(),this.date()+1)-1;break;case"hour":e=this._d.valueOf(),e+=36e5-rr(e+(this._isUTC?0:6e4*this.utcOffset()),36e5)-1;break;case"minute":e=this._d.valueOf(),e+=6e4-rr(e,6e4)-1;break;case"second":e=this._d.valueOf(),e+=1e3-rr(e,1e3)-1}return this._d.setTime(e),n.updateOffset(this,!0),this},vr.format=function(t){t||(t=this.isUtc()?n.defaultFormatUtc:n.defaultFormat);var e=R(this,t);return this.localeData().postformat(e)},vr.from=function(t,e){return this.isValid()&&(S(t)&&t.isValid()||xe(t).isValid())?He({to:this,from:t}).locale(this.locale()).humanize(!e):this.localeData().invalidDate()},vr.fromNow=function(t){return this.from(xe(),t)},vr.to=function(t,e){return this.isValid()&&(S(t)&&t.isValid()||xe(t).isValid())?He({from:this,to:t}).locale(this.locale()).humanize(!e):this.localeData().invalidDate()},vr.toNow=function(t){return this.to(xe(),t)},vr.get=function(t){return Y(this[t=U(t)])?this[t]():this},vr.invalidAt=function(){return y(this).overflow},vr.isAfter=function(t,e){var r=S(t)?t:xe(t);return!(!this.isValid()||!r.isValid())&&("millisecond"===(e=U(e)||"millisecond")?this.valueOf()>r.valueOf():r.valueOf()<this.clone().startOf(e).valueOf())},vr.isBefore=function(t,e){var r=S(t)?t:xe(t);return!(!this.isValid()||!r.isValid())&&("millisecond"===(e=U(e)||"millisecond")?this.valueOf()<r.valueOf():this.clone().endOf(e).valueOf()<r.valueOf())},vr.isBetween=function(t,e,r,n){var i=S(t)?t:xe(t),a=S(e)?e:xe(e);return!!(this.isValid()&&i.isValid()&&a.isValid())&&(("("===(n=n||"()")[0]?this.isAfter(i,r):!this.isBefore(i,r))&&(")"===n[1]?this.isBefore(a,r):!this.isAfter(a,r)))},vr.isSame=function(t,e){var r,n=S(t)?t:xe(t);return!(!this.isValid()||!n.isValid())&&("millisecond"===(e=U(e)||"millisecond")?this.valueOf()===n.valueOf():(r=n.valueOf(),this.clone().startOf(e).valueOf()<=r&&r<=this.clone().endOf(e).valueOf()))},vr.isSameOrAfter=function(t,e){return this.isSame(t,e)||this.isAfter(t,e)},vr.isSameOrBefore=function(t,e){return this.isSame(t,e)||this.isBefore(t,e)},vr.isValid=function(){return v(this)},vr.lang=tr,vr.locale=Xe,vr.localeData=er,vr.max=Ye,vr.min=Me,vr.parsingFlags=function(){return d({},y(this))},vr.set=function(t,e){if("object"==typeof t){var r,n=function(t){var e,r=[];for(e in t)s(t,e)&&r.push({unit:e,priority:G[e]});return r.sort((function(t,e){return t.priority-e.priority})),r}(t=H(t));for(r=0;r<n.length;r++)this[n[r].unit](t[n[r].unit])}else if(Y(this[t=U(t)]))return this[t](e);return this},vr.startOf=function(t){var e,r;if(void 0===(t=U(t))||"millisecond"===t||!this.isValid())return this;switch(r=this._isUTC?ir:nr,t){case"year":e=r(this.year(),0,1);break;case"quarter":e=r(this.year(),this.month()-this.month()%3,1);break;case"month":e=r(this.year(),this.month(),1);break;case"week":e=r(this.year(),this.month(),this.date()-this.weekday());break;case"isoWeek":e=r(this.year(),this.month(),this.date()-(this.isoWeekday()-1));break;case"day":case"date":e=r(this.year(),this.month(),this.date());break;case"hour":e=this._d.valueOf(),e-=rr(e+(this._isUTC?0:6e4*this.utcOffset()),36e5);break;case"minute":e=this._d.valueOf(),e-=rr(e,6e4);break;case"second":e=this._d.valueOf(),e-=rr(e,1e3)}return this._d.setTime(e),n.updateOffset(this,!0),this},vr.subtract=$e,vr.toArray=function(){var t=this;return[t.year(),t.month(),t.date(),t.hour(),t.minute(),t.second(),t.millisecond()]},vr.toObject=function(){var t=this;return{years:t.year(),months:t.month(),date:t.date(),hours:t.hours(),minutes:t.minutes(),seconds:t.seconds(),milliseconds:t.milliseconds()}},vr.toDate=function(){return new Date(this.valueOf())},vr.toISOString=function(t){if(!this.isValid())return null;var e=!0!==t,r=e?this.clone().utc():this;return r.year()<0||r.year()>9999?R(r,e?"YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]":"YYYYYY-MM-DD[T]HH:mm:ss.SSSZ"):Y(Date.prototype.toISOString)?e?this.toDate().toISOString():new Date(this.valueOf()+60*this.utcOffset()*1e3).toISOString().replace("Z",R(r,"Z")):R(r,e?"YYYY-MM-DD[T]HH:mm:ss.SSS[Z]":"YYYY-MM-DD[T]HH:mm:ss.SSSZ")},vr.inspect=function(){if(!this.isValid())return"moment.invalid(/* "+this._i+" */)";var t,e,r,n="moment",i="";return this.isLocal()||(n=0===this.utcOffset()?"moment.utc":"moment.parseZone",i="Z"),t="["+n+'("]',e=0<=this.year()&&this.year()<=9999?"YYYY":"YYYYYY",r=i+'[")]',this.format(t+e+"-MM-DD[T]HH:mm:ss.SSS"+r)},"undefined"!=typeof Symbol&&null!=Symbol.for&&(vr[Symbol.for("nodejs.util.inspect.custom")]=function(){return"Moment<"+this.format()+">"}),vr.toJSON=function(){return this.isValid()?this.toISOString():null},vr.toString=function(){return this.clone().locale("en").format("ddd MMM DD YYYY HH:mm:ss [GMT]ZZ")},vr.unix=function(){return Math.floor(this.valueOf()/1e3)},vr.valueOf=function(){return this._d.valueOf()-6e4*(this._offset||0)},vr.creationData=function(){return{input:this._i,format:this._f,locale:this._locale,isUTC:this._isUTC,strict:this._strict}},vr.eraName=function(){var t,e,r,n=this.localeData().eras();for(t=0,e=n.length;t<e;++t){if(r=this.startOf("day").valueOf(),n[t].since<=r&&r<=n[t].until)return n[t].name;if(n[t].until<=r&&r<=n[t].since)return n[t].name}return""},vr.eraNarrow=function(){var t,e,r,n=this.localeData().eras();for(t=0,e=n.length;t<e;++t){if(r=this.startOf("day").valueOf(),n[t].since<=r&&r<=n[t].until)return n[t].narrow;if(n[t].until<=r&&r<=n[t].since)return n[t].narrow}return""},vr.eraAbbr=function(){var t,e,r,n=this.localeData().eras();for(t=0,e=n.length;t<e;++t){if(r=this.startOf("day").valueOf(),n[t].since<=r&&r<=n[t].until)return n[t].abbr;if(n[t].until<=r&&r<=n[t].since)return n[t].abbr}return""},vr.eraYear=function(){var t,e,r,i,a=this.localeData().eras();for(t=0,e=a.length;t<e;++t)if(r=a[t].since<=a[t].until?1:-1,i=this.startOf("day").valueOf(),a[t].since<=i&&i<=a[t].until||a[t].until<=i&&i<=a[t].since)return(this.year()-n(a[t].since).year())*r+a[t].offset;return this.year()},vr.year=Nt,vr.isLeapYear=function(){return z(this.year())},vr.weekYear=function(t){return ur.call(this,t,this.week(),this.weekday(),this.localeData()._week.dow,this.localeData()._week.doy)},vr.isoWeekYear=function(t){return ur.call(this,t,this.isoWeek(),this.isoWeekday(),1,4)},vr.quarter=vr.quarters=function(t){return null==t?Math.ceil((this.month()+1)/3):this.month(3*(t-1)+this.month()%3)},vr.month=Pt,vr.daysInMonth=function(){return St(this.year(),this.month())},vr.week=vr.weeks=function(t){var e=this.localeData().week(this);return null==t?e:this.add(7*(t-e),"d")},vr.isoWeek=vr.isoWeeks=function(t){var e=Lt(this,1,4).week;return null==t?e:this.add(7*(t-e),"d")},vr.weeksInYear=function(){var t=this.localeData()._week;return Ft(this.year(),t.dow,t.doy)},vr.weeksInWeekYear=function(){var t=this.localeData()._week;return Ft(this.weekYear(),t.dow,t.doy)},vr.isoWeeksInYear=function(){return Ft(this.year(),1,4)},vr.isoWeeksInISOWeekYear=function(){return Ft(this.isoWeekYear(),1,4)},vr.date=lr,vr.day=vr.days=function(t){if(!this.isValid())return null!=t?this:NaN;var e=this._isUTC?this._d.getUTCDay():this._d.getDay();return null!=t?(t=function(t,e){return"string"!=typeof t?t:isNaN(t)?"number"==typeof(t=e.weekdaysParse(t))?t:null:parseInt(t,10)}(t,this.localeData()),this.add(t-e,"d")):e},vr.weekday=function(t){if(!this.isValid())return null!=t?this:NaN;var e=(this.day()+7-this.localeData()._week.dow)%7;return null==t?e:this.add(t-e,"d")},vr.isoWeekday=function(t){if(!this.isValid())return null!=t?this:NaN;if(null!=t){var e=function(t,e){return"string"==typeof t?e.weekdaysParse(t)%7||7:isNaN(t)?null:t}(t,this.localeData());return this.day(this.day()%7?e:e-7)}return this.day()||7},vr.dayOfYear=function(t){var e=Math.round((this.clone().startOf("day")-this.clone().startOf("year"))/864e5)+1;return null==t?e:this.add(t-e,"d")},vr.hour=vr.hours=Xt,vr.minute=vr.minutes=fr,vr.second=vr.seconds=pr,vr.millisecond=vr.milliseconds=dr,vr.utcOffset=function(t,e,r){var i,a=this._offset||0;if(!this.isValid())return null!=t?this:NaN;if(null!=t){if("string"==typeof t){if(null===(t=Ce(ht,t)))return this}else Math.abs(t)<16&&!r&&(t*=60);return!this._isUTC&&e&&(i=Le(this)),this._offset=t,this._isUTC=!0,null!=i&&this.add(i,"m"),a!==t&&(!e||this._changeInProgress?qe(this,He(t-a,"m"),1,!1):this._changeInProgress||(this._changeInProgress=!0,n.updateOffset(this,!0),this._changeInProgress=null)),this}return this._isUTC?a:Le(this)},vr.utc=function(t){return this.utcOffset(0,t)},vr.local=function(t){return this._isUTC&&(this.utcOffset(0,t),this._isUTC=!1,t&&this.subtract(Le(this),"m")),this},vr.parseZone=function(){if(null!=this._tzm)this.utcOffset(this._tzm,!1,!0);else if("string"==typeof this._i){var t=Ce(ft,this._i);null!=t?this.utcOffset(t):this.utcOffset(0,!0)}return this},vr.hasAlignedHourOffset=function(t){return!!this.isValid()&&(t=t?xe(t).utcOffset():0,(this.utcOffset()-t)%60==0)},vr.isDST=function(){return this.utcOffset()>this.clone().month(0).utcOffset()||this.utcOffset()>this.clone().month(5).utcOffset()},vr.isLocal=function(){return!!this.isValid()&&!this._isUTC},vr.isUtcOffset=function(){return!!this.isValid()&&this._isUTC},vr.isUtc=Fe,vr.isUTC=Fe,vr.zoneAbbr=function(){return this._isUTC?"UTC":""},vr.zoneName=function(){return this._isUTC?"Coordinated Universal Time":""},vr.dates=O("dates accessor is deprecated. Use date instead.",lr),vr.months=O("months accessor is deprecated. Use month instead",Pt),vr.years=O("years accessor is deprecated. Use year instead",Nt),vr.zone=O("moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/",(function(t,e){return null!=t?("string"!=typeof t&&(t=-t),this.utcOffset(t,e),this):-this.utcOffset()})),vr.isDSTShifted=O("isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information",(function(){if(!c(this._isDSTShifted))return this._isDSTShifted;var t,e={};return w(e,this),(e=Oe(e))._a?(t=e._isUTC?p(e._a):xe(e._a),this._isDSTShifted=this.isValid()&&function(t,e,r){var n,i=Math.min(t.length,e.length),a=Math.abs(t.length-e.length),o=0;for(n=0;n<i;n++)(r&&t[n]!==e[n]||!r&&Z(t[n])!==Z(e[n]))&&o++;return o+a}(e._a,t.toArray())>0):this._isDSTShifted=!1,this._isDSTShifted}));var gr=P.prototype;function _r(t,e,r,n){var i=ue(),a=p().set(n,e);return i[r](a,t)}function wr(t,e,r){if(l(t)&&(e=t,t=void 0),t=t||"",null!=e)return _r(t,e,r,"month");var n,i=[];for(n=0;n<12;n++)i[n]=_r(t,n,r,"month");return i}function br(t,e,r,n){"boolean"==typeof t?(l(e)&&(r=e,e=void 0),e=e||""):(r=e=t,t=!1,l(e)&&(r=e,e=void 0),e=e||"");var i,a=ue(),o=t?a._week.dow:0,s=[];if(null!=r)return _r(e,(r+o)%7,n,"day");for(i=0;i<7;i++)s[i]=_r(e,(i+o)%7,n,"day");return s}gr.calendar=function(t,e,r){var n=this._calendar[t]||this._calendar.sameElse;return Y(n)?n.call(e,r):n},gr.longDateFormat=function(t){var e=this._longDateFormat[t],r=this._longDateFormat[t.toUpperCase()];return e||!r?e:(this._longDateFormat[t]=r.match(A).map((function(t){return"MMMM"===t||"MM"===t||"DD"===t||"dddd"===t?t.slice(1):t})).join(""),this._longDateFormat[t])},gr.invalidDate=function(){return this._invalidDate},gr.ordinal=function(t){return this._ordinal.replace("%d",t)},gr.preparse=mr,gr.postformat=mr,gr.relativeTime=function(t,e,r,n){var i=this._relativeTime[r];return Y(i)?i(t,e,r,n):i.replace(/%d/i,t)},gr.pastFuture=function(t,e){var r=this._relativeTime[t>0?"future":"past"];return Y(r)?r(e):r.replace(/%s/i,e)},gr.set=function(t){var e,r;for(r in t)s(t,r)&&(Y(e=t[r])?this[r]=e:this["_"+r]=e);this._config=t,this._dayOfMonthOrdinalParseLenient=new RegExp((this._dayOfMonthOrdinalParse.source||this._ordinalParse.source)+"|"+/\d{1,2}/.source)},gr.eras=function(t,e){var r,i,a,o=this._eras||ue("en")._eras;for(r=0,i=o.length;r<i;++r){switch(typeof o[r].since){case"string":a=n(o[r].since).startOf("day"),o[r].since=a.valueOf()}switch(typeof o[r].until){case"undefined":o[r].until=1/0;break;case"string":a=n(o[r].until).startOf("day").valueOf(),o[r].until=a.valueOf()}}return o},gr.erasParse=function(t,e,r){var n,i,a,o,s,u=this.eras();for(t=t.toUpperCase(),n=0,i=u.length;n<i;++n)if(a=u[n].name.toUpperCase(),o=u[n].abbr.toUpperCase(),s=u[n].narrow.toUpperCase(),r)switch(e){case"N":case"NN":case"NNN":if(o===t)return u[n];break;case"NNNN":if(a===t)return u[n];break;case"NNNNN":if(s===t)return u[n]}else if([a,o,s].indexOf(t)>=0)return u[n]},gr.erasConvertYear=function(t,e){var r=t.since<=t.until?1:-1;return void 0===e?n(t.since).year():n(t.since).year()+(e-t.offset)*r},gr.erasAbbrRegex=function(t){return s(this,"_erasAbbrRegex")||or.call(this),t?this._erasAbbrRegex:this._erasRegex},gr.erasNameRegex=function(t){return s(this,"_erasNameRegex")||or.call(this),t?this._erasNameRegex:this._erasRegex},gr.erasNarrowRegex=function(t){return s(this,"_erasNarrowRegex")||or.call(this),t?this._erasNarrowRegex:this._erasRegex},gr.months=function(t,e){return t?a(this._months)?this._months[t.month()]:this._months[(this._months.isFormat||Dt).test(e)?"format":"standalone"][t.month()]:a(this._months)?this._months:this._months.standalone},gr.monthsShort=function(t,e){return t?a(this._monthsShort)?this._monthsShort[t.month()]:this._monthsShort[Dt.test(e)?"format":"standalone"][t.month()]:a(this._monthsShort)?this._monthsShort:this._monthsShort.standalone},gr.monthsParse=function(t,e,r){var n,i,a;if(this._monthsParseExact)return Yt.call(this,t,e,r);for(this._monthsParse||(this._monthsParse=[],this._longMonthsParse=[],this._shortMonthsParse=[]),n=0;n<12;n++){if(i=p([2e3,n]),r&&!this._longMonthsParse[n]&&(this._longMonthsParse[n]=new RegExp("^"+this.months(i,"").replace(".","")+"$","i"),this._shortMonthsParse[n]=new RegExp("^"+this.monthsShort(i,"").replace(".","")+"$","i")),r||this._monthsParse[n]||(a="^"+this.months(i,"")+"|^"+this.monthsShort(i,""),this._monthsParse[n]=new RegExp(a.replace(".",""),"i")),r&&"MMMM"===e&&this._longMonthsParse[n].test(t))return n;if(r&&"MMM"===e&&this._shortMonthsParse[n].test(t))return n;if(!r&&this._monthsParse[n].test(t))return n}},gr.monthsRegex=function(t){return this._monthsParseExact?(s(this,"_monthsRegex")||jt.call(this),t?this._monthsStrictRegex:this._monthsRegex):(s(this,"_monthsRegex")||(this._monthsRegex=Mt),this._monthsStrictRegex&&t?this._monthsStrictRegex:this._monthsRegex)},gr.monthsShortRegex=function(t){return this._monthsParseExact?(s(this,"_monthsRegex")||jt.call(this),t?this._monthsShortStrictRegex:this._monthsShortRegex):(s(this,"_monthsShortRegex")||(this._monthsShortRegex=xt),this._monthsShortStrictRegex&&t?this._monthsShortStrictRegex:this._monthsShortRegex)},gr.week=function(t){return Lt(t,this._week.dow,this._week.doy).week},gr.firstDayOfYear=function(){return this._week.doy},gr.firstDayOfWeek=function(){return this._week.dow},gr.weekdays=function(t,e){var r=a(this._weekdays)?this._weekdays:this._weekdays[t&&!0!==t&&this._weekdays.isFormat.test(e)?"format":"standalone"];return!0===t?Wt(r,this._week.dow):t?r[t.day()]:r},gr.weekdaysMin=function(t){return!0===t?Wt(this._weekdaysMin,this._week.dow):t?this._weekdaysMin[t.day()]:this._weekdaysMin},gr.weekdaysShort=function(t){return!0===t?Wt(this._weekdaysShort,this._week.dow):t?this._weekdaysShort[t.day()]:this._weekdaysShort},gr.weekdaysParse=function(t,e,r){var n,i,a;if(this._weekdaysParseExact)return Zt.call(this,t,e,r);for(this._weekdaysParse||(this._weekdaysParse=[],this._minWeekdaysParse=[],this._shortWeekdaysParse=[],this._fullWeekdaysParse=[]),n=0;n<7;n++){if(i=p([2e3,1]).day(n),r&&!this._fullWeekdaysParse[n]&&(this._fullWeekdaysParse[n]=new RegExp("^"+this.weekdays(i,"").replace(".","\\.?")+"$","i"),this._shortWeekdaysParse[n]=new RegExp("^"+this.weekdaysShort(i,"").replace(".","\\.?")+"$","i"),this._minWeekdaysParse[n]=new RegExp("^"+this.weekdaysMin(i,"").replace(".","\\.?")+"$","i")),this._weekdaysParse[n]||(a="^"+this.weekdays(i,"")+"|^"+this.weekdaysShort(i,"")+"|^"+this.weekdaysMin(i,""),this._weekdaysParse[n]=new RegExp(a.replace(".",""),"i")),r&&"dddd"===e&&this._fullWeekdaysParse[n].test(t))return n;if(r&&"ddd"===e&&this._shortWeekdaysParse[n].test(t))return n;if(r&&"dd"===e&&this._minWeekdaysParse[n].test(t))return n;if(!r&&this._weekdaysParse[n].test(t))return n}},gr.weekdaysRegex=function(t){return this._weekdaysParseExact?(s(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysStrictRegex:this._weekdaysRegex):(s(this,"_weekdaysRegex")||(this._weekdaysRegex=Vt),this._weekdaysStrictRegex&&t?this._weekdaysStrictRegex:this._weekdaysRegex)},gr.weekdaysShortRegex=function(t){return this._weekdaysParseExact?(s(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysShortStrictRegex:this._weekdaysShortRegex):(s(this,"_weekdaysShortRegex")||(this._weekdaysShortRegex=zt),this._weekdaysShortStrictRegex&&t?this._weekdaysShortStrictRegex:this._weekdaysShortRegex)},gr.weekdaysMinRegex=function(t){return this._weekdaysParseExact?(s(this,"_weekdaysRegex")||$t.call(this),t?this._weekdaysMinStrictRegex:this._weekdaysMinRegex):(s(this,"_weekdaysMinRegex")||(this._weekdaysMinRegex=qt),this._weekdaysMinStrictRegex&&t?this._weekdaysMinStrictRegex:this._weekdaysMinRegex)},gr.isPM=function(t){return"p"===(t+"").toLowerCase().charAt(0)},gr.meridiem=function(t,e,r){return t>11?r?"pm":"PM":r?"am":"AM"},oe("en",{eras:[{since:"0001-01-01",until:1/0,offset:1,name:"Anno Domini",narrow:"AD",abbr:"AD"},{since:"0000-12-31",until:-1/0,offset:1,name:"Before Christ",narrow:"BC",abbr:"BC"}],dayOfMonthOrdinalParse:/\d{1,2}(th|st|nd|rd)/,ordinal:function(t){var e=t%10;return t+(1===Z(t%100/10)?"th":1===e?"st":2===e?"nd":3===e?"rd":"th")}}),n.lang=O("moment.lang is deprecated. Use moment.locale instead.",oe),n.langData=O("moment.langData is deprecated. Use moment.localeData instead.",ue);var Sr=Math.abs;function kr(t,e,r,n){var i=He(e,r);return t._milliseconds+=n*i._milliseconds,t._days+=n*i._days,t._months+=n*i._months,t._bubble()}function Or(t){return t<0?Math.floor(t):Math.ceil(t)}function Dr(t){return 4800*t/146097}function xr(t){return 146097*t/4800}function Mr(t){return function(){return this.as(t)}}var Yr=Mr("ms"),Tr=Mr("s"),Pr=Mr("m"),jr=Mr("h"),Ar=Mr("d"),Nr=Mr("w"),Er=Mr("M"),Ir=Mr("Q"),Cr=Mr("y");function Rr(t){return function(){return this.isValid()?this._data[t]:NaN}}var Lr=Rr("milliseconds"),Fr=Rr("seconds"),Wr=Rr("minutes"),Ur=Rr("hours"),Hr=Rr("days"),Gr=Rr("months"),Vr=Rr("years"),zr=Math.round,qr={ss:44,s:45,m:45,h:22,d:26,w:null,M:11};function Zr(t,e,r,n,i){return i.relativeTime(e||1,!!r,t,n)}var $r=Math.abs;function Br(t){return(t>0)-(t<0)||+t}function Jr(){if(!this.isValid())return this.localeData().invalidDate();var t,e,r,n,i,a,o,s,u=$r(this._milliseconds)/1e3,c=$r(this._days),l=$r(this._months),f=this.asSeconds();return f?(t=q(u/60),e=q(t/60),u%=60,t%=60,r=q(l/12),l%=12,n=u?u.toFixed(3).replace(/\.?0+$/,""):"",i=f<0?"-":"",a=Br(this._months)!==Br(f)?"-":"",o=Br(this._days)!==Br(f)?"-":"",s=Br(this._milliseconds)!==Br(f)?"-":"",i+"P"+(r?a+r+"Y":"")+(l?a+l+"M":"")+(c?o+c+"D":"")+(e||t||u?"T":"")+(e?s+e+"H":"")+(t?s+t+"M":"")+(u?s+n+"S":"")):"P0D"}var Qr=je.prototype;return Qr.isValid=function(){return this._isValid},Qr.abs=function(){var t=this._data;return this._milliseconds=Sr(this._milliseconds),this._days=Sr(this._days),this._months=Sr(this._months),t.milliseconds=Sr(t.milliseconds),t.seconds=Sr(t.seconds),t.minutes=Sr(t.minutes),t.hours=Sr(t.hours),t.months=Sr(t.months),t.years=Sr(t.years),this},Qr.add=function(t,e){return kr(this,t,e,1)},Qr.subtract=function(t,e){return kr(this,t,e,-1)},Qr.as=function(t){if(!this.isValid())return NaN;var e,r,n=this._milliseconds;if("month"===(t=U(t))||"quarter"===t||"year"===t)switch(e=this._days+n/864e5,r=this._months+Dr(e),t){case"month":return r;case"quarter":return r/3;case"year":return r/12}else switch(e=this._days+Math.round(xr(this._months)),t){case"week":return e/7+n/6048e5;case"day":return e+n/864e5;case"hour":return 24*e+n/36e5;case"minute":return 1440*e+n/6e4;case"second":return 86400*e+n/1e3;case"millisecond":return Math.floor(864e5*e)+n;default:throw new Error("Unknown unit "+t)}},Qr.asMilliseconds=Yr,Qr.asSeconds=Tr,Qr.asMinutes=Pr,Qr.asHours=jr,Qr.asDays=Ar,Qr.asWeeks=Nr,Qr.asMonths=Er,Qr.asQuarters=Ir,Qr.asYears=Cr,Qr.valueOf=function(){return this.isValid()?this._milliseconds+864e5*this._days+this._months%12*2592e6+31536e6*Z(this._months/12):NaN},Qr._bubble=function(){var t,e,r,n,i,a=this._milliseconds,o=this._days,s=this._months,u=this._data;return a>=0&&o>=0&&s>=0||a<=0&&o<=0&&s<=0||(a+=864e5*Or(xr(s)+o),o=0,s=0),u.milliseconds=a%1e3,t=q(a/1e3),u.seconds=t%60,e=q(t/60),u.minutes=e%60,r=q(e/60),u.hours=r%24,o+=q(r/24),i=q(Dr(o)),s+=i,o-=Or(xr(i)),n=q(s/12),s%=12,u.days=o,u.months=s,u.years=n,this},Qr.clone=function(){return He(this)},Qr.get=function(t){return t=U(t),this.isValid()?this[t+"s"]():NaN},Qr.milliseconds=Lr,Qr.seconds=Fr,Qr.minutes=Wr,Qr.hours=Ur,Qr.days=Hr,Qr.weeks=function(){return q(this.days()/7)},Qr.months=Gr,Qr.years=Vr,Qr.humanize=function(t,e){if(!this.isValid())return this.localeData().invalidDate();var r,n,i=!1,a=qr;return"object"==typeof t&&(e=t,t=!1),"boolean"==typeof t&&(i=t),"object"==typeof e&&(a=Object.assign({},qr,e),null!=e.s&&null==e.ss&&(a.ss=e.s-1)),r=this.localeData(),n=function(t,e,r,n){var i=He(t).abs(),a=zr(i.as("s")),o=zr(i.as("m")),s=zr(i.as("h")),u=zr(i.as("d")),c=zr(i.as("M")),l=zr(i.as("w")),f=zr(i.as("y")),h=a<=r.ss&&["s",a]||a<r.s&&["ss",a]||o<=1&&["m"]||o<r.m&&["mm",o]||s<=1&&["h"]||s<r.h&&["hh",s]||u<=1&&["d"]||u<r.d&&["dd",u];return null!=r.w&&(h=h||l<=1&&["w"]||l<r.w&&["ww",l]),(h=h||c<=1&&["M"]||c<r.M&&["MM",c]||f<=1&&["y"]||["yy",f])[2]=e,h[3]=+t>0,h[4]=n,Zr.apply(null,h)}(this,!i,a,r),i&&(n=r.pastFuture(+this,n)),r.postformat(n)},Qr.toISOString=Jr,Qr.toString=Jr,Qr.toJSON=Jr,Qr.locale=Xe,Qr.localeData=er,Qr.toIsoString=O("toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)",Jr),Qr.lang=tr,C("X",0,0,"unix"),C("x",0,0,"valueOf"),pt("x",lt),pt("X",/[+-]?\d+(\.\d{1,3})?/),_t("X",(function(t,e,r){r._d=new Date(1e3*parseFloat(t))})),_t("x",(function(t,e,r){r._d=new Date(Z(t))})),//! moment.js
+n.version="2.26.0",e=xe,n.fn=vr,n.min=function(){var t=[].slice.call(arguments,0);return Te("isBefore",t)},n.max=function(){var t=[].slice.call(arguments,0);return Te("isAfter",t)},n.now=function(){return Date.now?Date.now():+new Date},n.utc=p,n.unix=function(t){return xe(1e3*t)},n.months=function(t,e){return wr(t,e,"months")},n.isDate=f,n.locale=oe,n.invalid=m,n.duration=He,n.isMoment=S,n.weekdays=function(t,e,r){return br(t,e,r,"weekdays")},n.parseZone=function(){return xe.apply(null,arguments).parseZone()},n.localeData=ue,n.isDuration=Ae,n.monthsShort=function(t,e){return wr(t,e,"monthsShort")},n.weekdaysMin=function(t,e,r){return br(t,e,r,"weekdaysMin")},n.defineLocale=se,n.updateLocale=function(t,e){if(null!=e){var r,n,i=te;null!=ee[t]&&null!=ee[t].parentLocale?ee[t].set(T(ee[t]._config,e)):(null!=(n=ae(t))&&(i=n._config),e=T(i,e),null==n&&(e.abbr=t),(r=new P(e)).parentLocale=ee[t],ee[t]=r),oe(t)}else null!=ee[t]&&(null!=ee[t].parentLocale?(ee[t]=ee[t].parentLocale,t===oe()&&oe(t)):null!=ee[t]&&delete ee[t]);return ee[t]},n.locales=function(){return D(ee)},n.weekdaysShort=function(t,e,r){return br(t,e,r,"weekdaysShort")},n.normalizeUnits=U,n.relativeTimeRounding=function(t){return void 0===t?zr:"function"==typeof t&&(zr=t,!0)},n.relativeTimeThreshold=function(t,e){return void 0!==qr[t]&&(void 0===e?qr[t]:(qr[t]=e,"s"===t&&(qr.ss=e-1),!0))},n.calendarFormat=function(t,e){var r=t.diff(e,"days",!0);return r<-6?"sameElse":r<-1?"lastWeek":r<0?"lastDay":r<1?"sameDay":r<2?"nextDay":r<7?"nextWeek":"sameElse"},n.prototype=vr,n.HTML5_FMT={DATETIME_LOCAL:"YYYY-MM-DDTHH:mm",DATETIME_LOCAL_SECONDS:"YYYY-MM-DDTHH:mm:ss",DATETIME_LOCAL_MS:"YYYY-MM-DDTHH:mm:ss.SSS",DATE:"YYYY-MM-DD",TIME:"HH:mm",TIME_SECONDS:"HH:mm:ss",TIME_MS:"HH:mm:ss.SSS",WEEK:"GGGG-[W]WW",MONTH:"YYYY-MM"},n}()})),qo=/^\/?Date\((-?\d+)/i;function Zo(t){return zo.isMoment(t)}function $o(t,e){var r;if(void 0!==t){if(null===t)return null;if(!e)return t;if("string"!=typeof e&&!(e instanceof String))throw new Error("Type must be a string");switch(e){case"boolean":case"Boolean":return Boolean(t);case"number":case"Number":return Go(t)&&!isNaN(Date.parse(t))?zo(t).valueOf():Number(t.valueOf());case"string":case"String":return String(t);case"Date":if(Ho(t))return new Date(t);if(t instanceof Date)return new Date(t.valueOf());if(Zo(t))return new Date(t.valueOf());if(Go(t))return(r=qo.exec(t))?new Date(Number(r[1])):zo(new Date(t)).toDate();throw new Error("Cannot convert object of type "+Vo(t)+" to type Date");case"Moment":if(Ho(t))return zo(t);if(t instanceof Date)return zo(t.valueOf());if(Zo(t))return zo(t);if(Go(t))return r=qo.exec(t),zo(r?Number(r[1]):t);throw new Error("Cannot convert object of type "+Vo(t)+" to type Date");case"ISODate":if(Ho(t))return new Date(t);if(t instanceof Date)return t.toISOString();if(Zo(t))return t.toDate().toISOString();if(Go(t))return(r=qo.exec(t))?new Date(Number(r[1])).toISOString():zo(t).format();throw new Error("Cannot convert object of type "+Vo(t)+" to type ISODate");case"ASPDate":if(Ho(t))return"/Date("+t+")/";if(t instanceof Date||Zo(t))return"/Date("+t.valueOf()+")/";if(Go(t))return"/Date("+((r=qo.exec(t))?new Date(Number(r[1])).valueOf():new Date(t).valueOf())+")/";throw new Error("Cannot convert object of type "+Vo(t)+" to type ASPDate");default:throw new Error("Unknown type ".concat(e))}}}function Bo(t){return"string"==typeof t||"number"==typeof t}var Jo=jt("splice"),Qo=It("splice",{ACCESSORS:!0,0:0,1:2}),Ko=Math.max,Xo=Math.min;z({target:"Array",proto:!0,forced:!Jo||!Qo},{splice:function(t,e){var r,n,i,a,o,s,u=tt(this),c=Q(u.length),l=_e(t,c),f=arguments.length;if(0===f?r=n=0:1===f?(r=0,n=c-l):(r=f-2,n=Xo(Ko(B(e),0),c-l)),c+r-n>9007199254740991)throw TypeError("Maximum allowed length exceeded");for(i=dt(u,n),a=0;a<n;a++)(o=l+a)in u&&Ne(i,a,u[o]);if(i.length=n,r<n){for(a=l;a<c-n;a++)s=a+r,(o=a+n)in u?u[s]=u[o]:delete u[s];for(a=c;a>c-n+r;a--)delete u[a-1]}else if(r>n)for(a=c-n;a>l;a--)s=a+r-1,(o=a+n-1)in u?u[s]=u[o]:delete u[s];for(a=0;a<r;a++)u[a+l]=arguments[a+2];return u.length=c-n+r,i}});var ts=vt("Array").splice,es=Array.prototype,rs=function(t){var e=t.splice;return t===es||t instanceof Array&&e===es.splice?ts:e},ns=[].slice,is=/MSIE .\./.test(Dt),as=function(t){return function(e,r){var n=arguments.length>2,i=n?ns.call(arguments,2):void 0;return t(n?function(){("function"==typeof e?e:Function(e)).apply(this,i)}:e,r)}};z({global:!0,bind:!0,forced:is},{setTimeout:as(o.setTimeout),setInterval:as(o.setInterval)});var os=C.setTimeout,ss=function(){function t(e){ce(this,t),this._queue=[],this._timeout=null,this._extended=null,this.delay=null,this.max=1/0,this.setOptions(e)}return de(t,[{key:"setOptions",value:function(t){t&&void 0!==t.delay&&(this.delay=t.delay),t&&void 0!==t.max&&(this.max=t.max),this._flushIfNeeded()}},{key:"destroy",value:function(){if(this.flush(),this._extended){for(var t=this._extended.object,e=this._extended.methods,r=0;r<e.length;r++){var n=e[r];n.original?t[n.name]=n.original:delete t[n.name]}this._extended=null}}},{key:"replace",value:function(t,e){var r=this,n=t[e];if(!n)throw new Error("Method "+e+" undefined");t[e]=function(){for(var t=arguments.length,e=new Array(t),i=0;i<t;i++)e[i]=arguments[i];r.queue({args:e,fn:n,context:this})}}},{key:"queue",value:function(t){"function"==typeof t?this._queue.push({fn:t}):this._queue.push(t),this._flushIfNeeded()}},{key:"_flushIfNeeded",value:function(){var t=this;this._queue.length>this.max&&this.flush(),null!=this._timeout&&(clearTimeout(this._timeout),this._timeout=null),this.queue.length>0&&"number"==typeof this.delay&&(this._timeout=os((function(){t.flush()}),this.delay))}},{key:"flush",value:function(){var t,e;zr(t=rs(e=this._queue).call(e,0)).call(t,(function(t){t.fn.apply(t.context||t.fn,t.args||[])}))}}],[{key:"extend",value:function(e,r){var n=new t(r);if(void 0!==e.flush)throw new Error("Target object already has a property flush");e.flush=function(){n.flush()};var i=[{name:"flush",original:void 0}];if(r&&r.replace)for(var a=0;a<r.replace.length;a++){var o=r.replace[a];i.push({name:o,original:e[o]}),n.replace(e,o)}return n._extended={object:e,methods:i},n}}]),t}(),us=function(){function t(){ce(this,t),this._subscribers={"*":[],add:[],remove:[],update:[]},this.subscribe=t.prototype.on,this.unsubscribe=t.prototype.off}return de(t,[{key:"_trigger",value:function(t,e,r){var n,i;if("*"===t)throw new Error("Cannot trigger event *");zr(n=ha(i=[]).call(i,ca(this._subscribers[t]),ca(this._subscribers["*"]))).call(n,(function(n){n(t,e,null!=r?r:null)}))}},{key:"on",value:function(t,e){"function"==typeof e&&this._subscribers[t].push(e)}},{key:"off",value:function(t,e){var r;this._subscribers[t]=Zt(r=this._subscribers[t]).call(r,(function(t){return t!==e}))}}]),t}(),cs=(Ia("Set",(function(t){return function(){return t(this,arguments.length?arguments[0]:void 0)}}),Ha),C.Set);function ls(t,e){var r;if(void 0===$n||null==Wn(t)){if(Va(t)||(r=function(t,e){var r;if(!t)return;if("string"==typeof t)return fs(t,e);var n=pi(r=Object.prototype.toString.call(t)).call(r,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return ai(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return fs(t,e)}(t))||e&&t&&"number"==typeof t.length){r&&(t=r);var n=0,i=function(){};return{s:i,n:function(){return n>=t.length?{done:!0}:{done:!1,value:t[n++]}},e:function(t){throw t},f:i}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var a,o=!0,s=!1;return{s:function(){r=Fn(t)},n:function(){var t=r.next();return o=t.done,t},e:function(t){s=!0,a=t},f:function(){try{o||null==r.return||r.return()}finally{if(s)throw a}}}}function fs(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n}var hs=function(){function t(e){ce(this,t),this._pairs=e}return de(t,[{key:xi,value:Oi.mark((function t(){var e,r,n,i,a;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=ls(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=No(r.value,2),i=n[0],a=n[1],t.next=7,[i,a];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"entries",value:Oi.mark((function t(){var e,r,n,i,a;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=ls(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=No(r.value,2),i=n[0],a=n[1],t.next=7,[i,a];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"keys",value:Oi.mark((function t(){var e,r,n,i;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=ls(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=No(r.value,1),i=n[0],t.next=7,i;case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"values",value:Oi.mark((function t(){var e,r,n,i;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:e=ls(this._pairs),t.prev=1,e.s();case 3:if((r=e.n()).done){t.next=9;break}return n=No(r.value,2),i=n[1],t.next=7,i;case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),e.e(t.t0);case 14:return t.prev=14,e.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,this,[[1,11,14,17]])}))},{key:"toIdArray",value:function(){var t;return Ut(t=ca(this._pairs)).call(t,(function(t){return t[0]}))}},{key:"toItemArray",value:function(){var t;return Ut(t=ca(this._pairs)).call(t,(function(t){return t[1]}))}},{key:"toEntryArray",value:function(){return ca(this._pairs)}},{key:"toObjectMap",value:function(){var t,e=co(null),r=ls(this._pairs);try{for(r.s();!(t=r.n()).done;){var n=No(t.value,2),i=n[0],a=n[1];e[i]=a}}catch(t){r.e(t)}finally{r.f()}return e}},{key:"toMap",value:function(){return new Ga(this._pairs)}},{key:"toIdSet",value:function(){return new cs(this.toIdArray())}},{key:"toItemSet",value:function(){return new cs(this.toItemArray())}},{key:"cache",value:function(){return new t(ca(this._pairs))}},{key:"distinct",value:function(t){var e,r=new cs,n=ls(this._pairs);try{for(n.s();!(e=n.n()).done;){var i=No(e.value,2),a=i[0],o=i[1];r.add(t(o,a))}}catch(t){n.e(t)}finally{n.f()}return r}},{key:"filter",value:function(e){var r=this._pairs;return new t(Ei({},xi,Oi.mark((function t(){var n,i,a,o,s;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:n=ls(r),t.prev=1,n.s();case 3:if((i=n.n()).done){t.next=10;break}if(a=No(i.value,2),o=a[0],s=a[1],!e(s,o)){t.next=8;break}return t.next=8,[o,s];case 8:t.next=3;break;case 10:t.next=15;break;case 12:t.prev=12,t.t0=t.catch(1),n.e(t.t0);case 15:return t.prev=15,n.f(),t.finish(15);case 18:case"end":return t.stop()}}),t,null,[[1,12,15,18]])}))))}},{key:"forEach",value:function(t){var e,r=ls(this._pairs);try{for(r.s();!(e=r.n()).done;){var n=No(e.value,2),i=n[0];t(n[1],i)}}catch(t){r.e(t)}finally{r.f()}}},{key:"map",value:function(e){var r=this._pairs;return new t(Ei({},xi,Oi.mark((function t(){var n,i,a,o,s;return Oi.wrap((function(t){for(;;)switch(t.prev=t.next){case 0:n=ls(r),t.prev=1,n.s();case 3:if((i=n.n()).done){t.next=9;break}return a=No(i.value,2),o=a[0],s=a[1],t.next=7,[o,e(s,o)];case 7:t.next=3;break;case 9:t.next=14;break;case 11:t.prev=11,t.t0=t.catch(1),n.e(t.t0);case 14:return t.prev=14,n.f(),t.finish(14);case 17:case"end":return t.stop()}}),t,null,[[1,11,14,17]])}))))}},{key:"max",value:function(t){var e=Fn(this._pairs),r=e.next();if(r.done)return null;for(var n=r.value[1],i=t(r.value[1],r.value[0]);!(r=e.next()).done;){var a=No(r.value,2),o=a[0],s=a[1],u=t(s,o);u>i&&(i=u,n=s)}return n}},{key:"min",value:function(t){var e=Fn(this._pairs),r=e.next();if(r.done)return null;for(var n=r.value[1],i=t(r.value[1],r.value[0]);!(r=e.next()).done;){var a=No(r.value,2),o=a[0],s=a[1],u=t(s,o);u<i&&(i=u,n=s)}return n}},{key:"reduce",value:function(t,e){var r,n=ls(this._pairs);try{for(n.s();!(r=n.n()).done;){var i=No(r.value,2),a=i[0];e=t(e,i[1],a)}}catch(t){n.e(t)}finally{n.f()}return e}},{key:"sort",value:function(e){var r=this;return new t(Ei({},xi,(function(){var t;return Fn(qi(t=ca(r._pairs)).call(t,(function(t,r){var n=No(t,2),i=n[0],a=n[1],o=No(r,2),s=o[0],u=o[1];return e(a,u,i,s)})))})))}}]),t}();function ds(t,e){var r=xa(t);if(An){var n=An(t);e&&(n=Zt(n).call(n,(function(e){return $r(t,e).enumerable}))),r.push.apply(r,n)}return r}function ps(t,e){var r;if(void 0===$n||null==Wn(t)){if(Va(t)||(r=function(t,e){var r;if(!t)return;if("string"==typeof t)return ys(t,e);var n=pi(r=Object.prototype.toString.call(t)).call(r,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return ai(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return ys(t,e)}(t))||e&&t&&"number"==typeof t.length){r&&(t=r);var n=0,i=function(){};return{s:i,n:function(){return n>=t.length?{done:!0}:{done:!1,value:t[n++]}},e:function(t){throw t},f:i}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var a,o=!0,s=!1;return{s:function(){r=Fn(t)},n:function(){var t=r.next();return o=t.done,t},e:function(t){s=!0,a=t},f:function(){try{o||null==r.return||r.return()}finally{if(s)throw a}}}}function ys(t,e){(null==e||e>t.length)&&(e=t.length);for(var r=0,n=new Array(e);r<e;r++)n[r]=t[r];return n}function vs(t){var e=function(){if("undefined"==typeof Reflect||!_i)return!1;if(_i.sham)return!1;if("function"==typeof Proxy)return!0;try{return Date.prototype.toString.call(_i(Date,[],(function(){}))),!0}catch(t){return!1}}();return function(){var r,n=eo(t);if(e){var i=eo(this).constructor;r=_i(n,arguments,i)}else r=n.apply(this,arguments);return Ka(this,r)}}var ms=function(){console.warn("Type coercion has been deprecated. Please, use data pipes instead. See https://visjs.github.io/vis-data/data/datapipe.html#TypeCoercion for more details with working migration example.")},gs=function(t){Ja(r,t);var e=vs(r);function r(t,n){var i;if(ce(this,r),i=e.call(this),t&&!Va(t)&&(n=t,t=[]),i._options=n||{},i._data=new Ga,i.length=0,i._idProp=i._options.fieldId||"id",i._type={},i._options.type){ms();for(var a=xa(i._options.type),o=0,s=a.length;o<s;o++){var u=a[o],c=i._options.type[u];i._type[u]="Date"==c||"ISODate"==c||"ASPDate"==c?"Date":c}}return t&&t.length&&i.add(t),i.setOptions(n),i}return de(r,[{key:"setOptions",value:function(t){t&&void 0!==t.queue&&(!1===t.queue?this._queue&&(this._queue.destroy(),delete this._queue):(this._queue||(this._queue=ss.extend(this,{replace:["add","update","remove"]})),t.queue&&"object"===Oa(t.queue)&&this._queue.setOptions(t.queue)))}},{key:"add",value:function(t,e){var r,n=this,i=[];if(Va(t)){var a=Ut(t).call(t,(function(t){return t[n._idProp]}));if(Sa(a).call(a,(function(t){return n._data.has(t)})))throw new Error("A duplicate id was found in the parameter array.");for(var o=0,s=t.length;o<s;o++)r=this._addItem(t[o]),i.push(r)}else{if(!t||"object"!==Oa(t))throw new Error("Unknown dataType");r=this._addItem(t),i.push(r)}return i.length&&this._trigger("add",{items:i},e),i}},{key:"update",value:function(t,e){var r=this,n=[],i=[],a=[],o=[],s=this._idProp,u=function(t){var e=t[s];if(null!=e&&r._data.has(e)){var u=t,c=va({},r._data.get(e)),l=r._updateItem(u);i.push(l),o.push(u),a.push(c)}else{var f=r._addItem(t);n.push(f)}};if(Va(t))for(var c=0,l=t.length;c<l;c++)t[c]&&"object"===Oa(t[c])?u(t[c]):console.warn("Ignoring input item, which is not an object at index "+c);else{if(!t||"object"!==Oa(t))throw new Error("Unknown dataType");u(t)}if(n.length&&this._trigger("add",{items:n},e),i.length){var f={items:i,oldData:a,data:o};this._trigger("update",f,e)}return ha(n).call(n,i)}},{key:"updateOnly",value:function(t,e){var r,n=this;Va(t)||(t=[t]);var i=Ut(r=Ut(t).call(t,(function(t){var e=n._data.get(t[n._idProp]);if(null==e)throw new Error("Updating non-existent items is not allowed.");return{oldData:e,update:t}}))).call(r,(function(t){var e=t.oldData,r=t.update,i=e[n._idProp],a=function(t){for(var e,r=arguments.length,n=new Array(r>1?r-1:0),i=1;i<r;i++)n[i-1]=arguments[i];return Lo.apply(void 0,ha(e=[{},t]).call(e,n))}(e,r);return n._data.set(i,a),{id:i,oldData:e,updatedData:a}}));if(i.length){var a={items:Ut(i).call(i,(function(t){return t.id})),oldData:Ut(i).call(i,(function(t){return t.oldData})),data:Ut(i).call(i,(function(t){return t.updatedData}))};return this._trigger("update",a,e),a.items}return[]}},{key:"get",value:function(t,e){var r=void 0,n=void 0,i=void 0;Bo(t)?(r=t,i=e):Va(t)?(n=t,i=e):i=t;var a=i&&"Object"===i.returnType?"Object":"Array",o=i&&i.type||this._options.type,s=i&&Zt(i),u=[],c=null,l=null,f=null;if(null!=r)(c=this._getItem(r,o))&&s&&!s(c)&&(c=null);else if(null!=n)for(var h=0,d=n.length;h<d;h++)null==(c=this._getItem(n[h],o))||s&&!s(c)||u.push(c);else for(var p,y=0,v=(l=ca(Ji(p=this._data).call(p))).length;y<v;y++)f=l[y],null==(c=this._getItem(f,o))||s&&!s(c)||u.push(c);if(i&&i.order&&null==r&&this._sort(u,i.order),i&&i.fields){var m=i.fields;if(null!=r&&null!=c)c=this._filterFields(c,m);else for(var g=0,_=u.length;g<_;g++)u[g]=this._filterFields(u[g],m)}if("Object"==a){for(var w={},b=0,S=u.length;b<S;b++){var k=u[b];w[k[this._idProp]]=k}return w}return null!=r?c:u}},{key:"getIds",value:function(t){var e,r,n=this._data,i=t&&Zt(t),a=t&&t.order,o=t&&t.type||this._options.type,s=ca(Ji(n).call(n)),u=[];if(i)if(a){r=[];for(var c=0,l=s.length;c<l;c++){var f=s[c];i(e=this._getItem(f,o))&&r.push(e)}this._sort(r,a);for(var h=0,d=r.length;h<d;h++)u.push(r[h][this._idProp])}else for(var p=0,y=s.length;p<y;p++){var v=s[p];i(e=this._getItem(v,o))&&u.push(e[this._idProp])}else if(a){r=[];for(var m=0,g=s.length;m<g;m++){var _=s[m];r.push(n.get(_))}this._sort(r,a);for(var w=0,b=r.length;w<b;w++)u.push(r[w][this._idProp])}else for(var S=0,k=s.length;S<k;S++){var O=s[S];e=n.get(O),u.push(e[this._idProp])}return u}},{key:"getDataSet",value:function(){return this}},{key:"forEach",value:function(t,e){var r=e&&Zt(e),n=e&&e.type||this._options.type,i=this._data,a=ca(Ji(i).call(i));if(e&&e.order)for(var o=this.get(e),s=0,u=o.length;s<u;s++){var c=o[s];t(c,c[this._idProp])}else for(var l=0,f=a.length;l<f;l++){var h=a[l],d=this._getItem(h,n);r&&!r(d)||t(d,h)}}},{key:"map",value:function(t,e){for(var r=e&&Zt(e),n=e&&e.type||this._options.type,i=[],a=this._data,o=ca(Ji(a).call(a)),s=0,u=o.length;s<u;s++){var c=o[s],l=this._getItem(c,n);r&&!r(l)||i.push(t(l,c))}return e&&e.order&&this._sort(i,e.order),i}},{key:"_filterFields",value:function(t,e){var r;return t?ee(r=Va(e)?e:xa(e)).call(r,(function(e,r){return e[r]=t[r],e}),{}):t}},{key:"_sort",value:function(t,e){if("string"==typeof e){var r=e;qi(t).call(t,(function(t,e){var n=t[r],i=e[r];return n>i?1:n<i?-1:0}))}else{if("function"!=typeof e)throw new TypeError("Order must be a function or a string");qi(t).call(t,e)}}},{key:"remove",value:function(t,e){for(var r=[],n=[],i=Va(t)?t:[t],a=0,o=i.length;a<o;a++){var s=this._remove(i[a]);if(s){var u=s[this._idProp];null!=u&&(r.push(u),n.push(s))}}return r.length&&this._trigger("remove",{items:r,oldData:n},e),r}},{key:"_remove",value:function(t){var e;if(Bo(t)?e=t:t&&"object"===Oa(t)&&(e=t[this._idProp]),null!=e&&this._data.has(e)){var r=this._data.get(e)||null;return this._data.delete(e),--this.length,r}return null}},{key:"clear",value:function(t){for(var e,r=ca(Ji(e=this._data).call(e)),n=[],i=0,a=r.length;i<a;i++)n.push(this._data.get(r[i]));return this._data.clear(),this.length=0,this._trigger("remove",{items:r,oldData:n},t),r}},{key:"max",value:function(t){var e,r,n=null,i=null,a=ps(Li(e=this._data).call(e));try{for(a.s();!(r=a.n()).done;){var o=r.value,s=o[t];"number"==typeof s&&(null==i||s>i)&&(n=o,i=s)}}catch(t){a.e(t)}finally{a.f()}return n||null}},{key:"min",value:function(t){var e,r,n=null,i=null,a=ps(Li(e=this._data).call(e));try{for(a.s();!(r=a.n()).done;){var o=r.value,s=o[t];"number"==typeof s&&(null==i||s<i)&&(n=o,i=s)}}catch(t){a.e(t)}finally{a.f()}return n||null}},{key:"distinct",value:function(t){for(var e=this._data,r=ca(Ji(e).call(e)),n=[],i=this._options.type&&this._options.type[t]||null,a=0,o=0,s=r.length;o<s;o++){for(var u=r[o],c=e.get(u)[t],l=!1,f=0;f<a;f++)if(n[f]==c){l=!0;break}l||void 0===c||(n[a]=c,a++)}if(i)for(var h=0,d=n.length;h<d;h++)n[h]=$o(n[h],i);return n}},{key:"_addItem",value:function(t){var e=t[this._idProp];if(null!=e){if(this._data.has(e))throw new Error("Cannot add item: item with id "+e+" already exists")}else e=so(),t[this._idProp]=e;for(var r={},n=xa(t),i=0,a=n.length;i<a;i++){var o=n[i],s=this._type[o];r[o]=$o(t[o],s)}return this._data.set(e,r),++this.length,e}},{key:"_getItem",value:function(t,e){var r,n=this._data.get(t);if(!n)return null;var i=xa(n);if(e){ms(),r={};for(var a=0,o=i.length;a<o;a++){var s=i[a],u=n[s];r[s]=$o(u,e[s])}}else r=function(t){for(var e=1;e<arguments.length;e++){var r,n=null!=arguments[e]?arguments[e]:{};if(e%2)zr(r=ds(Object(n),!0)).call(r,(function(e){Ei(t,e,n[e])}));else if(Ee)Ye(t,Ee(n));else{var i;zr(i=ds(Object(n))).call(i,(function(e){ve(t,e,$r(n,e))}))}}return t}({},n);return null==r[this._idProp]&&(r[this._idProp]=n.id),r}},{key:"_updateItem",value:function(t){var e=t[this._idProp];if(null==e)throw new Error("Cannot update item: item has no id (item: "+Ni(t)+")");var r=this._data.get(e);if(!r)throw new Error("Cannot update item: no item with id "+e+" found");for(var n=xa(t),i=0,a=n.length;i<a;i++){var o=n[i],s=this._type[o];r[o]=$o(t[o],s)}return e}},{key:"stream",value:function(t){if(t){var e=this._data;return new hs(Ei({},xi,Oi.mark((function r(){var n,i,a,o;return Oi.wrap((function(r){for(;;)switch(r.prev=r.next){case 0:n=ps(t),r.prev=1,n.s();case 3:if((i=n.n()).done){r.next=11;break}if(a=i.value,null==(o=e.get(a))){r.next=9;break}return r.next=9,[a,o];case 9:r.next=3;break;case 11:r.next=16;break;case 13:r.prev=13,r.t0=r.catch(1),n.e(r.t0);case 16:return r.prev=16,n.f(),r.finish(16);case 19:case"end":return r.stop()}}),r,null,[[1,13,16,19]])}))))}var r;return new hs(Ei({},xi,ue(r=ki(this._data)).call(r,this._data)))}}]),r}(us);function _s(t){var e=function(){if("undefined"==typeof Reflect||!_i)return!1;if(_i.sham)return!1;if("function"==typeof Proxy)return!0;try{return Date.prototype.toString.call(_i(Date,[],(function(){}))),!0}catch(t){return!1}}();return function(){var r,n=eo(t);if(e){var i=eo(this).constructor;r=_i(n,arguments,i)}else r=n.apply(this,arguments);return Ka(this,r)}}var ws=function(t){Ja(r,t);var e=_s(r);function r(t,n){var i,a;return ce(this,r),(a=e.call(this)).length=0,a._ids=new cs,a._options=n||{},a._listener=ue(i=a._onEvent).call(i,Qa(a)),a.setData(t),a}return de(r,[{key:"setData",value:function(t){if(this._data){this._data.off&&this._data.off("*",this._listener);var e=this._data.getIds({filter:Zt(this._options)}),r=this._data.get(e);this._ids.clear(),this.length=0,this._trigger("remove",{items:e,oldData:r})}if(null!=t){this._data=t;for(var n=this._data.getIds({filter:Zt(this._options)}),i=0,a=n.length;i<a;i++){var o=n[i];this._ids.add(o)}this.length=n.length,this._trigger("add",{items:n})}else this._data=new gs;this._data.on&&this._data.on("*",this._listener)}},{key:"refresh",value:function(){for(var t=this._data.getIds({filter:Zt(this._options)}),e=ca(this._ids),r={},n=[],i=[],a=[],o=0,s=t.length;o<s;o++){var u=t[o];r[u]=!0,this._ids.has(u)||(n.push(u),this._ids.add(u))}for(var c=0,l=e.length;c<l;c++){var f=e[c],h=this._data.get(f);null==h?console.error("If you see this, report it please."):r[f]||(i.push(f),a.push(h),this._ids.delete(f))}this.length+=n.length-i.length,n.length&&this._trigger("add",{items:n}),i.length&&this._trigger("remove",{items:i,oldData:a})}},{key:"get",value:function(t,e){if(null==this._data)return null;var r,n=null;Bo(t)||Va(t)?(n=t,r=e):r=t;var i=va({},this._options,r),a=Zt(this._options),o=r&&Zt(r);return a&&o&&(i.filter=function(t){return a(t)&&o(t)}),null==n?this._data.get(i):this._data.get(n,i)}},{key:"getIds",value:function(t){if(this._data.length){var e,r=Zt(this._options),n=null!=t?Zt(t):null;return e=n?r?function(t){return r(t)&&n(t)}:n:r,this._data.getIds({filter:e,order:t&&t.order})}return[]}},{key:"forEach",value:function(t,e){if(this._data){var r,n,i=Zt(this._options),a=e&&Zt(e);n=a?i?function(t){return i(t)&&a(t)}:a:i,zr(r=this._data).call(r,t,{filter:n,order:e&&e.order})}}},{key:"map",value:function(t,e){if(this._data){var r,n,i=Zt(this._options),a=e&&Zt(e);return n=a?i?function(t){return i(t)&&a(t)}:a:i,Ut(r=this._data).call(r,t,{filter:n,order:e&&e.order})}return[]}},{key:"getDataSet",value:function(){return this._data.getDataSet()}},{key:"stream",value:function(t){var e;return this._data.stream(t||Ei({},xi,ue(e=Ji(this._ids)).call(e,this._ids)))}},{key:"dispose",value:function(){var t;(null===(t=this._data)||void 0===t?void 0:t.off)&&this._data.off("*",this._listener);var e="This data view has already been disposed of.";ve(this,"_data",{get:function(){throw new Error(e)},set:function(){throw new Error(e)},configurable:!1})}},{key:"_onEvent",value:function(t,e,r){if(e&&e.items&&this._data){var n=e.items,i=[],a=[],o=[],s=[],u=[],c=[];switch(t){case"add":for(var l=0,f=n.length;l<f;l++){var h=n[l];this.get(h)&&(this._ids.add(h),i.push(h))}break;case"update":for(var d=0,p=n.length;d<p;d++){var y=n[d];this.get(y)?this._ids.has(y)?(a.push(y),u.push(e.data[d]),s.push(e.oldData[d])):(this._ids.add(y),i.push(y)):this._ids.has(y)&&(this._ids.delete(y),o.push(y),c.push(e.oldData[d]))}break;case"remove":for(var v=0,m=n.length;v<m;v++){var g=n[v];this._ids.has(g)&&(this._ids.delete(g),o.push(g),c.push(e.oldData[v]))}}this.length+=i.length-o.length,i.length&&this._trigger("add",{items:i},r),a.length&&this._trigger("update",{items:a,oldData:s,data:u},r),o.length&&this._trigger("remove",{items:o,oldData:c},r)}}}]),r}(us);t.DELETE=Ro,t.DataSet=gs,t.DataStream=hs,t.DataView=ws,t.Queue=ss,t.createNewDataPipeFrom=function(t){return new ye(t)},Object.defineProperty(t,"__esModule",{value:!0})}));
 //# sourceMappingURL=vis-data.min.js.map
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
@@ -7011,7 +7774,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "networkOptions", function() { return options; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseDOTNetwork", function() { return parseDOTNetwork; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseGephiNetwork", function() { return parseGephi; });
-/* harmony import */ var vis_util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vis-util */ "./node_modules/vis-util/esm/vis-util.js");
+/* harmony import */ var vis_util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vis-util */ "./node_modules/vis-util/peer/umd/vis-util.min.js");
+/* harmony import */ var vis_util__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(vis_util__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var keycharm__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! keycharm */ "./node_modules/keycharm/keycharm.js");
 /* harmony import */ var keycharm__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(keycharm__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var vis_data__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! vis-data */ "./node_modules/vis-data/peer/umd/vis-data.min.js");
@@ -13771,7 +14535,7 @@ Activator$1.prototype.activate = function () {
   Activator$1.current = this;
   this.active = true;
   this.dom.overlay.style.display = 'none';
-  vis_util__WEBPACK_IMPORTED_MODULE_0__["default"].addClassName(this.dom.container, 'vis-active');
+  vis_util__WEBPACK_IMPORTED_MODULE_0___default.a.addClassName(this.dom.container, 'vis-active');
   this.emit('change');
   this.emit('activate'); // ugly hack: bind ESC after emitting the events, as the Network rebinds all
   // keyboard events on a 'change' event
@@ -13787,7 +14551,7 @@ Activator$1.prototype.activate = function () {
 Activator$1.prototype.deactivate = function () {
   this.active = false;
   this.dom.overlay.style.display = 'block';
-  vis_util__WEBPACK_IMPORTED_MODULE_0__["default"].removeClassName(this.dom.container, 'vis-active');
+  vis_util__WEBPACK_IMPORTED_MODULE_0___default.a.removeClassName(this.dom.container, 'vis-active');
   this.keycharm.unbind('esc', this.escListener);
   this.emit('change');
   this.emit('deactivate');
@@ -42780,77 +43544,21 @@ var parseDOTNetwork = DOTToGraph_1;
 
 /***/ }),
 
-/***/ "./node_modules/vis-util/esm/vis-util.js":
-/*!***********************************************!*\
-  !*** ./node_modules/vis-util/esm/vis-util.js ***!
-  \***********************************************/
-/*! exports provided: default, Alea, HSVToHex, HSVToRGB, RGBToHSV, RGBToHex, addClassName, addCssText, addEventListener, binarySearchCustom, binarySearchValue, bridgeObject, copyAndExtendArray, copyArray, deepExtend, easingFunctions, equalArray, extend, fillIfDefined, forEach, getAbsoluteLeft, getAbsoluteRight, getAbsoluteTop, getScrollBarWidth, getTarget, getType, hasParent, hexToHSV, hexToRGB, insertSort, isDate, isNumber, isObject, isString, isValidHex, isValidRGB, isValidRGBA, mergeOptions, option, overrideOpacity, parseColor, preventDefault, randomUUID, recursiveDOMDelete, removeClassName, removeCssText, removeEventListener, selectiveBridgeObject, selectiveDeepExtend, selectiveExtend, selectiveNotDeepExtend, throttle, toArray, topMost, updateProperty */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ "./node_modules/vis-util/peer/umd/vis-util.min.js":
+/*!********************************************************!*\
+  !*** ./node_modules/vis-util/peer/umd/vis-util.min.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* WEBPACK VAR INJECTION */(function(global) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Alea", function() { return Alea; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "HSVToHex", function() { return HSVToHex; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "HSVToRGB", function() { return HSVToRGB; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RGBToHSV", function() { return RGBToHSV; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RGBToHex", function() { return RGBToHex; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addClassName", function() { return addClassName; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addCssText", function() { return addCssText; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "addEventListener", function() { return addEventListener; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "binarySearchCustom", function() { return binarySearchCustom; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "binarySearchValue", function() { return binarySearchValue; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "bridgeObject", function() { return bridgeObject; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "copyAndExtendArray", function() { return copyAndExtendArray; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "copyArray", function() { return copyArray; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "deepExtend", function() { return deepExtend; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "easingFunctions", function() { return easingFunctions; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "equalArray", function() { return equalArray; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return extend; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fillIfDefined", function() { return fillIfDefined; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "forEach", function() { return forEach$3; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getAbsoluteLeft", function() { return getAbsoluteLeft; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getAbsoluteRight", function() { return getAbsoluteRight; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getAbsoluteTop", function() { return getAbsoluteTop; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getScrollBarWidth", function() { return getScrollBarWidth; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getTarget", function() { return getTarget; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getType", function() { return getType; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hasParent", function() { return hasParent; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hexToHSV", function() { return hexToHSV; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hexToRGB", function() { return hexToRGB; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "insertSort", function() { return insertSort; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isDate", function() { return isDate; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isNumber", function() { return isNumber; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isObject", function() { return isObject$1; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isString", function() { return isString; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isValidHex", function() { return isValidHex; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isValidRGB", function() { return isValidRGB; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isValidRGBA", function() { return isValidRGBA; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mergeOptions", function() { return mergeOptions; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "option", function() { return option; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "overrideOpacity", function() { return overrideOpacity; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parseColor", function() { return parseColor; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "preventDefault", function() { return preventDefault; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "randomUUID", function() { return uuid4; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "recursiveDOMDelete", function() { return recursiveDOMDelete; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeClassName", function() { return removeClassName; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeCssText", function() { return removeCssText; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeEventListener", function() { return removeEventListener; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "selectiveBridgeObject", function() { return selectiveBridgeObject; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "selectiveDeepExtend", function() { return selectiveDeepExtend; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "selectiveExtend", function() { return selectiveExtend; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "selectiveNotDeepExtend", function() { return selectiveNotDeepExtend; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "throttle", function() { return throttle; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toArray", function() { return toArray; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "topMost", function() { return topMost; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "updateProperty", function() { return updateProperty; });
-/**
+/* WEBPACK VAR INJECTION */(function(global) {/**
  * vis-util
  * https://github.com/visjs/vis-util
  *
  * utilitie collection for visjs
  *
- * @version 2.1.0
- * @date    2020-01-12T20:17:27.848Z
+ * @version 4.3.4
+ * @date    2020-08-01T15:11:53.524Z
  *
  * @copyright (c) 2011-2017 Almende B.V, http://almende.com
  * @copyright (c) 2017-2019 visjs contributors, https://github.com/visjs
@@ -42868,4769 +43576,10 @@ __webpack_require__.r(__webpack_exports__);
  *
  * vis.js may be distributed under either license.
  */
+!function(t,r){ true?r(exports):undefined}(this,(function(t){var r=function(t){try{return!!t()}catch(t){return!0}},e={}.toString,n=function(t){return e.call(t).slice(8,-1)},o="".split,i=r((function(){return!Object("z").propertyIsEnumerable(0)}))?function(t){return"String"==n(t)?o.call(t,""):Object(t)}:Object,a=function(t){if(null==t)throw TypeError("Can't call method on "+t);return t},u=function(t){return i(a(t))},c={},f="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{};function l(t,r,e){return t(e={path:r,exports:{},require:function(t,r){return function(){throw new Error("Dynamic requires are not currently supported by @rollup/plugin-commonjs")}(null==r&&e.path)}},e.exports),e.exports}function s(t){return t&&t.default||t}var p=function(t){return t&&t.Math==Math&&t},v=p("object"==typeof globalThis&&globalThis)||p("object"==typeof window&&window)||p("object"==typeof self&&self)||p("object"==typeof f&&f)||Function("return this")(),h=!r((function(){return 7!=Object.defineProperty({},1,{get:function(){return 7}})[1]})),d=function(t){return"object"==typeof t?null!==t:"function"==typeof t},y=v.document,g=d(y)&&d(y.createElement),b=function(t){return g?y.createElement(t):{}},m=!h&&!r((function(){return 7!=Object.defineProperty(b("div"),"a",{get:function(){return 7}}).a})),O=function(t){if(!d(t))throw TypeError(String(t)+" is not an object");return t},w=function(t,r){if(!d(t))return t;var e,n;if(r&&"function"==typeof(e=t.toString)&&!d(n=e.call(t)))return n;if("function"==typeof(e=t.valueOf)&&!d(n=e.call(t)))return n;if(!r&&"function"==typeof(e=t.toString)&&!d(n=e.call(t)))return n;throw TypeError("Can't convert object to primitive value")},j=Object.defineProperty,S={f:h?j:function(t,r,e){if(O(t),r=w(r,!0),O(e),m)try{return j(t,r,e)}catch(t){}if("get"in e||"set"in e)throw TypeError("Accessors not supported");return"value"in e&&(t[r]=e.value),t}},A=function(t,r){return{enumerable:!(1&t),configurable:!(2&t),writable:!(4&t),value:r}},E=h?function(t,r,e){return S.f(t,r,A(1,e))}:function(t,r,e){return t[r]=e,t},x=v["__core-js_shared__"]||function(t,r){try{E(v,t,r)}catch(e){v[t]=r}return r}("__core-js_shared__",{}),P=Function.toString;"function"!=typeof x.inspectSource&&(x.inspectSource=function(t){return P.call(t)});var T,k,M,I=x.inspectSource,C=v.WeakMap,L="function"==typeof C&&/native code/.test(I(C)),D={}.hasOwnProperty,N=function(t,r){return D.call(t,r)},_=l((function(t){(t.exports=function(t,r){return x[t]||(x[t]=void 0!==r?r:{})})("versions",[]).push({version:"3.6.4",mode:"pure",copyright:"© 2020 Denis Pushkarev (zloirock.ru)"})})),R=0,F=Math.random(),B=function(t){return"Symbol("+String(void 0===t?"":t)+")_"+(++R+F).toString(36)},G=_("keys"),V=function(t){return G[t]||(G[t]=B(t))},H={},Q=v.WeakMap;if(L){var $=new Q,W=$.get,q=$.has,z=$.set;T=function(t,r){return z.call($,t,r),r},k=function(t){return W.call($,t)||{}},M=function(t){return q.call($,t)}}else{var U=V("state");H[U]=!0,T=function(t,r){return E(t,U,r),r},k=function(t){return N(t,U)?t[U]:{}},M=function(t){return N(t,U)}}var J,K,Y,X={set:T,get:k,has:M,enforce:function(t){return M(t)?k(t):T(t,{})},getterFor:function(t){return function(r){var e;if(!d(r)||(e=k(r)).type!==t)throw TypeError("Incompatible receiver, "+t+" required");return e}}},Z={}.propertyIsEnumerable,tt=Object.getOwnPropertyDescriptor,rt={f:tt&&!Z.call({1:2},1)?function(t){var r=tt(this,t);return!!r&&r.enumerable}:Z},et=Object.getOwnPropertyDescriptor,nt={f:h?et:function(t,r){if(t=u(t),r=w(r,!0),m)try{return et(t,r)}catch(t){}if(N(t,r))return A(!rt.f.call(t,r),t[r])}},ot=/#|\.prototype\./,it=function(t,e){var n=ut[at(t)];return n==ft||n!=ct&&("function"==typeof e?r(e):!!e)},at=it.normalize=function(t){return String(t).replace(ot,".").toLowerCase()},ut=it.data={},ct=it.NATIVE="N",ft=it.POLYFILL="P",lt=it,st={},pt=function(t,r,e){if(function(t){if("function"!=typeof t)throw TypeError(String(t)+" is not a function")}(t),void 0===r)return t;switch(e){case 0:return function(){return t.call(r)};case 1:return function(e){return t.call(r,e)};case 2:return function(e,n){return t.call(r,e,n)};case 3:return function(e,n,o){return t.call(r,e,n,o)}}return function(){return t.apply(r,arguments)}},vt=nt.f,ht=function(t){var r=function(r,e,n){if(this instanceof t){switch(arguments.length){case 0:return new t;case 1:return new t(r);case 2:return new t(r,e)}return new t(r,e,n)}return t.apply(this,arguments)};return r.prototype=t.prototype,r},dt=function(t,r){var e,n,o,i,a,u,c,f,l=t.target,s=t.global,p=t.stat,h=t.proto,d=s?v:p?v[l]:(v[l]||{}).prototype,y=s?st:st[l]||(st[l]={}),g=y.prototype;for(o in r)e=!lt(s?o:l+(p?".":"#")+o,t.forced)&&d&&N(d,o),a=y[o],e&&(u=t.noTargetGet?(f=vt(d,o))&&f.value:d[o]),i=e&&u?u:r[o],e&&typeof a==typeof i||(c=t.bind&&e?pt(i,v):t.wrap&&e?ht(i):h&&"function"==typeof i?pt(Function.call,i):i,(t.sham||i&&i.sham||a&&a.sham)&&E(c,"sham",!0),y[o]=c,h&&(N(st,n=l+"Prototype")||E(st,n,{}),st[n][o]=i,t.real&&g&&!g[o]&&E(g,o,i)))},yt=function(t){return Object(a(t))},gt=!r((function(){function t(){}return t.prototype.constructor=null,Object.getPrototypeOf(new t)!==t.prototype})),bt=V("IE_PROTO"),mt=Object.prototype,Ot=gt?Object.getPrototypeOf:function(t){return t=yt(t),N(t,bt)?t[bt]:"function"==typeof t.constructor&&t instanceof t.constructor?t.constructor.prototype:t instanceof Object?mt:null},wt=!!Object.getOwnPropertySymbols&&!r((function(){return!String(Symbol())})),jt=wt&&!Symbol.sham&&"symbol"==typeof Symbol.iterator,St=_("wks"),At=v.Symbol,Et=jt?At:At&&At.withoutSetter||B,xt=function(t){return N(St,t)||(wt&&N(At,t)?St[t]=At[t]:St[t]=Et("Symbol."+t)),St[t]},Pt=(xt("iterator"),!1);[].keys&&("next"in(Y=[].keys())?(K=Ot(Ot(Y)))!==Object.prototype&&(J=K):Pt=!0),null==J&&(J={});var Tt,kt={IteratorPrototype:J,BUGGY_SAFARI_ITERATORS:Pt},Mt=Math.ceil,It=Math.floor,Ct=function(t){return isNaN(t=+t)?0:(t>0?It:Mt)(t)},Lt=Math.min,Dt=function(t){return t>0?Lt(Ct(t),9007199254740991):0},Nt=Math.max,_t=Math.min,Rt=function(t,r){var e=Ct(t);return e<0?Nt(e+r,0):_t(e,r)},Ft=function(t){return function(r,e,n){var o,i=u(r),a=Dt(i.length),c=Rt(n,a);if(t&&e!=e){for(;a>c;)if((o=i[c++])!=o)return!0}else for(;a>c;c++)if((t||c in i)&&i[c]===e)return t||c||0;return!t&&-1}},Bt={includes:Ft(!0),indexOf:Ft(!1)},Gt=Bt.indexOf,Vt=function(t,r){var e,n=u(t),o=0,i=[];for(e in n)!N(H,e)&&N(n,e)&&i.push(e);for(;r.length>o;)N(n,e=r[o++])&&(~Gt(i,e)||i.push(e));return i},Ht=["constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","toLocaleString","toString","valueOf"],Qt=Object.keys||function(t){return Vt(t,Ht)},$t=h?Object.defineProperties:function(t,r){O(t);for(var e,n=Qt(r),o=n.length,i=0;o>i;)S.f(t,e=n[i++],r[e]);return t},Wt=function(t){return"function"==typeof t?t:void 0},qt=function(t,r){return arguments.length<2?Wt(st[t])||Wt(v[t]):st[t]&&st[t][r]||v[t]&&v[t][r]},zt=qt("document","documentElement"),Ut=V("IE_PROTO"),Jt=function(){},Kt=function(t){return"<script>"+t+"<\/script>"},Yt=function(){try{Tt=document.domain&&new ActiveXObject("htmlfile")}catch(t){}var t,r;Yt=Tt?function(t){t.write(Kt("")),t.close();var r=t.parentWindow.Object;return t=null,r}(Tt):((r=b("iframe")).style.display="none",zt.appendChild(r),r.src=String("javascript:"),(t=r.contentWindow.document).open(),t.write(Kt("document.F=Object")),t.close(),t.F);for(var e=Ht.length;e--;)delete Yt.prototype[Ht[e]];return Yt()};H[Ut]=!0;var Xt=Object.create||function(t,r){var e;return null!==t?(Jt.prototype=O(t),e=new Jt,Jt.prototype=null,e[Ut]=t):e=Yt(),void 0===r?e:$t(e,r)},Zt={};Zt[xt("toStringTag")]="z";var tr="[object z]"===String(Zt),rr=xt("toStringTag"),er="Arguments"==n(function(){return arguments}()),nr=tr?n:function(t){var r,e,o;return void 0===t?"Undefined":null===t?"Null":"string"==typeof(e=function(t,r){try{return t[r]}catch(t){}}(r=Object(t),rr))?e:er?n(r):"Object"==(o=n(r))&&"function"==typeof r.callee?"Arguments":o},or=tr?{}.toString:function(){return"[object "+nr(this)+"]"},ir=S.f,ar=xt("toStringTag"),ur=function(t,r,e,n){if(t){var o=e?t:t.prototype;N(o,ar)||ir(o,ar,{configurable:!0,value:r}),n&&!tr&&E(o,"toString",or)}},cr=kt.IteratorPrototype,fr=function(){return this},lr=(Object.setPrototypeOf||"__proto__"in{}&&function(){var t,r=!1,e={};try{(t=Object.getOwnPropertyDescriptor(Object.prototype,"__proto__").set).call(e,[]),r=e instanceof Array}catch(t){}}(),function(t,r,e,n){n&&n.enumerable?t[r]=e:E(t,r,e)}),sr=kt.IteratorPrototype,pr=kt.BUGGY_SAFARI_ITERATORS,vr=xt("iterator"),hr=function(){return this},dr=function(t,r,e,n,o,i,a){!function(t,r,e){var n=r+" Iterator";t.prototype=Xt(cr,{next:A(1,e)}),ur(t,n,!1,!0),c[n]=fr}(e,r,n);var u,f,l,s=function(t){if(t===o&&y)return y;if(!pr&&t in h)return h[t];switch(t){case"keys":case"values":case"entries":return function(){return new e(this,t)}}return function(){return new e(this)}},p=r+" Iterator",v=!1,h=t.prototype,d=h[vr]||h["@@iterator"]||o&&h[o],y=!pr&&d||s(o),g="Array"==r&&h.entries||d;if(g&&(u=Ot(g.call(new t)),sr!==Object.prototype&&u.next&&(ur(u,p,!0,!0),c[p]=hr)),"values"==o&&d&&"values"!==d.name&&(v=!0,y=function(){return d.call(this)}),a&&h[vr]!==y&&E(h,vr,y),c[r]=y,o)if(f={values:s("values"),keys:i?y:s("keys"),entries:s("entries")},a)for(l in f)(pr||v||!(l in h))&&lr(h,l,f[l]);else dt({target:r,proto:!0,forced:pr||v},f);return f},yr=X.set,gr=X.getterFor("Array Iterator");dr(Array,"Array",(function(t,r){yr(this,{type:"Array Iterator",target:u(t),index:0,kind:r})}),(function(){var t=gr(this),r=t.target,e=t.kind,n=t.index++;return!r||n>=r.length?(t.target=void 0,{value:void 0,done:!0}):"keys"==e?{value:n,done:!1}:"values"==e?{value:r[n],done:!1}:{value:[n,r[n]],done:!1}}),"values");c.Arguments=c.Array;var br=xt("toStringTag");for(var mr in{CSSRuleList:0,CSSStyleDeclaration:0,CSSValueList:0,ClientRectList:0,DOMRectList:0,DOMStringList:0,DOMTokenList:1,DataTransferItemList:0,FileList:0,HTMLAllCollection:0,HTMLCollection:0,HTMLFormElement:0,HTMLSelectElement:0,MediaList:0,MimeTypeArray:0,NamedNodeMap:0,NodeList:1,PaintRequestList:0,Plugin:0,PluginArray:0,SVGLengthList:0,SVGNumberList:0,SVGPathSegList:0,SVGPointList:0,SVGStringList:0,SVGTransformList:0,SourceBufferList:0,StyleSheetList:0,TextTrackCueList:0,TextTrackList:0,TouchList:0}){var Or=v[mr],wr=Or&&Or.prototype;wr&&nr(wr)!==br&&E(wr,br,mr),c[mr]=c.Array}var jr=function(t){return function(r,e){var n,o,i=String(a(r)),u=Ct(e),c=i.length;return u<0||u>=c?t?"":void 0:(n=i.charCodeAt(u))<55296||n>56319||u+1===c||(o=i.charCodeAt(u+1))<56320||o>57343?t?i.charAt(u):n:t?i.slice(u,u+2):o-56320+(n-55296<<10)+65536}},Sr={codeAt:jr(!1),charAt:jr(!0)}.charAt,Ar=X.set,Er=X.getterFor("String Iterator");dr(String,"String",(function(t){Ar(this,{type:"String Iterator",string:String(t),index:0})}),(function(){var t,r=Er(this),e=r.string,n=r.index;return n>=e.length?{value:void 0,done:!0}:(t=Sr(e,n),r.index+=t.length,{value:t,done:!1})}));var xr=xt("iterator"),Pr=function(t){if(null!=t)return t[xr]||t["@@iterator"]||c[nr(t)]},Tr=function(t){var r=Pr(t);if("function"!=typeof r)throw TypeError(String(t)+" is not iterable");return O(r.call(t))},kr=Pr,Mr=function(t,r,e,n){try{return n?r(O(e)[0],e[1]):r(e)}catch(r){var o=t.return;throw void 0!==o&&O(o.call(t)),r}},Ir=xt("iterator"),Cr=Array.prototype,Lr=function(t){return void 0!==t&&(c.Array===t||Cr[Ir]===t)},Dr=function(t,r,e){var n=w(r);n in t?S.f(t,n,A(0,e)):t[n]=e},Nr=xt("iterator"),_r=!1;try{var Rr=0,Fr={next:function(){return{done:!!Rr++}},return:function(){_r=!0}};Fr[Nr]=function(){return this},Array.from(Fr,(function(){throw 2}))}catch(t){}var Br=!function(t,r){if(!r&&!_r)return!1;var e=!1;try{var n={};n[Nr]=function(){return{next:function(){return{done:e=!0}}}},t(n)}catch(t){}return e}((function(t){Array.from(t)}));dt({target:"Array",stat:!0,forced:Br},{from:function(t){var r,e,n,o,i,a,u=yt(t),c="function"==typeof this?this:Array,f=arguments.length,l=f>1?arguments[1]:void 0,s=void 0!==l,p=Pr(u),v=0;if(s&&(l=pt(l,f>2?arguments[2]:void 0,2)),null==p||c==Array&&Lr(p))for(e=new c(r=Dt(u.length));r>v;v++)a=s?l(u[v],v):u[v],Dr(e,v,a);else for(i=(o=p.call(u)).next,e=new c;!(n=i.call(o)).done;v++)a=s?Mr(o,l,[n.value,v],!0):n.value,Dr(e,v,a);return e.length=v,e}});var Gr=st.Array.from,Vr=Gr,Hr=r((function(){Qt(1)}));dt({target:"Object",stat:!0,forced:Hr},{keys:function(t){return Qt(yt(t))}});var Qr,$r,Wr=st.Object.keys,qr=Array.isArray||function(t){return"Array"==n(t)},zr=xt("species"),Ur=function(t,r){var e;return qr(t)&&("function"!=typeof(e=t.constructor)||e!==Array&&!qr(e.prototype)?d(e)&&null===(e=e[zr])&&(e=void 0):e=void 0),new(void 0===e?Array:e)(0===r?0:r)},Jr=[].push,Kr=function(t){var r=1==t,e=2==t,n=3==t,o=4==t,a=6==t,u=5==t||a;return function(c,f,l,s){for(var p,v,h=yt(c),d=i(h),y=pt(f,l,3),g=Dt(d.length),b=0,m=s||Ur,O=r?m(c,g):e?m(c,0):void 0;g>b;b++)if((u||b in d)&&(v=y(p=d[b],b,h),t))if(r)O[b]=v;else if(v)switch(t){case 3:return!0;case 5:return p;case 6:return b;case 2:Jr.call(O,p)}else if(o)return!1;return a?-1:n||o?o:O}},Yr={forEach:Kr(0),map:Kr(1),filter:Kr(2),some:Kr(3),every:Kr(4),find:Kr(5),findIndex:Kr(6)},Xr=qt("navigator","userAgent")||"",Zr=v.process,te=Zr&&Zr.versions,re=te&&te.v8;re?$r=(Qr=re.split("."))[0]+Qr[1]:Xr&&(!(Qr=Xr.match(/Edge\/(\d+)/))||Qr[1]>=74)&&(Qr=Xr.match(/Chrome\/(\d+)/))&&($r=Qr[1]);var ee=$r&&+$r,ne=xt("species"),oe=function(t){return ee>=51||!r((function(){var r=[];return(r.constructor={})[ne]=function(){return{foo:1}},1!==r[t](Boolean).foo}))},ie=Object.defineProperty,ae={},ue=function(t){throw t},ce=function(t,e){if(N(ae,t))return ae[t];e||(e={});var n=[][t],o=!!N(e,"ACCESSORS")&&e.ACCESSORS,i=N(e,0)?e[0]:ue,a=N(e,1)?e[1]:void 0;return ae[t]=!!n&&!r((function(){if(o&&!h)return!0;var t={length:-1};o?ie(t,1,{enumerable:!0,get:ue}):t[1]=1,n.call(t,i,a)}))},fe=Yr.map,le=oe("map"),se=ce("map");dt({target:"Array",proto:!0,forced:!le||!se},{map:function(t){return fe(this,t,arguments.length>1?arguments[1]:void 0)}});var pe=function(t){return st[t+"Prototype"]},ve=pe("Array").map,he=Array.prototype,de=function(t){var r=t.map;return t===he||t instanceof Array&&r===he.map?ve:r};dt({target:"Array",stat:!0},{isArray:qr});var ye=st.Array.isArray,ge=ye,be={f:xt},me=S.f,Oe=function(t){var r=st.Symbol||(st.Symbol={});N(r,t)||me(r,t,{value:be.f(t)})};Oe("iterator");var we=be.f("iterator"),je=xt("isConcatSpreadable"),Se=ee>=51||!r((function(){var t=[];return t[je]=!1,t.concat()[0]!==t})),Ae=oe("concat"),Ee=function(t){if(!d(t))return!1;var r=t[je];return void 0!==r?!!r:qr(t)};dt({target:"Array",proto:!0,forced:!Se||!Ae},{concat:function(t){var r,e,n,o,i,a=yt(this),u=Ur(a,0),c=0;for(r=-1,n=arguments.length;r<n;r++)if(Ee(i=-1===r?a:arguments[r])){if(c+(o=Dt(i.length))>9007199254740991)throw TypeError("Maximum allowed index exceeded");for(e=0;e<o;e++,c++)e in i&&Dr(u,c,i[e])}else{if(c>=9007199254740991)throw TypeError("Maximum allowed index exceeded");Dr(u,c++,i)}return u.length=c,u}});var xe=Object.freeze({__proto__:null}),Pe=Ht.concat("length","prototype"),Te={f:Object.getOwnPropertyNames||function(t){return Vt(t,Pe)}},ke=Te.f,Me={}.toString,Ie="object"==typeof window&&window&&Object.getOwnPropertyNames?Object.getOwnPropertyNames(window):[],Ce={f:function(t){return Ie&&"[object Window]"==Me.call(t)?function(t){try{return ke(t)}catch(t){return Ie.slice()}}(t):ke(u(t))}},Le={f:Object.getOwnPropertySymbols},De=Yr.forEach,Ne=V("hidden"),_e=xt("toPrimitive"),Re=X.set,Fe=X.getterFor("Symbol"),Be=Object.prototype,Ge=v.Symbol,Ve=qt("JSON","stringify"),He=nt.f,Qe=S.f,$e=Ce.f,We=rt.f,qe=_("symbols"),ze=_("op-symbols"),Ue=_("string-to-symbol-registry"),Je=_("symbol-to-string-registry"),Ke=_("wks"),Ye=v.QObject,Xe=!Ye||!Ye.prototype||!Ye.prototype.findChild,Ze=h&&r((function(){return 7!=Xt(Qe({},"a",{get:function(){return Qe(this,"a",{value:7}).a}})).a}))?function(t,r,e){var n=He(Be,r);n&&delete Be[r],Qe(t,r,e),n&&t!==Be&&Qe(Be,r,n)}:Qe,tn=function(t,r){var e=qe[t]=Xt(Ge.prototype);return Re(e,{type:"Symbol",tag:t,description:r}),h||(e.description=r),e},rn=jt?function(t){return"symbol"==typeof t}:function(t){return Object(t)instanceof Ge},en=function(t,r,e){t===Be&&en(ze,r,e),O(t);var n=w(r,!0);return O(e),N(qe,n)?(e.enumerable?(N(t,Ne)&&t[Ne][n]&&(t[Ne][n]=!1),e=Xt(e,{enumerable:A(0,!1)})):(N(t,Ne)||Qe(t,Ne,A(1,{})),t[Ne][n]=!0),Ze(t,n,e)):Qe(t,n,e)},nn=function(t,r){O(t);var e=u(r),n=Qt(e).concat(cn(e));return De(n,(function(r){h&&!on.call(e,r)||en(t,r,e[r])})),t},on=function(t){var r=w(t,!0),e=We.call(this,r);return!(this===Be&&N(qe,r)&&!N(ze,r))&&(!(e||!N(this,r)||!N(qe,r)||N(this,Ne)&&this[Ne][r])||e)},an=function(t,r){var e=u(t),n=w(r,!0);if(e!==Be||!N(qe,n)||N(ze,n)){var o=He(e,n);return!o||!N(qe,n)||N(e,Ne)&&e[Ne][n]||(o.enumerable=!0),o}},un=function(t){var r=$e(u(t)),e=[];return De(r,(function(t){N(qe,t)||N(H,t)||e.push(t)})),e},cn=function(t){var r=t===Be,e=$e(r?ze:u(t)),n=[];return De(e,(function(t){!N(qe,t)||r&&!N(Be,t)||n.push(qe[t])})),n};if(wt||(lr((Ge=function(){if(this instanceof Ge)throw TypeError("Symbol is not a constructor");var t=arguments.length&&void 0!==arguments[0]?String(arguments[0]):void 0,r=B(t),e=function(t){this===Be&&e.call(ze,t),N(this,Ne)&&N(this[Ne],r)&&(this[Ne][r]=!1),Ze(this,r,A(1,t))};return h&&Xe&&Ze(Be,r,{configurable:!0,set:e}),tn(r,t)}).prototype,"toString",(function(){return Fe(this).tag})),lr(Ge,"withoutSetter",(function(t){return tn(B(t),t)})),rt.f=on,S.f=en,nt.f=an,Te.f=Ce.f=un,Le.f=cn,be.f=function(t){return tn(xt(t),t)},h&&Qe(Ge.prototype,"description",{configurable:!0,get:function(){return Fe(this).description}})),dt({global:!0,wrap:!0,forced:!wt,sham:!wt},{Symbol:Ge}),De(Qt(Ke),(function(t){Oe(t)})),dt({target:"Symbol",stat:!0,forced:!wt},{for:function(t){var r=String(t);if(N(Ue,r))return Ue[r];var e=Ge(r);return Ue[r]=e,Je[e]=r,e},keyFor:function(t){if(!rn(t))throw TypeError(t+" is not a symbol");if(N(Je,t))return Je[t]},useSetter:function(){Xe=!0},useSimple:function(){Xe=!1}}),dt({target:"Object",stat:!0,forced:!wt,sham:!h},{create:function(t,r){return void 0===r?Xt(t):nn(Xt(t),r)},defineProperty:en,defineProperties:nn,getOwnPropertyDescriptor:an}),dt({target:"Object",stat:!0,forced:!wt},{getOwnPropertyNames:un,getOwnPropertySymbols:cn}),dt({target:"Object",stat:!0,forced:r((function(){Le.f(1)}))},{getOwnPropertySymbols:function(t){return Le.f(yt(t))}}),Ve){var fn=!wt||r((function(){var t=Ge();return"[null]"!=Ve([t])||"{}"!=Ve({a:t})||"{}"!=Ve(Object(t))}));dt({target:"JSON",stat:!0,forced:fn},{stringify:function(t,r,e){for(var n,o=[t],i=1;arguments.length>i;)o.push(arguments[i++]);if(n=r,(d(r)||void 0!==t)&&!rn(t))return qr(r)||(r=function(t,r){if("function"==typeof n&&(r=n.call(this,t,r)),!rn(r))return r}),o[1]=r,Ve.apply(null,o)}})}Ge.prototype[_e]||E(Ge.prototype,_e,Ge.prototype.valueOf),ur(Ge,"Symbol"),H[Ne]=!0,Oe("asyncIterator");var ln=Object.freeze({__proto__:null});Oe("hasInstance"),Oe("isConcatSpreadable"),Oe("match"),Oe("matchAll"),Oe("replace"),Oe("search"),Oe("species"),Oe("split"),Oe("toPrimitive"),Oe("toStringTag"),Oe("unscopables"),ur(Math,"Math",!0),ur(v.JSON,"JSON",!0),s(xe),s(ln);var sn=st.Symbol;Oe("asyncDispose"),Oe("dispose"),Oe("observable"),Oe("patternMatch"),Oe("replaceAll");var pn=sn,vn=l((function(t){function r(e){return t.exports=r="function"==typeof pn&&"symbol"==typeof we?function(t){return typeof t}:function(t){return t&&"function"==typeof pn&&t.constructor===pn&&t!==pn.prototype?"symbol":typeof t},r(e)}t.exports=r})),hn=qt("Reflect","ownKeys")||function(t){var r=Te.f(O(t)),e=Le.f;return e?r.concat(e(t)):r};dt({target:"Reflect",stat:!0},{ownKeys:hn});var dn=st.Reflect.ownKeys,yn=oe("slice"),gn=ce("slice",{ACCESSORS:!0,0:0,1:2}),bn=xt("species"),mn=[].slice,On=Math.max;dt({target:"Array",proto:!0,forced:!yn||!gn},{slice:function(t,r){var e,n,o,i=u(this),a=Dt(i.length),c=Rt(t,a),f=Rt(void 0===r?a:r,a);if(qr(i)&&("function"!=typeof(e=i.constructor)||e!==Array&&!qr(e.prototype)?d(e)&&null===(e=e[bn])&&(e=void 0):e=void 0,e===Array||void 0===e))return mn.call(i,c,f);for(n=new(void 0===e?Array:e)(On(f-c,0)),o=0;c<f;c++,o++)c in i&&Dr(n,o,i[c]);return n.length=o,n}});var wn=pe("Array").slice,jn=Array.prototype,Sn=function(t){var r=t.slice;return t===jn||t instanceof Array&&r===jn.slice?wn:r},An=Sn,En=ye;var xn=function(t,r){(null==r||r>t.length)&&(r=t.length);for(var e=0,n=new Array(r);e<r;e++)n[e]=t[e];return n};var Pn=function(t){if(En(t))return xn(t)},Tn=Gr,kn=xt("iterator"),Mn=function(t){var r=Object(t);return void 0!==r[kn]||"@@iterator"in r||c.hasOwnProperty(nr(r))};var In=function(t){if(void 0!==pn&&Mn(Object(t)))return Tn(t)},Cn=Sn;var Ln=function(t,r){var e;if(t){if("string"==typeof t)return xn(t,r);var n=Cn(e=Object.prototype.toString.call(t)).call(e,8,-1);return"Object"===n&&t.constructor&&(n=t.constructor.name),"Map"===n||"Set"===n?Tn(t):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?xn(t,r):void 0}};var Dn=function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var Nn=function(t){return Pn(t)||In(t)||Ln(t)||Dn()},_n=pe("Array").concat,Rn=Array.prototype,Fn=function(t){var r=t.concat;return t===Rn||t instanceof Array&&r===Rn.concat?_n:r},Bn=sn;function Gn(t,r){var e;if(void 0===Bn||null==kr(t)){if(ge(t)||(e=function(t,r){var e;if(!t)return;if("string"==typeof t)return Vn(t,r);var n=An(e=Object.prototype.toString.call(t)).call(e,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return Vr(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return Vn(t,r)}(t))||r&&t&&"number"==typeof t.length){e&&(t=e);var n=0,o=function(){};return{s:o,n:function(){return n>=t.length?{done:!0}:{done:!1,value:t[n++]}},e:function(t){throw t},f:o}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var i,a=!0,u=!1;return{s:function(){e=Tr(t)},n:function(){var t=e.next();return a=t.done,t},e:function(t){u=!0,i=t},f:function(){try{a||null==e.return||e.return()}finally{if(u)throw i}}}}function Vn(t,r){(null==r||r>t.length)&&(r=t.length);for(var e=0,n=new Array(r);e<r;e++)n[e]=t[e];return n}var Hn=Bn("DELETE");function Qn(){var t=$n.apply(void 0,arguments);return qn(t),t}function $n(){for(var t=arguments.length,r=new Array(t),e=0;e<t;e++)r[e]=arguments[e];if(r.length<2)return r[0];var n;if(r.length>2)return $n.apply(void 0,Fn(n=[Qn(r[0],r[1])]).call(n,Nn(An(r).call(r,2))));var o,i=r[0],a=r[1],u=Gn(dn(a));try{for(u.s();!(o=u.n()).done;){var c=o.value;Object.prototype.propertyIsEnumerable.call(a,c)&&(a[c]===Hn?delete i[c]:null===i[c]||null===a[c]||"object"!==vn(i[c])||"object"!==vn(a[c])||ge(i[c])||ge(a[c])?i[c]=Wn(a[c]):i[c]=$n(i[c],a[c]))}}catch(t){u.e(t)}finally{u.f()}return i}function Wn(t){return ge(t)?de(t).call(t,(function(t){return Wn(t)})):"object"===vn(t)&&null!==t?$n({},t):t}function qn(t){for(var r=0,e=Wr(t);r<e.length;r++){var n=e[r];t[n]===Hn?delete t[n]:"object"===vn(t[n])&&null!==t[n]&&qn(t[n])}}var zn=function(t){if(En(t))return t};var Un=function(t,r){if(void 0!==pn&&Mn(Object(t))){var e=[],n=!0,o=!1,i=void 0;try{for(var a,u=Tr(t);!(n=(a=u.next()).done)&&(e.push(a.value),!r||e.length!==r);n=!0);}catch(t){o=!0,i=t}finally{try{n||null==u.return||u.return()}finally{if(o)throw i}}return e}};var Jn=function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")};var Kn=function(t,r){return zn(t)||Un(t,r)||Ln(t,r)||Jn()};dt({target:"Date",stat:!0},{now:function(){return(new Date).getTime()}});var Yn=st.Date.now;function Xn(t){var r=function(){for(var t=Zn(),r=t(" "),e=t(" "),n=t(" "),o=0;o<arguments.length;o++)(r-=t(o<0||arguments.length<=o?void 0:arguments[o]))<0&&(r+=1),(e-=t(o<0||arguments.length<=o?void 0:arguments[o]))<0&&(e+=1),(n-=t(o<0||arguments.length<=o?void 0:arguments[o]))<0&&(n+=1);return[r,e,n]}(t),e=Kn(r,3),n=e[0],o=e[1],i=e[2],a=1,u=function(){var t=2091639*n+2.3283064365386963e-10*a;return n=o,o=i,i=t-(a=0|t)};return u.uint32=function(){return 4294967296*u()},u.fract53=function(){return u()+11102230246251565e-32*(2097152*u()|0)},u.algorithm="Alea",u.seed=t,u.version="0.9",u}function Zn(){var t=4022871197;return function(r){for(var e=r.toString(),n=0;n<e.length;n++){var o=.02519603282416938*(t+=e.charCodeAt(n));o-=t=o>>>0,t=(o*=t)>>>0,t+=4294967296*(o-=t)}return 2.3283064365386963e-10*(t>>>0)}}dt({target:"Object",stat:!0,forced:!h,sham:!h},{defineProperty:S.f});var to=l((function(t){var r=st.Object,e=t.exports=function(t,e,n){return r.defineProperty(t,e,n)};r.defineProperty.sham&&(e.sham=!0)})),ro=to;dt({target:"Object",stat:!0,forced:!h,sham:!h},{defineProperties:$t});var eo=l((function(t){var r=st.Object,e=t.exports=function(t,e){return r.defineProperties(t,e)};r.defineProperties.sham&&(e.sham=!0)}));dt({target:"Object",stat:!0,sham:!h},{getOwnPropertyDescriptors:function(t){for(var r,e,n=u(t),o=nt.f,i=hn(n),a={},c=0;i.length>c;)void 0!==(e=o(n,r=i[c++]))&&Dr(a,r,e);return a}});var no=st.Object.getOwnPropertyDescriptors,oo=nt.f,io=r((function(){oo(1)}));dt({target:"Object",stat:!0,forced:!h||io,sham:!h},{getOwnPropertyDescriptor:function(t,r){return oo(u(t),r)}});var ao=l((function(t){var r=st.Object,e=t.exports=function(t,e){return r.getOwnPropertyDescriptor(t,e)};r.getOwnPropertyDescriptor.sham&&(e.sham=!0)})),uo=st.Object.getOwnPropertySymbols;dt({target:"Object",stat:!0,sham:!h},{create:Xt});var co=st.Object,fo=function(t,r){return co.create(t,r)},lo=to;var so,po=function(t,r,e){return r in t?lo(t,r,{value:e,enumerable:!0,configurable:!0,writable:!0}):t[r]=e,t},vo="\t\n\v\f\r                　\u2028\u2029\ufeff",ho="["+vo+"]",yo=RegExp("^"+ho+ho+"*"),go=RegExp(ho+ho+"*$"),bo=function(t){return function(r){var e=String(a(r));return 1&t&&(e=e.replace(yo,"")),2&t&&(e=e.replace(go,"")),e}},mo={start:bo(1),end:bo(2),trim:bo(3)},Oo=mo.trim;dt({target:"String",proto:!0,forced:(so="trim",r((function(){return!!vo[so]()||"​᠎"!="​᠎"[so]()||vo[so].name!==so})))},{trim:function(){return Oo(this)}});var wo=pe("String").trim,jo=String.prototype,So=function(t){var r=t.trim;return"string"==typeof t||t===jo||t instanceof String&&r===jo.trim?wo:r},Ao=function(t,e){var n=[][t];return!!n&&r((function(){n.call(null,e||function(){throw 1},1)}))},Eo=Yr.forEach,xo=Ao("forEach"),Po=ce("forEach"),To=xo&&Po?[].forEach:function(t){return Eo(this,t,arguments.length>1?arguments[1]:void 0)};dt({target:"Array",proto:!0,forced:[].forEach!=To},{forEach:To});var ko=pe("Array").forEach,Mo=Array.prototype,Io={DOMTokenList:!0,NodeList:!0},Co=function(t){var r=t.forEach;return t===Mo||t instanceof Array&&r===Mo.forEach||Io.hasOwnProperty(nr(t))?ko:r},Lo=mo.trim,Do=v.parseInt,No=/^[+-]?0[Xx]/,_o=8!==Do(vo+"08")||22!==Do(vo+"0x16")?function(t,r){var e=Lo(String(t));return Do(e,r>>>0||(No.test(e)?16:10))}:Do;dt({global:!0,forced:parseInt!=_o},{parseInt:_o});var Ro=st.parseInt,Fo=rt.f,Bo=function(t){return function(r){for(var e,n=u(r),o=Qt(n),i=o.length,a=0,c=[];i>a;)e=o[a++],h&&!Fo.call(n,e)||c.push(t?[e,n[e]]:n[e]);return c}},Go={entries:Bo(!0),values:Bo(!1)}.values;dt({target:"Object",stat:!0},{values:function(t){return Go(t)}});var Vo=st.Object.values,Ho=Yr.filter,Qo=oe("filter"),$o=ce("filter");dt({target:"Array",proto:!0,forced:!Qo||!$o},{filter:function(t){return Ho(this,t,arguments.length>1?arguments[1]:void 0)}});var Wo=pe("Array").filter,qo=Array.prototype,zo=function(t){var r=t.filter;return t===qo||t instanceof Array&&r===qo.filter?Wo:r},Uo=r((function(){Ot(1)}));dt({target:"Object",stat:!0,forced:Uo,sham:!gt},{getPrototypeOf:function(t){return Ot(yt(t))}});var Jo=st.Object.getPrototypeOf,Ko=Bt.indexOf,Yo=[].indexOf,Xo=!!Yo&&1/[1].indexOf(1,-0)<0,Zo=Ao("indexOf"),ti=ce("indexOf",{ACCESSORS:!0,1:0});dt({target:"Array",proto:!0,forced:Xo||!Zo||!ti},{indexOf:function(t){return Xo?Yo.apply(this,arguments)||0:Ko(this,t,arguments.length>1?arguments[1]:void 0)}});var ri=pe("Array").indexOf,ei=Array.prototype,ni=function(t){var r=t.indexOf;return t===ei||t instanceof Array&&r===ei.indexOf?ri:r},oi=Object.assign,ii=Object.defineProperty,ai=!oi||r((function(){if(h&&1!==oi({b:1},oi(ii({},"a",{enumerable:!0,get:function(){ii(this,"b",{value:3,enumerable:!1})}}),{b:2})).b)return!0;var t={},r={},e=Symbol();return t[e]=7,"abcdefghijklmnopqrst".split("").forEach((function(t){r[t]=t})),7!=oi({},t)[e]||"abcdefghijklmnopqrst"!=Qt(oi({},r)).join("")}))?function(t,r){for(var e=yt(t),n=arguments.length,o=1,a=Le.f,u=rt.f;n>o;)for(var c,f=i(arguments[o++]),l=a?Qt(f).concat(a(f)):Qt(f),s=l.length,p=0;s>p;)c=l[p++],h&&!u.call(f,c)||(e[c]=f[c]);return e}:oi;dt({target:"Object",stat:!0,forced:Object.assign!==ai},{assign:ai});var ui=st.Object.assign;function ci(t,r){var e;if(void 0===Bn||null==kr(t)){if(ge(t)||(e=function(t,r){var e;if(!t)return;if("string"==typeof t)return fi(t,r);var n=An(e=Object.prototype.toString.call(t)).call(e,8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return Vr(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return fi(t,r)}(t))||r&&t&&"number"==typeof t.length){e&&(t=e);var n=0,o=function(){};return{s:o,n:function(){return n>=t.length?{done:!0}:{done:!1,value:t[n++]}},e:function(t){throw t},f:o}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var i,a=!0,u=!1;return{s:function(){e=Tr(t)},n:function(){var t=e.next();return a=t.done,t},e:function(t){u=!0,i=t},f:function(){try{a||null==e.return||e.return()}finally{if(u)throw i}}}}function fi(t,r){(null==r||r>t.length)&&(r=t.length);for(var e=0,n=new Array(r);e<r;e++)n[e]=t[e];return n}function li(t,r){var e=Wr(t);if(uo){var n=uo(t);r&&(n=zo(n).call(n,(function(r){return ao(t,r).enumerable}))),e.push.apply(e,n)}return e}function si(t){for(var r=1;r<arguments.length;r++){var e,n=null!=arguments[r]?arguments[r]:{};if(r%2)Co(e=li(Object(n),!0)).call(e,(function(r){po(t,r,n[r])}));else if(no)eo(t,no(n));else{var o;Co(o=li(Object(n))).call(o,(function(r){ro(t,r,ao(n,r))}))}}return t}var pi=/^\/?Date\((-?\d+)/i,vi=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i,hi=/^#?([a-f\d])([a-f\d])([a-f\d])$/i,di=/^rgb\( *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *\)$/i,yi=/^rgba\( *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *([01]|0?\.\d+) *\)$/i;function gi(t){return t instanceof Number||"number"==typeof t}function bi(t){return t instanceof String||"string"==typeof t}function mi(t){return"object"===vn(t)&&null!==t}function Oi(t,r,e,n){var o=!1;!0===n&&(o=null===r[e]&&void 0!==t[e]),o?delete t[e]:t[e]=r[e]}var wi=ui;function ji(t,r){var e=arguments.length>2&&void 0!==arguments[2]&&arguments[2],n=arguments.length>3&&void 0!==arguments[3]&&arguments[3];for(var o in r)if(Object.prototype.hasOwnProperty.call(r,o)||!0===e)if("object"===vn(r[o])&&null!==r[o]&&Jo(r[o])===Object.prototype)void 0===t[o]?t[o]=ji({},r[o],e):"object"===vn(t[o])&&null!==t[o]&&Jo(t[o])===Object.prototype?ji(t[o],r[o],e):Oi(t,r,o,n);else if(ge(r[o])){var i;t[o]=An(i=r[o]).call(i)}else Oi(t,r,o,n);return t}var Si=Vo;var Ai={asBoolean:function(t,r){return"function"==typeof t&&(t=t()),null!=t?0!=t:r||null},asNumber:function(t,r){return"function"==typeof t&&(t=t()),null!=t?Number(t)||r||null:r||null},asString:function(t,r){return"function"==typeof t&&(t=t()),null!=t?String(t):r||null},asSize:function(t,r){return"function"==typeof t&&(t=t()),bi(t)?t:gi(t)?t+"px":r||null},asElement:function(t,r){return"function"==typeof t&&(t=t()),t||r||null}};function Ei(t){var r;switch(t.length){case 3:case 4:return(r=hi.exec(t))?{r:Ro(r[1]+r[1],16),g:Ro(r[2]+r[2],16),b:Ro(r[3]+r[3],16)}:null;case 6:case 7:return(r=vi.exec(t))?{r:Ro(r[1],16),g:Ro(r[2],16),b:Ro(r[3],16)}:null;default:return null}}function xi(t,r,e){var n;return"#"+An(n=((1<<24)+(t<<16)+(r<<8)+e).toString(16)).call(n,1)}function Pi(t,r,e){t/=255,r/=255,e/=255;var n=Math.min(t,Math.min(r,e)),o=Math.max(t,Math.max(r,e));return n===o?{h:0,s:0,v:n}:{h:60*((t===n?3:e===n?1:5)-(t===n?r-e:e===n?t-r:e-t)/(o-n))/360,s:(o-n)/o,v:o}}var Ti=function(t){var r,e={};return Co(r=t.split(";")).call(r,(function(t){if(""!=So(t).call(t)){var r,n,o=t.split(":"),i=So(r=o[0]).call(r),a=So(n=o[1]).call(n);e[i]=a}})),e},ki=function(t){var r;return de(r=Wr(t)).call(r,(function(r){return r+": "+t[r]})).join("; ")};function Mi(t,r,e){var n,o,i,a=Math.floor(6*t),u=6*t-a,c=e*(1-r),f=e*(1-u*r),l=e*(1-(1-u)*r);switch(a%6){case 0:n=e,o=l,i=c;break;case 1:n=f,o=e,i=c;break;case 2:n=c,o=e,i=l;break;case 3:n=c,o=f,i=e;break;case 4:n=l,o=c,i=e;break;case 5:n=e,o=c,i=f}return{r:Math.floor(255*n),g:Math.floor(255*o),b:Math.floor(255*i)}}function Ii(t,r,e){var n=Mi(t,r,e);return xi(n.r,n.g,n.b)}function Ci(t){var r=Ei(t);if(!r)throw new TypeError("'".concat(t,"' is not a valid color."));return Pi(r.r,r.g,r.b)}function Li(t){return/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(t)}function Di(t){return di.test(t)}function Ni(t){if(null===t||"object"!==vn(t))return null;if(t instanceof Element)return t;var r=fo(t);for(var e in t)Object.prototype.hasOwnProperty.call(t,e)&&"object"==vn(t[e])&&(r[e]=Ni(t[e]));return r}t.Alea=function(){for(var t=arguments.length,r=new Array(t),e=0;e<t;e++)r[e]=arguments[e];return Xn(r.length?r:[Yn()])},t.DELETE=Hn,t.HSVToHex=Ii,t.HSVToRGB=Mi,t.RGBToHSV=Pi,t.RGBToHex=xi,t.addClassName=function(t,r){var e=t.className.split(" "),n=r.split(" ");e=Fn(e).call(e,zo(n).call(n,(function(t){return ni(e).call(e,t)<0}))),t.className=e.join(" ")},t.addCssText=function(t,r){var e=Ti(t.style.cssText),n=Ti(r),o=si(si({},e),n);t.style.cssText=ki(o)},t.addEventListener=function(t,r,e,n){var o;t.addEventListener?(void 0===n&&(n=!1),"mousewheel"===r&&ni(o=navigator.userAgent).call(o,"Firefox")>=0&&(r="DOMMouseScroll"),t.addEventListener(r,e,n)):t.attachEvent("on"+r,e)},t.binarySearchCustom=function(t,r,e,n){for(var o=0,i=0,a=t.length-1;i<=a&&o<1e4;){var u=Math.floor((i+a)/2),c=t[u],f=r(void 0===n?c[e]:c[e][n]);if(0==f)return u;-1==f?i=u+1:a=u-1,o++}return-1},t.binarySearchValue=function(t,r,e,n,o){var i,a,u,c,f=0,l=0,s=t.length-1;for(o=null!=o?o:function(t,r){return t==r?0:t<r?-1:1};l<=s&&f<1e4;){if(c=Math.floor(.5*(s+l)),i=t[Math.max(0,c-1)][e],a=t[c][e],u=t[Math.min(t.length-1,c+1)][e],0==o(a,r))return c;if(o(i,r)<0&&o(a,r)>0)return"before"==n?Math.max(0,c-1):c;if(o(a,r)<0&&o(u,r)>0)return"before"==n?c:Math.min(t.length-1,c+1);o(a,r)<0?l=c+1:s=c-1,f++}return-1},t.bridgeObject=Ni,t.copyAndExtendArray=function(t,r){var e;return Fn(e=[]).call(e,Nn(t),[r])},t.copyArray=function(t){return An(t).call(t)},t.deepExtend=ji,t.deepObjectAssign=Qn,t.easingFunctions={linear:function(t){return t},easeInQuad:function(t){return t*t},easeOutQuad:function(t){return t*(2-t)},easeInOutQuad:function(t){return t<.5?2*t*t:(4-2*t)*t-1},easeInCubic:function(t){return t*t*t},easeOutCubic:function(t){return--t*t*t+1},easeInOutCubic:function(t){return t<.5?4*t*t*t:(t-1)*(2*t-2)*(2*t-2)+1},easeInQuart:function(t){return t*t*t*t},easeOutQuart:function(t){return 1- --t*t*t*t},easeInOutQuart:function(t){return t<.5?8*t*t*t*t:1-8*--t*t*t*t},easeInQuint:function(t){return t*t*t*t*t},easeOutQuint:function(t){return 1+--t*t*t*t*t},easeInOutQuint:function(t){return t<.5?16*t*t*t*t*t:1+16*--t*t*t*t*t}},t.equalArray=function(t,r){if(t.length!==r.length)return!1;for(var e=0,n=t.length;e<n;e++)if(t[e]!=r[e])return!1;return!0},t.extend=wi,t.fillIfDefined=function t(r,e){var n=arguments.length>2&&void 0!==arguments[2]&&arguments[2];for(var o in r)if(void 0!==e[o])if(null===e[o]||"object"!==vn(e[o]))Oi(r,e,o,n);else{var i=r[o],a=e[o];mi(i)&&mi(a)&&t(i,a,n)}},t.forEach=function(t,r){if(ge(t))for(var e=t.length,n=0;n<e;n++)r(t[n],n,t);else for(var o in t)Object.prototype.hasOwnProperty.call(t,o)&&r(t[o],o,t)},t.getAbsoluteLeft=function(t){return t.getBoundingClientRect().left},t.getAbsoluteRight=function(t){return t.getBoundingClientRect().right},t.getAbsoluteTop=function(t){return t.getBoundingClientRect().top},t.getScrollBarWidth=function(){var t=document.createElement("p");t.style.width="100%",t.style.height="200px";var r=document.createElement("div");r.style.position="absolute",r.style.top="0px",r.style.left="0px",r.style.visibility="hidden",r.style.width="200px",r.style.height="150px",r.style.overflow="hidden",r.appendChild(t),document.body.appendChild(r);var e=t.offsetWidth;r.style.overflow="scroll";var n=t.offsetWidth;return e==n&&(n=r.clientWidth),document.body.removeChild(r),e-n},t.getTarget=function(){var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:window.event,r=null;return t&&(t.target?r=t.target:t.srcElement&&(r=t.srcElement)),r instanceof Element&&(null==r.nodeType||3!=r.nodeType||(r=r.parentNode)instanceof Element)?r:null},t.getType=function(t){var r=vn(t);return"object"===r?null===t?"null":t instanceof Boolean?"Boolean":t instanceof Number?"Number":t instanceof String?"String":ge(t)?"Array":t instanceof Date?"Date":"Object":"number"===r?"Number":"boolean"===r?"Boolean":"string"===r?"String":void 0===r?"undefined":r},t.hasParent=function(t,r){for(var e=t;e;){if(e===r)return!0;if(!e.parentNode)return!1;e=e.parentNode}return!1},t.hexToHSV=Ci,t.hexToRGB=Ei,t.insertSort=function(t,r){for(var e=0;e<t.length;e++){var n=t[e],o=void 0;for(o=e;o>0&&r(n,t[o-1])<0;o--)t[o]=t[o-1];t[o]=n}return t},t.isDate=function(t){if(t instanceof Date)return!0;if(bi(t)){if(pi.exec(t))return!0;if(!isNaN(Date.parse(t)))return!0}return!1},t.isNumber=gi,t.isObject=mi,t.isString=bi,t.isValidHex=Li,t.isValidRGB=Di,t.isValidRGBA=function(t){return yi.test(t)},t.mergeOptions=function(t,r,e){var n=arguments.length>3&&void 0!==arguments[3]?arguments[3]:{},o=function(t){return null!=t},i=function(t){return null!==t&&"object"===vn(t)},a=function(t){for(var r in t)if(Object.prototype.hasOwnProperty.call(t,r))return!1;return!0};if(!i(t))throw new Error("Parameter mergeTarget must be an object");if(!i(r))throw new Error("Parameter options must be an object");if(!o(e))throw new Error("Parameter option must have a value");if(!i(n))throw new Error("Parameter globalOptions must be an object");var u=function(t,r,e){i(t[e])||(t[e]={});var n=r[e],o=t[e];for(var a in n)Object.prototype.hasOwnProperty.call(n,a)&&(o[a]=n[a])},c=r[e],f=i(n)&&!a(n),l=f?n[e]:void 0,s=l?l.enabled:void 0;if(void 0!==c){if("boolean"==typeof c)return i(t[e])||(t[e]={}),void(t[e].enabled=c);if(null===c&&!i(t[e])){if(!o(l))return;t[e]=fo(l)}if(i(c)){var p=!0;void 0!==c.enabled?p=c.enabled:void 0!==s&&(p=l.enabled),u(t,r,e),t[e].enabled=p}}},t.option=Ai,t.overrideOpacity=function(t,r){if(-1!==ni(t).call(t,"rgba"))return t;if(-1!==ni(t).call(t,"rgb")){var e=t.substr(ni(t).call(t,"(")+1).replace(")","").split(",");return"rgba("+e[0]+","+e[1]+","+e[2]+","+r+")"}var n=Ei(t);return null==n?t:"rgba("+n.r+","+n.g+","+n.b+","+r+")"},t.parseColor=function(t,r){if(bi(t)){var e=t;if(Di(e)){var n,o=de(n=e.substr(4).substr(0,e.length-5).split(",")).call(n,(function(t){return Ro(t)}));e=xi(o[0],o[1],o[2])}if(!0===Li(e)){var i=Ci(e),a={h:i.h,s:.8*i.s,v:Math.min(1,1.02*i.v)},u={h:i.h,s:Math.min(1,1.25*i.s),v:.8*i.v},c=Ii(u.h,u.s,u.v),f=Ii(a.h,a.s,a.v);return{background:e,border:c,highlight:{background:f,border:c},hover:{background:f,border:c}}}return{background:e,border:e,highlight:{background:e,border:e},hover:{background:e,border:e}}}return r?{background:t.background||r.background,border:t.border||r.border,highlight:bi(t.highlight)?{border:t.highlight,background:t.highlight}:{background:t.highlight&&t.highlight.background||r.highlight.background,border:t.highlight&&t.highlight.border||r.highlight.border},hover:bi(t.hover)?{border:t.hover,background:t.hover}:{border:t.hover&&t.hover.border||r.hover.border,background:t.hover&&t.hover.background||r.hover.background}}:{background:t.background||void 0,border:t.border||void 0,highlight:bi(t.highlight)?{border:t.highlight,background:t.highlight}:{background:t.highlight&&t.highlight.background||void 0,border:t.highlight&&t.highlight.border||void 0},hover:bi(t.hover)?{border:t.hover,background:t.hover}:{border:t.hover&&t.hover.border||void 0,background:t.hover&&t.hover.background||void 0}}},t.preventDefault=function(t){t||(t=window.event),t&&(t.preventDefault?t.preventDefault():t.returnValue=!1)},t.pureDeepObjectAssign=function(t){for(var r,e=arguments.length,n=new Array(e>1?e-1:0),o=1;o<e;o++)n[o-1]=arguments[o];return Qn.apply(void 0,Fn(r=[{},t]).call(r,n))},t.recursiveDOMDelete=function t(r){if(r)for(;!0===r.hasChildNodes();){var e=r.firstChild;e&&(t(e),r.removeChild(e))}},t.removeClassName=function(t,r){var e=t.className.split(" "),n=r.split(" ");e=zo(e).call(e,(function(t){return ni(n).call(n,t)<0})),t.className=e.join(" ")},t.removeCssText=function(t,r){var e=Ti(t.style.cssText),n=Ti(r);for(var o in n)Object.prototype.hasOwnProperty.call(n,o)&&delete e[o];t.style.cssText=ki(e)},t.removeEventListener=function(t,r,e,n){var o;t.removeEventListener?(void 0===n&&(n=!1),"mousewheel"===r&&ni(o=navigator.userAgent).call(o,"Firefox")>=0&&(r="DOMMouseScroll"),t.removeEventListener(r,e,n)):t.detachEvent("on"+r,e)},t.selectiveBridgeObject=function(t,r){if(null!==r&&"object"===vn(r)){for(var e=fo(r),n=0;n<t.length;n++)Object.prototype.hasOwnProperty.call(r,t[n])&&"object"==vn(r[t[n]])&&(e[t[n]]=Ni(r[t[n]]));return e}return null},t.selectiveDeepExtend=function(t,r,e){var n=arguments.length>3&&void 0!==arguments[3]&&arguments[3];if(ge(e))throw new TypeError("Arrays are not supported by deepExtend");for(var o=0;o<t.length;o++){var i=t[o];if(Object.prototype.hasOwnProperty.call(e,i))if(e[i]&&e[i].constructor===Object)void 0===r[i]&&(r[i]={}),r[i].constructor===Object?ji(r[i],e[i],!1,n):Oi(r,e,i,n);else{if(ge(e[i]))throw new TypeError("Arrays are not supported by deepExtend");Oi(r,e,i,n)}}return r},t.selectiveExtend=function(t,r){if(!ge(t))throw new Error("Array with property names expected as first argument");for(var e=arguments.length,n=new Array(e>2?e-2:0),o=2;o<e;o++)n[o-2]=arguments[o];for(var i=0,a=n;i<a.length;i++)for(var u=a[i],c=0;c<t.length;c++){var f=t[c];u&&Object.prototype.hasOwnProperty.call(u,f)&&(r[f]=u[f])}return r},t.selectiveNotDeepExtend=function(t,r,e){var n=arguments.length>3&&void 0!==arguments[3]&&arguments[3];if(ge(e))throw new TypeError("Arrays are not supported by deepExtend");for(var o in e)if(Object.prototype.hasOwnProperty.call(e,o)&&-1===ni(t).call(t,o))if(e[o]&&e[o].constructor===Object)void 0===r[o]&&(r[o]={}),r[o].constructor===Object?ji(r[o],e[o]):Oi(r,e,o,n);else if(ge(e[o])){r[o]=[];for(var i=0;i<e[o].length;i++)r[o].push(e[o][i])}else Oi(r,e,o,n);return r},t.throttle=function(t){var r=!1;return function(){r||(r=!0,requestAnimationFrame((function(){r=!1,t()})))}},t.toArray=Si,t.topMost=function(t,r){var e;ge(r)||(r=[r]);var n,o=ci(t);try{for(o.s();!(n=o.n()).done;){var i=n.value;if(i){e=i[r[0]];for(var a=1;a<r.length;a++)e&&(e=e[r[a]]);if(void 0!==e)break}}}catch(t){o.e(t)}finally{o.f()}return e},t.updateProperty=function(t,r,e){return t[r]!==e&&(t[r]=e,!0)},Object.defineProperty(t,"__esModule",{value:!0})}));
+//# sourceMappingURL=vis-util.min.js.map
 
-var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-function createCommonjsModule(fn, module) {
-	return module = { exports: {} }, fn(module, module.exports), module.exports;
-}
-
-var check = function (it) {
-  return it && it.Math == Math && it;
-}; // https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
-
-
-var global_1 = // eslint-disable-next-line no-undef
-check(typeof globalThis == 'object' && globalThis) || check(typeof window == 'object' && window) || check(typeof self == 'object' && self) || check(typeof commonjsGlobal == 'object' && commonjsGlobal) || // eslint-disable-next-line no-new-func
-Function('return this')();
-
-var fails = function (exec) {
-  try {
-    return !!exec();
-  } catch (error) {
-    return true;
-  }
-};
-
-var descriptors = !fails(function () {
-  return Object.defineProperty({}, 'a', {
-    get: function () {
-      return 7;
-    }
-  }).a != 7;
-});
-
-var nativePropertyIsEnumerable = {}.propertyIsEnumerable;
-var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor; // Nashorn ~ JDK8 bug
-
-var NASHORN_BUG = getOwnPropertyDescriptor && !nativePropertyIsEnumerable.call({
-  1: 2
-}, 1); // `Object.prototype.propertyIsEnumerable` method implementation
-// https://tc39.github.io/ecma262/#sec-object.prototype.propertyisenumerable
-
-var f = NASHORN_BUG ? function propertyIsEnumerable(V) {
-  var descriptor = getOwnPropertyDescriptor(this, V);
-  return !!descriptor && descriptor.enumerable;
-} : nativePropertyIsEnumerable;
-var objectPropertyIsEnumerable = {
-  f: f
-};
-
-var createPropertyDescriptor = function (bitmap, value) {
-  return {
-    enumerable: !(bitmap & 1),
-    configurable: !(bitmap & 2),
-    writable: !(bitmap & 4),
-    value: value
-  };
-};
-
-var toString = {}.toString;
-
-var classofRaw = function (it) {
-  return toString.call(it).slice(8, -1);
-};
-
-var split = ''.split; // fallback for non-array-like ES3 and non-enumerable old V8 strings
-
-var indexedObject = fails(function () {
-  // throws an error in rhino, see https://github.com/mozilla/rhino/issues/346
-  // eslint-disable-next-line no-prototype-builtins
-  return !Object('z').propertyIsEnumerable(0);
-}) ? function (it) {
-  return classofRaw(it) == 'String' ? split.call(it, '') : Object(it);
-} : Object;
-
-// `RequireObjectCoercible` abstract operation
-// https://tc39.github.io/ecma262/#sec-requireobjectcoercible
-var requireObjectCoercible = function (it) {
-  if (it == undefined) throw TypeError("Can't call method on " + it);
-  return it;
-};
-
-var toIndexedObject = function (it) {
-  return indexedObject(requireObjectCoercible(it));
-};
-
-var isObject = function (it) {
-  return typeof it === 'object' ? it !== null : typeof it === 'function';
-};
-
-// https://tc39.github.io/ecma262/#sec-toprimitive
-// instead of the ES6 spec version, we didn't implement @@toPrimitive case
-// and the second argument - flag - preferred type is a string
-
-var toPrimitive = function (input, PREFERRED_STRING) {
-  if (!isObject(input)) return input;
-  var fn, val;
-  if (PREFERRED_STRING && typeof (fn = input.toString) == 'function' && !isObject(val = fn.call(input))) return val;
-  if (typeof (fn = input.valueOf) == 'function' && !isObject(val = fn.call(input))) return val;
-  if (!PREFERRED_STRING && typeof (fn = input.toString) == 'function' && !isObject(val = fn.call(input))) return val;
-  throw TypeError("Can't convert object to primitive value");
-};
-
-var hasOwnProperty = {}.hasOwnProperty;
-
-var has = function (it, key) {
-  return hasOwnProperty.call(it, key);
-};
-
-var document$1 = global_1.document; // typeof document.createElement is 'object' in old IE
-
-var EXISTS = isObject(document$1) && isObject(document$1.createElement);
-
-var documentCreateElement = function (it) {
-  return EXISTS ? document$1.createElement(it) : {};
-};
-
-var ie8DomDefine = !descriptors && !fails(function () {
-  return Object.defineProperty(documentCreateElement('div'), 'a', {
-    get: function () {
-      return 7;
-    }
-  }).a != 7;
-});
-
-var nativeGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor; // `Object.getOwnPropertyDescriptor` method
-// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptor
-
-var f$1 = descriptors ? nativeGetOwnPropertyDescriptor : function getOwnPropertyDescriptor(O, P) {
-  O = toIndexedObject(O);
-  P = toPrimitive(P, true);
-  if (ie8DomDefine) try {
-    return nativeGetOwnPropertyDescriptor(O, P);
-  } catch (error) {
-    /* empty */
-  }
-  if (has(O, P)) return createPropertyDescriptor(!objectPropertyIsEnumerable.f.call(O, P), O[P]);
-};
-var objectGetOwnPropertyDescriptor = {
-  f: f$1
-};
-
-var replacement = /#|\.prototype\./;
-
-var isForced = function (feature, detection) {
-  var value = data[normalize(feature)];
-  return value == POLYFILL ? true : value == NATIVE ? false : typeof detection == 'function' ? fails(detection) : !!detection;
-};
-
-var normalize = isForced.normalize = function (string) {
-  return String(string).replace(replacement, '.').toLowerCase();
-};
-
-var data = isForced.data = {};
-var NATIVE = isForced.NATIVE = 'N';
-var POLYFILL = isForced.POLYFILL = 'P';
-var isForced_1 = isForced;
-
-var path = {};
-
-var aFunction = function (it) {
-  if (typeof it != 'function') {
-    throw TypeError(String(it) + ' is not a function');
-  }
-
-  return it;
-};
-
-var bindContext = function (fn, that, length) {
-  aFunction(fn);
-  if (that === undefined) return fn;
-
-  switch (length) {
-    case 0:
-      return function () {
-        return fn.call(that);
-      };
-
-    case 1:
-      return function (a) {
-        return fn.call(that, a);
-      };
-
-    case 2:
-      return function (a, b) {
-        return fn.call(that, a, b);
-      };
-
-    case 3:
-      return function (a, b, c) {
-        return fn.call(that, a, b, c);
-      };
-  }
-
-  return function ()
-  /* ...args */
-  {
-    return fn.apply(that, arguments);
-  };
-};
-
-var anObject = function (it) {
-  if (!isObject(it)) {
-    throw TypeError(String(it) + ' is not an object');
-  }
-
-  return it;
-};
-
-var nativeDefineProperty = Object.defineProperty; // `Object.defineProperty` method
-// https://tc39.github.io/ecma262/#sec-object.defineproperty
-
-var f$2 = descriptors ? nativeDefineProperty : function defineProperty(O, P, Attributes) {
-  anObject(O);
-  P = toPrimitive(P, true);
-  anObject(Attributes);
-  if (ie8DomDefine) try {
-    return nativeDefineProperty(O, P, Attributes);
-  } catch (error) {
-    /* empty */
-  }
-  if ('get' in Attributes || 'set' in Attributes) throw TypeError('Accessors not supported');
-  if ('value' in Attributes) O[P] = Attributes.value;
-  return O;
-};
-var objectDefineProperty = {
-  f: f$2
-};
-
-var createNonEnumerableProperty = descriptors ? function (object, key, value) {
-  return objectDefineProperty.f(object, key, createPropertyDescriptor(1, value));
-} : function (object, key, value) {
-  object[key] = value;
-  return object;
-};
-
-var getOwnPropertyDescriptor$1 = objectGetOwnPropertyDescriptor.f;
-
-var wrapConstructor = function (NativeConstructor) {
-  var Wrapper = function (a, b, c) {
-    if (this instanceof NativeConstructor) {
-      switch (arguments.length) {
-        case 0:
-          return new NativeConstructor();
-
-        case 1:
-          return new NativeConstructor(a);
-
-        case 2:
-          return new NativeConstructor(a, b);
-      }
-
-      return new NativeConstructor(a, b, c);
-    }
-
-    return NativeConstructor.apply(this, arguments);
-  };
-
-  Wrapper.prototype = NativeConstructor.prototype;
-  return Wrapper;
-};
-/*
-  options.target      - name of the target object
-  options.global      - target is the global object
-  options.stat        - export as static methods of target
-  options.proto       - export as prototype methods of target
-  options.real        - real prototype method for the `pure` version
-  options.forced      - export even if the native feature is available
-  options.bind        - bind methods to the target, required for the `pure` version
-  options.wrap        - wrap constructors to preventing global pollution, required for the `pure` version
-  options.unsafe      - use the simple assignment of property instead of delete + defineProperty
-  options.sham        - add a flag to not completely full polyfills
-  options.enumerable  - export as enumerable property
-  options.noTargetGet - prevent calling a getter on target
-*/
-
-
-var _export = function (options, source) {
-  var TARGET = options.target;
-  var GLOBAL = options.global;
-  var STATIC = options.stat;
-  var PROTO = options.proto;
-  var nativeSource = GLOBAL ? global_1 : STATIC ? global_1[TARGET] : (global_1[TARGET] || {}).prototype;
-  var target = GLOBAL ? path : path[TARGET] || (path[TARGET] = {});
-  var targetPrototype = target.prototype;
-  var FORCED, USE_NATIVE, VIRTUAL_PROTOTYPE;
-  var key, sourceProperty, targetProperty, nativeProperty, resultProperty, descriptor;
-
-  for (key in source) {
-    FORCED = isForced_1(GLOBAL ? key : TARGET + (STATIC ? '.' : '#') + key, options.forced); // contains in native
-
-    USE_NATIVE = !FORCED && nativeSource && has(nativeSource, key);
-    targetProperty = target[key];
-    if (USE_NATIVE) if (options.noTargetGet) {
-      descriptor = getOwnPropertyDescriptor$1(nativeSource, key);
-      nativeProperty = descriptor && descriptor.value;
-    } else nativeProperty = nativeSource[key]; // export native or implementation
-
-    sourceProperty = USE_NATIVE && nativeProperty ? nativeProperty : source[key];
-    if (USE_NATIVE && typeof targetProperty === typeof sourceProperty) continue; // bind timers to global for call from export context
-
-    if (options.bind && USE_NATIVE) resultProperty = bindContext(sourceProperty, global_1); // wrap global constructors for prevent changs in this version
-    else if (options.wrap && USE_NATIVE) resultProperty = wrapConstructor(sourceProperty); // make static versions for prototype methods
-      else if (PROTO && typeof sourceProperty == 'function') resultProperty = bindContext(Function.call, sourceProperty); // default case
-        else resultProperty = sourceProperty; // add a flag to not completely full polyfills
-
-    if (options.sham || sourceProperty && sourceProperty.sham || targetProperty && targetProperty.sham) {
-      createNonEnumerableProperty(resultProperty, 'sham', true);
-    }
-
-    target[key] = resultProperty;
-
-    if (PROTO) {
-      VIRTUAL_PROTOTYPE = TARGET + 'Prototype';
-
-      if (!has(path, VIRTUAL_PROTOTYPE)) {
-        createNonEnumerableProperty(path, VIRTUAL_PROTOTYPE, {});
-      } // export virtual prototype methods
-
-
-      path[VIRTUAL_PROTOTYPE][key] = sourceProperty; // export real prototype methods
-
-      if (options.real && targetPrototype && !targetPrototype[key]) {
-        createNonEnumerableProperty(targetPrototype, key, sourceProperty);
-      }
-    }
-  }
-};
-
-// https://tc39.github.io/ecma262/#sec-isarray
-
-var isArray = Array.isArray || function isArray(arg) {
-  return classofRaw(arg) == 'Array';
-};
-
-// https://tc39.github.io/ecma262/#sec-array.isarray
-
-_export({
-  target: 'Array',
-  stat: true
-}, {
-  isArray: isArray
-});
-
-var isArray$1 = path.Array.isArray;
-
-var isArray$2 = isArray$1;
-
-var isArray$3 = isArray$2;
-
-function _arrayWithHoles(arr) {
-  if (isArray$3(arr)) return arr;
-}
-
-var arrayWithHoles = _arrayWithHoles;
-
-var iterators = {};
-
-var setGlobal = function (key, value) {
-  try {
-    createNonEnumerableProperty(global_1, key, value);
-  } catch (error) {
-    global_1[key] = value;
-  }
-
-  return value;
-};
-
-var SHARED = '__core-js_shared__';
-var store = global_1[SHARED] || setGlobal(SHARED, {});
-var sharedStore = store;
-
-var functionToString = Function.toString; // this helper broken in `3.4.1-3.4.4`, so we can't use `shared` helper
-
-if (typeof sharedStore.inspectSource != 'function') {
-  sharedStore.inspectSource = function (it) {
-    return functionToString.call(it);
-  };
-}
-
-var inspectSource = sharedStore.inspectSource;
-
-var WeakMap = global_1.WeakMap;
-var nativeWeakMap = typeof WeakMap === 'function' && /native code/.test(inspectSource(WeakMap));
-
-var shared = createCommonjsModule(function (module) {
-  (module.exports = function (key, value) {
-    return sharedStore[key] || (sharedStore[key] = value !== undefined ? value : {});
-  })('versions', []).push({
-    version: '3.6.0',
-    mode:  'pure' ,
-    copyright: '© 2019 Denis Pushkarev (zloirock.ru)'
-  });
-});
-
-var id = 0;
-var postfix = Math.random();
-
-var uid = function (key) {
-  return 'Symbol(' + String(key === undefined ? '' : key) + ')_' + (++id + postfix).toString(36);
-};
-
-var keys = shared('keys');
-
-var sharedKey = function (key) {
-  return keys[key] || (keys[key] = uid(key));
-};
-
-var hiddenKeys = {};
-
-var WeakMap$1 = global_1.WeakMap;
-var set, get, has$1;
-
-var enforce = function (it) {
-  return has$1(it) ? get(it) : set(it, {});
-};
-
-var getterFor = function (TYPE) {
-  return function (it) {
-    var state;
-
-    if (!isObject(it) || (state = get(it)).type !== TYPE) {
-      throw TypeError('Incompatible receiver, ' + TYPE + ' required');
-    }
-
-    return state;
-  };
-};
-
-if (nativeWeakMap) {
-  var store$1 = new WeakMap$1();
-  var wmget = store$1.get;
-  var wmhas = store$1.has;
-  var wmset = store$1.set;
-
-  set = function (it, metadata) {
-    wmset.call(store$1, it, metadata);
-    return metadata;
-  };
-
-  get = function (it) {
-    return wmget.call(store$1, it) || {};
-  };
-
-  has$1 = function (it) {
-    return wmhas.call(store$1, it);
-  };
-} else {
-  var STATE = sharedKey('state');
-  hiddenKeys[STATE] = true;
-
-  set = function (it, metadata) {
-    createNonEnumerableProperty(it, STATE, metadata);
-    return metadata;
-  };
-
-  get = function (it) {
-    return has(it, STATE) ? it[STATE] : {};
-  };
-
-  has$1 = function (it) {
-    return has(it, STATE);
-  };
-}
-
-var internalState = {
-  set: set,
-  get: get,
-  has: has$1,
-  enforce: enforce,
-  getterFor: getterFor
-};
-
-// https://tc39.github.io/ecma262/#sec-toobject
-
-var toObject = function (argument) {
-  return Object(requireObjectCoercible(argument));
-};
-
-var correctPrototypeGetter = !fails(function () {
-  function F() {
-    /* empty */
-  }
-
-  F.prototype.constructor = null;
-  return Object.getPrototypeOf(new F()) !== F.prototype;
-});
-
-var IE_PROTO = sharedKey('IE_PROTO');
-var ObjectPrototype = Object.prototype; // `Object.getPrototypeOf` method
-// https://tc39.github.io/ecma262/#sec-object.getprototypeof
-
-var objectGetPrototypeOf = correctPrototypeGetter ? Object.getPrototypeOf : function (O) {
-  O = toObject(O);
-  if (has(O, IE_PROTO)) return O[IE_PROTO];
-
-  if (typeof O.constructor == 'function' && O instanceof O.constructor) {
-    return O.constructor.prototype;
-  }
-
-  return O instanceof Object ? ObjectPrototype : null;
-};
-
-var nativeSymbol = !!Object.getOwnPropertySymbols && !fails(function () {
-  // Chrome 38 Symbol has incorrect toString conversion
-  // eslint-disable-next-line no-undef
-  return !String(Symbol());
-});
-
-var useSymbolAsUid = nativeSymbol // eslint-disable-next-line no-undef
-&& !Symbol.sham // eslint-disable-next-line no-undef
-&& typeof Symbol() == 'symbol';
-
-var WellKnownSymbolsStore = shared('wks');
-var Symbol$1 = global_1.Symbol;
-var createWellKnownSymbol = useSymbolAsUid ? Symbol$1 : uid;
-
-var wellKnownSymbol = function (name) {
-  if (!has(WellKnownSymbolsStore, name)) {
-    if (nativeSymbol && has(Symbol$1, name)) WellKnownSymbolsStore[name] = Symbol$1[name];else WellKnownSymbolsStore[name] = createWellKnownSymbol('Symbol.' + name);
-  }
-
-  return WellKnownSymbolsStore[name];
-};
-
-var ITERATOR = wellKnownSymbol('iterator');
-var BUGGY_SAFARI_ITERATORS = false;
-// https://tc39.github.io/ecma262/#sec-%iteratorprototype%-object
-
-
-var IteratorPrototype, PrototypeOfArrayIteratorPrototype, arrayIterator;
-
-if ([].keys) {
-  arrayIterator = [].keys(); // Safari 8 has buggy iterators w/o `next`
-
-  if (!('next' in arrayIterator)) BUGGY_SAFARI_ITERATORS = true;else {
-    PrototypeOfArrayIteratorPrototype = objectGetPrototypeOf(objectGetPrototypeOf(arrayIterator));
-    if (PrototypeOfArrayIteratorPrototype !== Object.prototype) IteratorPrototype = PrototypeOfArrayIteratorPrototype;
-  }
-}
-
-if (IteratorPrototype == undefined) IteratorPrototype = {}; // 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
-
-var iteratorsCore = {
-  IteratorPrototype: IteratorPrototype,
-  BUGGY_SAFARI_ITERATORS: BUGGY_SAFARI_ITERATORS
-};
-
-var ceil = Math.ceil;
-var floor = Math.floor; // `ToInteger` abstract operation
-// https://tc39.github.io/ecma262/#sec-tointeger
-
-var toInteger = function (argument) {
-  return isNaN(argument = +argument) ? 0 : (argument > 0 ? floor : ceil)(argument);
-};
-
-var min = Math.min; // `ToLength` abstract operation
-// https://tc39.github.io/ecma262/#sec-tolength
-
-var toLength = function (argument) {
-  return argument > 0 ? min(toInteger(argument), 0x1FFFFFFFFFFFFF) : 0; // 2 ** 53 - 1 == 9007199254740991
-};
-
-var max = Math.max;
-var min$1 = Math.min; // Helper for a popular repeating case of the spec:
-// Let integer be ? ToInteger(index).
-// If integer < 0, let result be max((length + integer), 0); else let result be min(integer, length).
-
-var toAbsoluteIndex = function (index, length) {
-  var integer = toInteger(index);
-  return integer < 0 ? max(integer + length, 0) : min$1(integer, length);
-};
-
-var createMethod = function (IS_INCLUDES) {
-  return function ($this, el, fromIndex) {
-    var O = toIndexedObject($this);
-    var length = toLength(O.length);
-    var index = toAbsoluteIndex(fromIndex, length);
-    var value; // Array#includes uses SameValueZero equality algorithm
-    // eslint-disable-next-line no-self-compare
-
-    if (IS_INCLUDES && el != el) while (length > index) {
-      value = O[index++]; // eslint-disable-next-line no-self-compare
-
-      if (value != value) return true; // Array#indexOf ignores holes, Array#includes - not
-    } else for (; length > index; index++) {
-      if ((IS_INCLUDES || index in O) && O[index] === el) return IS_INCLUDES || index || 0;
-    }
-    return !IS_INCLUDES && -1;
-  };
-};
-
-var arrayIncludes = {
-  // `Array.prototype.includes` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.includes
-  includes: createMethod(true),
-  // `Array.prototype.indexOf` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.indexof
-  indexOf: createMethod(false)
-};
-
-var indexOf = arrayIncludes.indexOf;
-
-var objectKeysInternal = function (object, names) {
-  var O = toIndexedObject(object);
-  var i = 0;
-  var result = [];
-  var key;
-
-  for (key in O) !has(hiddenKeys, key) && has(O, key) && result.push(key); // Don't enum bug & hidden keys
-
-
-  while (names.length > i) if (has(O, key = names[i++])) {
-    ~indexOf(result, key) || result.push(key);
-  }
-
-  return result;
-};
-
-// IE8- don't enum bug keys
-var enumBugKeys = ['constructor', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString', 'toString', 'valueOf'];
-
-// https://tc39.github.io/ecma262/#sec-object.keys
-
-var objectKeys = Object.keys || function keys(O) {
-  return objectKeysInternal(O, enumBugKeys);
-};
-
-// https://tc39.github.io/ecma262/#sec-object.defineproperties
-
-var objectDefineProperties = descriptors ? Object.defineProperties : function defineProperties(O, Properties) {
-  anObject(O);
-  var keys = objectKeys(Properties);
-  var length = keys.length;
-  var index = 0;
-  var key;
-
-  while (length > index) objectDefineProperty.f(O, key = keys[index++], Properties[key]);
-
-  return O;
-};
-
-var aFunction$1 = function (variable) {
-  return typeof variable == 'function' ? variable : undefined;
-};
-
-var getBuiltIn = function (namespace, method) {
-  return arguments.length < 2 ? aFunction$1(path[namespace]) || aFunction$1(global_1[namespace]) : path[namespace] && path[namespace][method] || global_1[namespace] && global_1[namespace][method];
-};
-
-var html = getBuiltIn('document', 'documentElement');
-
-var GT = '>';
-var LT = '<';
-var PROTOTYPE = 'prototype';
-var SCRIPT = 'script';
-var IE_PROTO$1 = sharedKey('IE_PROTO');
-
-var EmptyConstructor = function () {
-  /* empty */
-};
-
-var scriptTag = function (content) {
-  return LT + SCRIPT + GT + content + LT + '/' + SCRIPT + GT;
-}; // Create object with fake `null` prototype: use ActiveX Object with cleared prototype
-
-
-var NullProtoObjectViaActiveX = function (activeXDocument) {
-  activeXDocument.write(scriptTag(''));
-  activeXDocument.close();
-  var temp = activeXDocument.parentWindow.Object;
-  activeXDocument = null; // avoid memory leak
-
-  return temp;
-}; // Create object with fake `null` prototype: use iframe Object with cleared prototype
-
-
-var NullProtoObjectViaIFrame = function () {
-  // Thrash, waste and sodomy: IE GC bug
-  var iframe = documentCreateElement('iframe');
-  var JS = 'java' + SCRIPT + ':';
-  var iframeDocument;
-  iframe.style.display = 'none';
-  html.appendChild(iframe); // https://github.com/zloirock/core-js/issues/475
-
-  iframe.src = String(JS);
-  iframeDocument = iframe.contentWindow.document;
-  iframeDocument.open();
-  iframeDocument.write(scriptTag('document.F=Object'));
-  iframeDocument.close();
-  return iframeDocument.F;
-}; // Check for document.domain and active x support
-// No need to use active x approach when document.domain is not set
-// see https://github.com/es-shims/es5-shim/issues/150
-// variation of https://github.com/kitcambridge/es5-shim/commit/4f738ac066346
-// avoid IE GC bug
-
-
-var activeXDocument;
-
-var NullProtoObject = function () {
-  try {
-    /* global ActiveXObject */
-    activeXDocument = document.domain && new ActiveXObject('htmlfile');
-  } catch (error) {
-    /* ignore */
-  }
-
-  NullProtoObject = activeXDocument ? NullProtoObjectViaActiveX(activeXDocument) : NullProtoObjectViaIFrame();
-  var length = enumBugKeys.length;
-
-  while (length--) delete NullProtoObject[PROTOTYPE][enumBugKeys[length]];
-
-  return NullProtoObject();
-};
-
-hiddenKeys[IE_PROTO$1] = true; // `Object.create` method
-// https://tc39.github.io/ecma262/#sec-object.create
-
-var objectCreate = Object.create || function create(O, Properties) {
-  var result;
-
-  if (O !== null) {
-    EmptyConstructor[PROTOTYPE] = anObject(O);
-    result = new EmptyConstructor();
-    EmptyConstructor[PROTOTYPE] = null; // add "__proto__" for Object.getPrototypeOf polyfill
-
-    result[IE_PROTO$1] = O;
-  } else result = NullProtoObject();
-
-  return Properties === undefined ? result : objectDefineProperties(result, Properties);
-};
-
-var TO_STRING_TAG = wellKnownSymbol('toStringTag');
-var test = {};
-test[TO_STRING_TAG] = 'z';
-var toStringTagSupport = String(test) === '[object z]';
-
-var TO_STRING_TAG$1 = wellKnownSymbol('toStringTag'); // ES3 wrong here
-
-var CORRECT_ARGUMENTS = classofRaw(function () {
-  return arguments;
-}()) == 'Arguments'; // fallback for IE11 Script Access Denied error
-
-var tryGet = function (it, key) {
-  try {
-    return it[key];
-  } catch (error) {
-    /* empty */
-  }
-}; // getting tag from ES6+ `Object.prototype.toString`
-
-
-var classof = toStringTagSupport ? classofRaw : function (it) {
-  var O, tag, result;
-  return it === undefined ? 'Undefined' : it === null ? 'Null' // @@toStringTag case
-  : typeof (tag = tryGet(O = Object(it), TO_STRING_TAG$1)) == 'string' ? tag // builtinTag case
-  : CORRECT_ARGUMENTS ? classofRaw(O) // ES3 arguments fallback
-  : (result = classofRaw(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : result;
-};
-
-// https://tc39.github.io/ecma262/#sec-object.prototype.tostring
-
-
-var objectToString = toStringTagSupport ? {}.toString : function toString() {
-  return '[object ' + classof(this) + ']';
-};
-
-var defineProperty = objectDefineProperty.f;
-var TO_STRING_TAG$2 = wellKnownSymbol('toStringTag');
-
-var setToStringTag = function (it, TAG, STATIC, SET_METHOD) {
-  if (it) {
-    var target = STATIC ? it : it.prototype;
-
-    if (!has(target, TO_STRING_TAG$2)) {
-      defineProperty(target, TO_STRING_TAG$2, {
-        configurable: true,
-        value: TAG
-      });
-    }
-
-    if (SET_METHOD && !toStringTagSupport) {
-      createNonEnumerableProperty(target, 'toString', objectToString);
-    }
-  }
-};
-
-var IteratorPrototype$1 = iteratorsCore.IteratorPrototype;
-
-var returnThis = function () {
-  return this;
-};
-
-var createIteratorConstructor = function (IteratorConstructor, NAME, next) {
-  var TO_STRING_TAG = NAME + ' Iterator';
-  IteratorConstructor.prototype = objectCreate(IteratorPrototype$1, {
-    next: createPropertyDescriptor(1, next)
-  });
-  setToStringTag(IteratorConstructor, TO_STRING_TAG, false, true);
-  iterators[TO_STRING_TAG] = returnThis;
-  return IteratorConstructor;
-};
-
-var aPossiblePrototype = function (it) {
-  if (!isObject(it) && it !== null) {
-    throw TypeError("Can't set " + String(it) + ' as a prototype');
-  }
-
-  return it;
-};
-
-// https://tc39.github.io/ecma262/#sec-object.setprototypeof
-// Works with __proto__ only. Old v8 can't work with null proto objects.
-
-/* eslint-disable no-proto */
-
-var objectSetPrototypeOf = Object.setPrototypeOf || ('__proto__' in {} ? function () {
-  var CORRECT_SETTER = false;
-  var test = {};
-  var setter;
-
-  try {
-    setter = Object.getOwnPropertyDescriptor(Object.prototype, '__proto__').set;
-    setter.call(test, []);
-    CORRECT_SETTER = test instanceof Array;
-  } catch (error) {
-    /* empty */
-  }
-
-  return function setPrototypeOf(O, proto) {
-    anObject(O);
-    aPossiblePrototype(proto);
-    if (CORRECT_SETTER) setter.call(O, proto);else O.__proto__ = proto;
-    return O;
-  };
-}() : undefined);
-
-var redefine = function (target, key, value, options) {
-  if (options && options.enumerable) target[key] = value;else createNonEnumerableProperty(target, key, value);
-};
-
-var IteratorPrototype$2 = iteratorsCore.IteratorPrototype;
-var BUGGY_SAFARI_ITERATORS$1 = iteratorsCore.BUGGY_SAFARI_ITERATORS;
-var ITERATOR$1 = wellKnownSymbol('iterator');
-var KEYS = 'keys';
-var VALUES = 'values';
-var ENTRIES = 'entries';
-
-var returnThis$1 = function () {
-  return this;
-};
-
-var defineIterator = function (Iterable, NAME, IteratorConstructor, next, DEFAULT, IS_SET, FORCED) {
-  createIteratorConstructor(IteratorConstructor, NAME, next);
-
-  var getIterationMethod = function (KIND) {
-    if (KIND === DEFAULT && defaultIterator) return defaultIterator;
-    if (!BUGGY_SAFARI_ITERATORS$1 && KIND in IterablePrototype) return IterablePrototype[KIND];
-
-    switch (KIND) {
-      case KEYS:
-        return function keys() {
-          return new IteratorConstructor(this, KIND);
-        };
-
-      case VALUES:
-        return function values() {
-          return new IteratorConstructor(this, KIND);
-        };
-
-      case ENTRIES:
-        return function entries() {
-          return new IteratorConstructor(this, KIND);
-        };
-    }
-
-    return function () {
-      return new IteratorConstructor(this);
-    };
-  };
-
-  var TO_STRING_TAG = NAME + ' Iterator';
-  var INCORRECT_VALUES_NAME = false;
-  var IterablePrototype = Iterable.prototype;
-  var nativeIterator = IterablePrototype[ITERATOR$1] || IterablePrototype['@@iterator'] || DEFAULT && IterablePrototype[DEFAULT];
-  var defaultIterator = !BUGGY_SAFARI_ITERATORS$1 && nativeIterator || getIterationMethod(DEFAULT);
-  var anyNativeIterator = NAME == 'Array' ? IterablePrototype.entries || nativeIterator : nativeIterator;
-  var CurrentIteratorPrototype, methods, KEY; // fix native
-
-  if (anyNativeIterator) {
-    CurrentIteratorPrototype = objectGetPrototypeOf(anyNativeIterator.call(new Iterable()));
-
-    if (IteratorPrototype$2 !== Object.prototype && CurrentIteratorPrototype.next) {
-
-
-      setToStringTag(CurrentIteratorPrototype, TO_STRING_TAG, true, true);
-      iterators[TO_STRING_TAG] = returnThis$1;
-    }
-  } // fix Array#{values, @@iterator}.name in V8 / FF
-
-
-  if (DEFAULT == VALUES && nativeIterator && nativeIterator.name !== VALUES) {
-    INCORRECT_VALUES_NAME = true;
-
-    defaultIterator = function values() {
-      return nativeIterator.call(this);
-    };
-  } // define iterator
-
-
-  if (( FORCED) && IterablePrototype[ITERATOR$1] !== defaultIterator) {
-    createNonEnumerableProperty(IterablePrototype, ITERATOR$1, defaultIterator);
-  }
-
-  iterators[NAME] = defaultIterator; // export additional methods
-
-  if (DEFAULT) {
-    methods = {
-      values: getIterationMethod(VALUES),
-      keys: IS_SET ? defaultIterator : getIterationMethod(KEYS),
-      entries: getIterationMethod(ENTRIES)
-    };
-    if (FORCED) for (KEY in methods) {
-      if (BUGGY_SAFARI_ITERATORS$1 || INCORRECT_VALUES_NAME || !(KEY in IterablePrototype)) {
-        redefine(IterablePrototype, KEY, methods[KEY]);
-      }
-    } else _export({
-      target: NAME,
-      proto: true,
-      forced: BUGGY_SAFARI_ITERATORS$1 || INCORRECT_VALUES_NAME
-    }, methods);
-  }
-
-  return methods;
-};
-
-var ARRAY_ITERATOR = 'Array Iterator';
-var setInternalState = internalState.set;
-var getInternalState = internalState.getterFor(ARRAY_ITERATOR); // `Array.prototype.entries` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.entries
-// `Array.prototype.keys` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.keys
-// `Array.prototype.values` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.values
-// `Array.prototype[@@iterator]` method
-// https://tc39.github.io/ecma262/#sec-array.prototype-@@iterator
-// `CreateArrayIterator` internal method
-// https://tc39.github.io/ecma262/#sec-createarrayiterator
-
-var es_array_iterator = defineIterator(Array, 'Array', function (iterated, kind) {
-  setInternalState(this, {
-    type: ARRAY_ITERATOR,
-    target: toIndexedObject(iterated),
-    // target
-    index: 0,
-    // next index
-    kind: kind // kind
-
-  }); // `%ArrayIteratorPrototype%.next` method
-  // https://tc39.github.io/ecma262/#sec-%arrayiteratorprototype%.next
-}, function () {
-  var state = getInternalState(this);
-  var target = state.target;
-  var kind = state.kind;
-  var index = state.index++;
-
-  if (!target || index >= target.length) {
-    state.target = undefined;
-    return {
-      value: undefined,
-      done: true
-    };
-  }
-
-  if (kind == 'keys') return {
-    value: index,
-    done: false
-  };
-  if (kind == 'values') return {
-    value: target[index],
-    done: false
-  };
-  return {
-    value: [index, target[index]],
-    done: false
-  };
-}, 'values'); // argumentsList[@@iterator] is %ArrayProto_values%
-// https://tc39.github.io/ecma262/#sec-createunmappedargumentsobject
-// https://tc39.github.io/ecma262/#sec-createmappedargumentsobject
-
-iterators.Arguments = iterators.Array; // https://tc39.github.io/ecma262/#sec-array.prototype-@@unscopables
-
-// iterable DOM collections
-// flag - `iterable` interface - 'entries', 'keys', 'values', 'forEach' methods
-var domIterables = {
-  CSSRuleList: 0,
-  CSSStyleDeclaration: 0,
-  CSSValueList: 0,
-  ClientRectList: 0,
-  DOMRectList: 0,
-  DOMStringList: 0,
-  DOMTokenList: 1,
-  DataTransferItemList: 0,
-  FileList: 0,
-  HTMLAllCollection: 0,
-  HTMLCollection: 0,
-  HTMLFormElement: 0,
-  HTMLSelectElement: 0,
-  MediaList: 0,
-  MimeTypeArray: 0,
-  NamedNodeMap: 0,
-  NodeList: 1,
-  PaintRequestList: 0,
-  Plugin: 0,
-  PluginArray: 0,
-  SVGLengthList: 0,
-  SVGNumberList: 0,
-  SVGPathSegList: 0,
-  SVGPointList: 0,
-  SVGStringList: 0,
-  SVGTransformList: 0,
-  SourceBufferList: 0,
-  StyleSheetList: 0,
-  TextTrackCueList: 0,
-  TextTrackList: 0,
-  TouchList: 0
-};
-
-var TO_STRING_TAG$3 = wellKnownSymbol('toStringTag');
-
-for (var COLLECTION_NAME in domIterables) {
-  var Collection = global_1[COLLECTION_NAME];
-  var CollectionPrototype = Collection && Collection.prototype;
-
-  if (CollectionPrototype && !CollectionPrototype[TO_STRING_TAG$3]) {
-    createNonEnumerableProperty(CollectionPrototype, TO_STRING_TAG$3, COLLECTION_NAME);
-  }
-
-  iterators[COLLECTION_NAME] = iterators.Array;
-}
-
-var createMethod$1 = function (CONVERT_TO_STRING) {
-  return function ($this, pos) {
-    var S = String(requireObjectCoercible($this));
-    var position = toInteger(pos);
-    var size = S.length;
-    var first, second;
-    if (position < 0 || position >= size) return CONVERT_TO_STRING ? '' : undefined;
-    first = S.charCodeAt(position);
-    return first < 0xD800 || first > 0xDBFF || position + 1 === size || (second = S.charCodeAt(position + 1)) < 0xDC00 || second > 0xDFFF ? CONVERT_TO_STRING ? S.charAt(position) : first : CONVERT_TO_STRING ? S.slice(position, position + 2) : (first - 0xD800 << 10) + (second - 0xDC00) + 0x10000;
-  };
-};
-
-var stringMultibyte = {
-  // `String.prototype.codePointAt` method
-  // https://tc39.github.io/ecma262/#sec-string.prototype.codepointat
-  codeAt: createMethod$1(false),
-  // `String.prototype.at` method
-  // https://github.com/mathiasbynens/String.prototype.at
-  charAt: createMethod$1(true)
-};
-
-var charAt = stringMultibyte.charAt;
-var STRING_ITERATOR = 'String Iterator';
-var setInternalState$1 = internalState.set;
-var getInternalState$1 = internalState.getterFor(STRING_ITERATOR); // `String.prototype[@@iterator]` method
-// https://tc39.github.io/ecma262/#sec-string.prototype-@@iterator
-
-defineIterator(String, 'String', function (iterated) {
-  setInternalState$1(this, {
-    type: STRING_ITERATOR,
-    string: String(iterated),
-    index: 0
-  }); // `%StringIteratorPrototype%.next` method
-  // https://tc39.github.io/ecma262/#sec-%stringiteratorprototype%.next
-}, function next() {
-  var state = getInternalState$1(this);
-  var string = state.string;
-  var index = state.index;
-  var point;
-  if (index >= string.length) return {
-    value: undefined,
-    done: true
-  };
-  point = charAt(string, index);
-  state.index += point.length;
-  return {
-    value: point,
-    done: false
-  };
-});
-
-var ITERATOR$2 = wellKnownSymbol('iterator');
-
-var getIteratorMethod = function (it) {
-  if (it != undefined) return it[ITERATOR$2] || it['@@iterator'] || iterators[classof(it)];
-};
-
-var getIterator = function (it) {
-  var iteratorMethod = getIteratorMethod(it);
-
-  if (typeof iteratorMethod != 'function') {
-    throw TypeError(String(it) + ' is not iterable');
-  }
-
-  return anObject(iteratorMethod.call(it));
-};
-
-var getIterator_1 = getIterator;
-
-var getIterator$1 = getIterator_1;
-
-var ITERATOR$3 = wellKnownSymbol('iterator');
-
-var isIterable = function (it) {
-  var O = Object(it);
-  return O[ITERATOR$3] !== undefined || '@@iterator' in O // eslint-disable-next-line no-prototype-builtins
-  || iterators.hasOwnProperty(classof(O));
-};
-
-var isIterable_1 = isIterable;
-
-var isIterable$1 = isIterable_1;
-
-function _iterableToArrayLimit(arr, i) {
-  if (!(isIterable$1(Object(arr)) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
-    return;
-  }
-
-  var _arr = [];
-  var _n = true;
-  var _d = false;
-  var _e = undefined;
-
-  try {
-    for (var _i = getIterator$1(arr), _s; !(_n = (_s = _i.next()).done); _n = true) {
-      _arr.push(_s.value);
-
-      if (i && _arr.length === i) break;
-    }
-  } catch (err) {
-    _d = true;
-    _e = err;
-  } finally {
-    try {
-      if (!_n && _i["return"] != null) _i["return"]();
-    } finally {
-      if (_d) throw _e;
-    }
-  }
-
-  return _arr;
-}
-
-var iterableToArrayLimit = _iterableToArrayLimit;
-
-function _nonIterableRest() {
-  throw new TypeError("Invalid attempt to destructure non-iterable instance");
-}
-
-var nonIterableRest = _nonIterableRest;
-
-function _slicedToArray(arr, i) {
-  return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || nonIterableRest();
-}
-
-var slicedToArray = _slicedToArray;
-
-// https://tc39.github.io/ecma262/#sec-date.now
-
-_export({
-  target: 'Date',
-  stat: true
-}, {
-  now: function now() {
-    return new Date().getTime();
-  }
-});
-
-var now = path.Date.now;
-
-var now$1 = now;
-
-var now$2 = now$1;
-
-/**
- * Seedable, fast and reasonably good (not crypto but more than okay for our
- * needs) random number generator.
- *
- * @remarks
- * Adapted from {@link https://web.archive.org/web/20110429100736/http://baagoe.com:80/en/RandomMusings/javascript}.
- * Original algorithm created by Johannes Baagøe \<baagoe\@baagoe.com\> in 2010.
- */
-
-/**
- * Random number generator.
- */
-
-/**
- * Create a seeded pseudo random generator based on Alea by Johannes Baagøe.
- *
- * @param seed - All supplied arguments will be used as a seed. In case nothing
- * is supplied the current time will be used to seed the generator.
- *
- * @returns A ready to use seeded generator.
- */
-function Alea() {
-  for (var _len = arguments.length, seed = new Array(_len), _key = 0; _key < _len; _key++) {
-    seed[_key] = arguments[_key];
-  }
-
-  return AleaImplementation(seed.length ? seed : [now$2()]);
-}
-/**
- * An implementation of [[Alea]] without user input validation.
- *
- * @param seed - The data that will be used to seed the generator.
- *
- * @returns A ready to use seeded generator.
- */
-
-function AleaImplementation(seed) {
-  var _mashSeed = mashSeed(seed),
-      _mashSeed2 = slicedToArray(_mashSeed, 3),
-      s0 = _mashSeed2[0],
-      s1 = _mashSeed2[1],
-      s2 = _mashSeed2[2];
-
-  var c = 1;
-
-  var random = function random() {
-    var t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
-
-    s0 = s1;
-    s1 = s2;
-    return s2 = t - (c = t | 0);
-  };
-
-  random.uint32 = function () {
-    return random() * 0x100000000;
-  }; // 2^32
-
-
-  random.fract53 = function () {
-    return random() + (random() * 0x200000 | 0) * 1.1102230246251565e-16;
-  }; // 2^-53
-
-
-  random.algorithm = "Alea";
-  random.seed = seed;
-  random.version = "0.9";
-  return random;
-}
-/**
- * Turn arbitrary data into values [[AleaImplementation]] can use to generate
- * random numbers.
- *
- * @param seed - Arbitrary data that will be used as the seed.
- *
- * @returns Three numbers to use as initial values for [[AleaImplementation]].
- */
-
-
-function mashSeed() {
-  var mash = Mash();
-  var s0 = mash(" ");
-  var s1 = mash(" ");
-  var s2 = mash(" ");
-
-  for (var i = 0; i < arguments.length; i++) {
-    s0 -= mash(i < 0 || arguments.length <= i ? undefined : arguments[i]);
-
-    if (s0 < 0) {
-      s0 += 1;
-    }
-
-    s1 -= mash(i < 0 || arguments.length <= i ? undefined : arguments[i]);
-
-    if (s1 < 0) {
-      s1 += 1;
-    }
-
-    s2 -= mash(i < 0 || arguments.length <= i ? undefined : arguments[i]);
-
-    if (s2 < 0) {
-      s2 += 1;
-    }
-  }
-
-  return [s0, s1, s2];
-}
-/**
- * Values of these types can be used as a seed.
- */
-
-
-/**
- * Create a new mash function.
- *
- * @returns A nonpure function that takes arbitrary [[Mashable]] data and turns
- * them into numbers.
- */
-function Mash() {
-  var n = 0xefc8249d;
-  return function (data) {
-    var string = data.toString();
-
-    for (var i = 0; i < string.length; i++) {
-      n += string.charCodeAt(i);
-      var h = 0.02519603282416938 * n;
-      n = h >>> 0;
-      h -= n;
-      h *= n;
-      n = h >>> 0;
-      h -= n;
-      n += h * 0x100000000; // 2^32
-    }
-
-    return (n >>> 0) * 2.3283064365386963e-10; // 2^-32
-  };
-}
-
-// https://tc39.github.io/ecma262/#sec-object.defineproperty
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: !descriptors,
-  sham: !descriptors
-}, {
-  defineProperty: objectDefineProperty.f
-});
-
-var defineProperty_1 = createCommonjsModule(function (module) {
-  var Object = path.Object;
-
-  var defineProperty = module.exports = function defineProperty(it, key, desc) {
-    return Object.defineProperty(it, key, desc);
-  };
-
-  if (Object.defineProperty.sham) defineProperty.sham = true;
-});
-
-var defineProperty$1 = defineProperty_1;
-
-var defineProperty$2 = defineProperty$1;
-
-// https://tc39.github.io/ecma262/#sec-object.defineproperties
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: !descriptors,
-  sham: !descriptors
-}, {
-  defineProperties: objectDefineProperties
-});
-
-var defineProperties_1 = createCommonjsModule(function (module) {
-  var Object = path.Object;
-
-  var defineProperties = module.exports = function defineProperties(T, D) {
-    return Object.defineProperties(T, D);
-  };
-
-  if (Object.defineProperties.sham) defineProperties.sham = true;
-});
-
-var defineProperties = defineProperties_1;
-
-var defineProperties$1 = defineProperties;
-
-var hiddenKeys$1 = enumBugKeys.concat('length', 'prototype'); // `Object.getOwnPropertyNames` method
-// https://tc39.github.io/ecma262/#sec-object.getownpropertynames
-
-var f$3 = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
-  return objectKeysInternal(O, hiddenKeys$1);
-};
-
-var objectGetOwnPropertyNames = {
-  f: f$3
-};
-
-var f$4 = Object.getOwnPropertySymbols;
-var objectGetOwnPropertySymbols = {
-  f: f$4
-};
-
-var ownKeys = getBuiltIn('Reflect', 'ownKeys') || function ownKeys(it) {
-  var keys = objectGetOwnPropertyNames.f(anObject(it));
-  var getOwnPropertySymbols = objectGetOwnPropertySymbols.f;
-  return getOwnPropertySymbols ? keys.concat(getOwnPropertySymbols(it)) : keys;
-};
-
-var createProperty = function (object, key, value) {
-  var propertyKey = toPrimitive(key);
-  if (propertyKey in object) objectDefineProperty.f(object, propertyKey, createPropertyDescriptor(0, value));else object[propertyKey] = value;
-};
-
-// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptors
-
-_export({
-  target: 'Object',
-  stat: true,
-  sham: !descriptors
-}, {
-  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object) {
-    var O = toIndexedObject(object);
-    var getOwnPropertyDescriptor = objectGetOwnPropertyDescriptor.f;
-    var keys = ownKeys(O);
-    var result = {};
-    var index = 0;
-    var key, descriptor;
-
-    while (keys.length > index) {
-      descriptor = getOwnPropertyDescriptor(O, key = keys[index++]);
-      if (descriptor !== undefined) createProperty(result, key, descriptor);
-    }
-
-    return result;
-  }
-});
-
-var getOwnPropertyDescriptors = path.Object.getOwnPropertyDescriptors;
-
-var getOwnPropertyDescriptors$1 = getOwnPropertyDescriptors;
-
-var getOwnPropertyDescriptors$2 = getOwnPropertyDescriptors$1;
-
-var nativeGetOwnPropertyDescriptor$1 = objectGetOwnPropertyDescriptor.f;
-var FAILS_ON_PRIMITIVES = fails(function () {
-  nativeGetOwnPropertyDescriptor$1(1);
-});
-var FORCED = !descriptors || FAILS_ON_PRIMITIVES; // `Object.getOwnPropertyDescriptor` method
-// https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptor
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: FORCED,
-  sham: !descriptors
-}, {
-  getOwnPropertyDescriptor: function getOwnPropertyDescriptor(it, key) {
-    return nativeGetOwnPropertyDescriptor$1(toIndexedObject(it), key);
-  }
-});
-
-var getOwnPropertyDescriptor_1 = createCommonjsModule(function (module) {
-  var Object = path.Object;
-
-  var getOwnPropertyDescriptor = module.exports = function getOwnPropertyDescriptor(it, key) {
-    return Object.getOwnPropertyDescriptor(it, key);
-  };
-
-  if (Object.getOwnPropertyDescriptor.sham) getOwnPropertyDescriptor.sham = true;
-});
-
-var getOwnPropertyDescriptor$2 = getOwnPropertyDescriptor_1;
-
-var getOwnPropertyDescriptor$3 = getOwnPropertyDescriptor$2;
-
-var nativeGetOwnPropertyNames = objectGetOwnPropertyNames.f;
-var toString$1 = {}.toString;
-var windowNames = typeof window == 'object' && window && Object.getOwnPropertyNames ? Object.getOwnPropertyNames(window) : [];
-
-var getWindowNames = function (it) {
-  try {
-    return nativeGetOwnPropertyNames(it);
-  } catch (error) {
-    return windowNames.slice();
-  }
-}; // fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
-
-
-var f$5 = function getOwnPropertyNames(it) {
-  return windowNames && toString$1.call(it) == '[object Window]' ? getWindowNames(it) : nativeGetOwnPropertyNames(toIndexedObject(it));
-};
-
-var objectGetOwnPropertyNamesExternal = {
-  f: f$5
-};
-
-var f$6 = wellKnownSymbol;
-var wrappedWellKnownSymbol = {
-  f: f$6
-};
-
-var defineProperty$3 = objectDefineProperty.f;
-
-var defineWellKnownSymbol = function (NAME) {
-  var Symbol = path.Symbol || (path.Symbol = {});
-  if (!has(Symbol, NAME)) defineProperty$3(Symbol, NAME, {
-    value: wrappedWellKnownSymbol.f(NAME)
-  });
-};
-
-var SPECIES = wellKnownSymbol('species'); // `ArraySpeciesCreate` abstract operation
-// https://tc39.github.io/ecma262/#sec-arrayspeciescreate
-
-var arraySpeciesCreate = function (originalArray, length) {
-  var C;
-
-  if (isArray(originalArray)) {
-    C = originalArray.constructor; // cross-realm fallback
-
-    if (typeof C == 'function' && (C === Array || isArray(C.prototype))) C = undefined;else if (isObject(C)) {
-      C = C[SPECIES];
-      if (C === null) C = undefined;
-    }
-  }
-
-  return new (C === undefined ? Array : C)(length === 0 ? 0 : length);
-};
-
-var push = [].push; // `Array.prototype.{ forEach, map, filter, some, every, find, findIndex }` methods implementation
-
-var createMethod$2 = function (TYPE) {
-  var IS_MAP = TYPE == 1;
-  var IS_FILTER = TYPE == 2;
-  var IS_SOME = TYPE == 3;
-  var IS_EVERY = TYPE == 4;
-  var IS_FIND_INDEX = TYPE == 6;
-  var NO_HOLES = TYPE == 5 || IS_FIND_INDEX;
-  return function ($this, callbackfn, that, specificCreate) {
-    var O = toObject($this);
-    var self = indexedObject(O);
-    var boundFunction = bindContext(callbackfn, that, 3);
-    var length = toLength(self.length);
-    var index = 0;
-    var create = specificCreate || arraySpeciesCreate;
-    var target = IS_MAP ? create($this, length) : IS_FILTER ? create($this, 0) : undefined;
-    var value, result;
-
-    for (; length > index; index++) if (NO_HOLES || index in self) {
-      value = self[index];
-      result = boundFunction(value, index, O);
-
-      if (TYPE) {
-        if (IS_MAP) target[index] = result; // map
-        else if (result) switch (TYPE) {
-            case 3:
-              return true;
-            // some
-
-            case 5:
-              return value;
-            // find
-
-            case 6:
-              return index;
-            // findIndex
-
-            case 2:
-              push.call(target, value);
-            // filter
-          } else if (IS_EVERY) return false; // every
-      }
-    }
-
-    return IS_FIND_INDEX ? -1 : IS_SOME || IS_EVERY ? IS_EVERY : target;
-  };
-};
-
-var arrayIteration = {
-  // `Array.prototype.forEach` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.foreach
-  forEach: createMethod$2(0),
-  // `Array.prototype.map` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.map
-  map: createMethod$2(1),
-  // `Array.prototype.filter` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.filter
-  filter: createMethod$2(2),
-  // `Array.prototype.some` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.some
-  some: createMethod$2(3),
-  // `Array.prototype.every` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.every
-  every: createMethod$2(4),
-  // `Array.prototype.find` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.find
-  find: createMethod$2(5),
-  // `Array.prototype.findIndex` method
-  // https://tc39.github.io/ecma262/#sec-array.prototype.findIndex
-  findIndex: createMethod$2(6)
-};
-
-var $forEach = arrayIteration.forEach;
-var HIDDEN = sharedKey('hidden');
-var SYMBOL = 'Symbol';
-var PROTOTYPE$1 = 'prototype';
-var TO_PRIMITIVE = wellKnownSymbol('toPrimitive');
-var setInternalState$2 = internalState.set;
-var getInternalState$2 = internalState.getterFor(SYMBOL);
-var ObjectPrototype$1 = Object[PROTOTYPE$1];
-var $Symbol = global_1.Symbol;
-var $stringify = getBuiltIn('JSON', 'stringify');
-var nativeGetOwnPropertyDescriptor$2 = objectGetOwnPropertyDescriptor.f;
-var nativeDefineProperty$1 = objectDefineProperty.f;
-var nativeGetOwnPropertyNames$1 = objectGetOwnPropertyNamesExternal.f;
-var nativePropertyIsEnumerable$1 = objectPropertyIsEnumerable.f;
-var AllSymbols = shared('symbols');
-var ObjectPrototypeSymbols = shared('op-symbols');
-var StringToSymbolRegistry = shared('string-to-symbol-registry');
-var SymbolToStringRegistry = shared('symbol-to-string-registry');
-var WellKnownSymbolsStore$1 = shared('wks');
-var QObject = global_1.QObject; // Don't use setters in Qt Script, https://github.com/zloirock/core-js/issues/173
-
-var USE_SETTER = !QObject || !QObject[PROTOTYPE$1] || !QObject[PROTOTYPE$1].findChild; // fallback for old Android, https://code.google.com/p/v8/issues/detail?id=687
-
-var setSymbolDescriptor = descriptors && fails(function () {
-  return objectCreate(nativeDefineProperty$1({}, 'a', {
-    get: function () {
-      return nativeDefineProperty$1(this, 'a', {
-        value: 7
-      }).a;
-    }
-  })).a != 7;
-}) ? function (O, P, Attributes) {
-  var ObjectPrototypeDescriptor = nativeGetOwnPropertyDescriptor$2(ObjectPrototype$1, P);
-  if (ObjectPrototypeDescriptor) delete ObjectPrototype$1[P];
-  nativeDefineProperty$1(O, P, Attributes);
-
-  if (ObjectPrototypeDescriptor && O !== ObjectPrototype$1) {
-    nativeDefineProperty$1(ObjectPrototype$1, P, ObjectPrototypeDescriptor);
-  }
-} : nativeDefineProperty$1;
-
-var wrap = function (tag, description) {
-  var symbol = AllSymbols[tag] = objectCreate($Symbol[PROTOTYPE$1]);
-  setInternalState$2(symbol, {
-    type: SYMBOL,
-    tag: tag,
-    description: description
-  });
-  if (!descriptors) symbol.description = description;
-  return symbol;
-};
-
-var isSymbol = nativeSymbol && typeof $Symbol.iterator == 'symbol' ? function (it) {
-  return typeof it == 'symbol';
-} : function (it) {
-  return Object(it) instanceof $Symbol;
-};
-
-var $defineProperty = function defineProperty(O, P, Attributes) {
-  if (O === ObjectPrototype$1) $defineProperty(ObjectPrototypeSymbols, P, Attributes);
-  anObject(O);
-  var key = toPrimitive(P, true);
-  anObject(Attributes);
-
-  if (has(AllSymbols, key)) {
-    if (!Attributes.enumerable) {
-      if (!has(O, HIDDEN)) nativeDefineProperty$1(O, HIDDEN, createPropertyDescriptor(1, {}));
-      O[HIDDEN][key] = true;
-    } else {
-      if (has(O, HIDDEN) && O[HIDDEN][key]) O[HIDDEN][key] = false;
-      Attributes = objectCreate(Attributes, {
-        enumerable: createPropertyDescriptor(0, false)
-      });
-    }
-
-    return setSymbolDescriptor(O, key, Attributes);
-  }
-
-  return nativeDefineProperty$1(O, key, Attributes);
-};
-
-var $defineProperties = function defineProperties(O, Properties) {
-  anObject(O);
-  var properties = toIndexedObject(Properties);
-  var keys = objectKeys(properties).concat($getOwnPropertySymbols(properties));
-  $forEach(keys, function (key) {
-    if (!descriptors || $propertyIsEnumerable.call(properties, key)) $defineProperty(O, key, properties[key]);
-  });
-  return O;
-};
-
-var $create = function create(O, Properties) {
-  return Properties === undefined ? objectCreate(O) : $defineProperties(objectCreate(O), Properties);
-};
-
-var $propertyIsEnumerable = function propertyIsEnumerable(V) {
-  var P = toPrimitive(V, true);
-  var enumerable = nativePropertyIsEnumerable$1.call(this, P);
-  if (this === ObjectPrototype$1 && has(AllSymbols, P) && !has(ObjectPrototypeSymbols, P)) return false;
-  return enumerable || !has(this, P) || !has(AllSymbols, P) || has(this, HIDDEN) && this[HIDDEN][P] ? enumerable : true;
-};
-
-var $getOwnPropertyDescriptor = function getOwnPropertyDescriptor(O, P) {
-  var it = toIndexedObject(O);
-  var key = toPrimitive(P, true);
-  if (it === ObjectPrototype$1 && has(AllSymbols, key) && !has(ObjectPrototypeSymbols, key)) return;
-  var descriptor = nativeGetOwnPropertyDescriptor$2(it, key);
-
-  if (descriptor && has(AllSymbols, key) && !(has(it, HIDDEN) && it[HIDDEN][key])) {
-    descriptor.enumerable = true;
-  }
-
-  return descriptor;
-};
-
-var $getOwnPropertyNames = function getOwnPropertyNames(O) {
-  var names = nativeGetOwnPropertyNames$1(toIndexedObject(O));
-  var result = [];
-  $forEach(names, function (key) {
-    if (!has(AllSymbols, key) && !has(hiddenKeys, key)) result.push(key);
-  });
-  return result;
-};
-
-var $getOwnPropertySymbols = function getOwnPropertySymbols(O) {
-  var IS_OBJECT_PROTOTYPE = O === ObjectPrototype$1;
-  var names = nativeGetOwnPropertyNames$1(IS_OBJECT_PROTOTYPE ? ObjectPrototypeSymbols : toIndexedObject(O));
-  var result = [];
-  $forEach(names, function (key) {
-    if (has(AllSymbols, key) && (!IS_OBJECT_PROTOTYPE || has(ObjectPrototype$1, key))) {
-      result.push(AllSymbols[key]);
-    }
-  });
-  return result;
-}; // `Symbol` constructor
-// https://tc39.github.io/ecma262/#sec-symbol-constructor
-
-
-if (!nativeSymbol) {
-  $Symbol = function Symbol() {
-    if (this instanceof $Symbol) throw TypeError('Symbol is not a constructor');
-    var description = !arguments.length || arguments[0] === undefined ? undefined : String(arguments[0]);
-    var tag = uid(description);
-
-    var setter = function (value) {
-      if (this === ObjectPrototype$1) setter.call(ObjectPrototypeSymbols, value);
-      if (has(this, HIDDEN) && has(this[HIDDEN], tag)) this[HIDDEN][tag] = false;
-      setSymbolDescriptor(this, tag, createPropertyDescriptor(1, value));
-    };
-
-    if (descriptors && USE_SETTER) setSymbolDescriptor(ObjectPrototype$1, tag, {
-      configurable: true,
-      set: setter
-    });
-    return wrap(tag, description);
-  };
-
-  redefine($Symbol[PROTOTYPE$1], 'toString', function toString() {
-    return getInternalState$2(this).tag;
-  });
-  objectPropertyIsEnumerable.f = $propertyIsEnumerable;
-  objectDefineProperty.f = $defineProperty;
-  objectGetOwnPropertyDescriptor.f = $getOwnPropertyDescriptor;
-  objectGetOwnPropertyNames.f = objectGetOwnPropertyNamesExternal.f = $getOwnPropertyNames;
-  objectGetOwnPropertySymbols.f = $getOwnPropertySymbols;
-
-  if (descriptors) {
-    // https://github.com/tc39/proposal-Symbol-description
-    nativeDefineProperty$1($Symbol[PROTOTYPE$1], 'description', {
-      configurable: true,
-      get: function description() {
-        return getInternalState$2(this).description;
-      }
-    });
-  }
-}
-
-if (!useSymbolAsUid) {
-  wrappedWellKnownSymbol.f = function (name) {
-    return wrap(wellKnownSymbol(name), name);
-  };
-}
-
-_export({
-  global: true,
-  wrap: true,
-  forced: !nativeSymbol,
-  sham: !nativeSymbol
-}, {
-  Symbol: $Symbol
-});
-$forEach(objectKeys(WellKnownSymbolsStore$1), function (name) {
-  defineWellKnownSymbol(name);
-});
-_export({
-  target: SYMBOL,
-  stat: true,
-  forced: !nativeSymbol
-}, {
-  // `Symbol.for` method
-  // https://tc39.github.io/ecma262/#sec-symbol.for
-  'for': function (key) {
-    var string = String(key);
-    if (has(StringToSymbolRegistry, string)) return StringToSymbolRegistry[string];
-    var symbol = $Symbol(string);
-    StringToSymbolRegistry[string] = symbol;
-    SymbolToStringRegistry[symbol] = string;
-    return symbol;
-  },
-  // `Symbol.keyFor` method
-  // https://tc39.github.io/ecma262/#sec-symbol.keyfor
-  keyFor: function keyFor(sym) {
-    if (!isSymbol(sym)) throw TypeError(sym + ' is not a symbol');
-    if (has(SymbolToStringRegistry, sym)) return SymbolToStringRegistry[sym];
-  },
-  useSetter: function () {
-    USE_SETTER = true;
-  },
-  useSimple: function () {
-    USE_SETTER = false;
-  }
-});
-_export({
-  target: 'Object',
-  stat: true,
-  forced: !nativeSymbol,
-  sham: !descriptors
-}, {
-  // `Object.create` method
-  // https://tc39.github.io/ecma262/#sec-object.create
-  create: $create,
-  // `Object.defineProperty` method
-  // https://tc39.github.io/ecma262/#sec-object.defineproperty
-  defineProperty: $defineProperty,
-  // `Object.defineProperties` method
-  // https://tc39.github.io/ecma262/#sec-object.defineproperties
-  defineProperties: $defineProperties,
-  // `Object.getOwnPropertyDescriptor` method
-  // https://tc39.github.io/ecma262/#sec-object.getownpropertydescriptors
-  getOwnPropertyDescriptor: $getOwnPropertyDescriptor
-});
-_export({
-  target: 'Object',
-  stat: true,
-  forced: !nativeSymbol
-}, {
-  // `Object.getOwnPropertyNames` method
-  // https://tc39.github.io/ecma262/#sec-object.getownpropertynames
-  getOwnPropertyNames: $getOwnPropertyNames,
-  // `Object.getOwnPropertySymbols` method
-  // https://tc39.github.io/ecma262/#sec-object.getownpropertysymbols
-  getOwnPropertySymbols: $getOwnPropertySymbols
-}); // Chrome 38 and 39 `Object.getOwnPropertySymbols` fails on primitives
-// https://bugs.chromium.org/p/v8/issues/detail?id=3443
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: fails(function () {
-    objectGetOwnPropertySymbols.f(1);
-  })
-}, {
-  getOwnPropertySymbols: function getOwnPropertySymbols(it) {
-    return objectGetOwnPropertySymbols.f(toObject(it));
-  }
-}); // `JSON.stringify` method behavior with symbols
-// https://tc39.github.io/ecma262/#sec-json.stringify
-
-if ($stringify) {
-  var FORCED_JSON_STRINGIFY = !nativeSymbol || fails(function () {
-    var symbol = $Symbol(); // MS Edge converts symbol values to JSON as {}
-
-    return $stringify([symbol]) != '[null]' // WebKit converts symbol values to JSON as null
-    || $stringify({
-      a: symbol
-    }) != '{}' // V8 throws on boxed symbols
-    || $stringify(Object(symbol)) != '{}';
-  });
-  _export({
-    target: 'JSON',
-    stat: true,
-    forced: FORCED_JSON_STRINGIFY
-  }, {
-    // eslint-disable-next-line no-unused-vars
-    stringify: function stringify(it, replacer, space) {
-      var args = [it];
-      var index = 1;
-      var $replacer;
-
-      while (arguments.length > index) args.push(arguments[index++]);
-
-      $replacer = replacer;
-      if (!isObject(replacer) && it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
-
-      if (!isArray(replacer)) replacer = function (key, value) {
-        if (typeof $replacer == 'function') value = $replacer.call(this, key, value);
-        if (!isSymbol(value)) return value;
-      };
-      args[1] = replacer;
-      return $stringify.apply(null, args);
-    }
-  });
-} // `Symbol.prototype[@@toPrimitive]` method
-// https://tc39.github.io/ecma262/#sec-symbol.prototype-@@toprimitive
-
-
-if (!$Symbol[PROTOTYPE$1][TO_PRIMITIVE]) {
-  createNonEnumerableProperty($Symbol[PROTOTYPE$1], TO_PRIMITIVE, $Symbol[PROTOTYPE$1].valueOf);
-} // `Symbol.prototype[@@toStringTag]` property
-// https://tc39.github.io/ecma262/#sec-symbol.prototype-@@tostringtag
-
-
-setToStringTag($Symbol, SYMBOL);
-hiddenKeys[HIDDEN] = true;
-
-var getOwnPropertySymbols = path.Object.getOwnPropertySymbols;
-
-var getOwnPropertySymbols$1 = getOwnPropertySymbols;
-
-var getOwnPropertySymbols$2 = getOwnPropertySymbols$1;
-
-// https://tc39.github.io/ecma262/#sec-object.create
-
-_export({
-  target: 'Object',
-  stat: true,
-  sham: !descriptors
-}, {
-  create: objectCreate
-});
-
-var Object$1 = path.Object;
-
-var create = function create(P, D) {
-  return Object$1.create(P, D);
-};
-
-var create$1 = create;
-
-var create$2 = create$1;
-
-var defineProperty$4 = defineProperty_1;
-
-var defineProperty$5 = defineProperty$4;
-
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    defineProperty$5(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-}
-
-var defineProperty$6 = _defineProperty;
-
-var FAILS_ON_PRIMITIVES$1 = fails(function () {
-  objectKeys(1);
-}); // `Object.keys` method
-// https://tc39.github.io/ecma262/#sec-object.keys
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: FAILS_ON_PRIMITIVES$1
-}, {
-  keys: function keys(it) {
-    return objectKeys(toObject(it));
-  }
-});
-
-var keys$1 = path.Object.keys;
-
-var keys$2 = keys$1;
-
-var keys$3 = keys$2;
-
-// a string of all valid unicode whitespaces
-// eslint-disable-next-line max-len
-var whitespaces = '\u0009\u000A\u000B\u000C\u000D\u0020\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028\u2029\uFEFF';
-
-var whitespace = '[' + whitespaces + ']';
-var ltrim = RegExp('^' + whitespace + whitespace + '*');
-var rtrim = RegExp(whitespace + whitespace + '*$'); // `String.prototype.{ trim, trimStart, trimEnd, trimLeft, trimRight }` methods implementation
-
-var createMethod$3 = function (TYPE) {
-  return function ($this) {
-    var string = String(requireObjectCoercible($this));
-    if (TYPE & 1) string = string.replace(ltrim, '');
-    if (TYPE & 2) string = string.replace(rtrim, '');
-    return string;
-  };
-};
-
-var stringTrim = {
-  // `String.prototype.{ trimLeft, trimStart }` methods
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trimstart
-  start: createMethod$3(1),
-  // `String.prototype.{ trimRight, trimEnd }` methods
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trimend
-  end: createMethod$3(2),
-  // `String.prototype.trim` method
-  // https://tc39.github.io/ecma262/#sec-string.prototype.trim
-  trim: createMethod$3(3)
-};
-
-var non = '\u200B\u0085\u180E'; // check that a method works with the correct list
-// of whitespaces and has a correct name
-
-var forcedStringTrimMethod = function (METHOD_NAME) {
-  return fails(function () {
-    return !!whitespaces[METHOD_NAME]() || non[METHOD_NAME]() != non || whitespaces[METHOD_NAME].name !== METHOD_NAME;
-  });
-};
-
-var $trim = stringTrim.trim; // `String.prototype.trim` method
-// https://tc39.github.io/ecma262/#sec-string.prototype.trim
-
-_export({
-  target: 'String',
-  proto: true,
-  forced: forcedStringTrimMethod('trim')
-}, {
-  trim: function trim() {
-    return $trim(this);
-  }
-});
-
-var entryVirtual = function (CONSTRUCTOR) {
-  return path[CONSTRUCTOR + 'Prototype'];
-};
-
-var trim = entryVirtual('String').trim;
-
-var StringPrototype = String.prototype;
-
-var trim_1 = function (it) {
-  var own = it.trim;
-  return typeof it === 'string' || it === StringPrototype || it instanceof String && own === StringPrototype.trim ? trim : own;
-};
-
-var trim$1 = trim_1;
-
-var trim$2 = trim$1;
-
-var sloppyArrayMethod = function (METHOD_NAME, argument) {
-  var method = [][METHOD_NAME];
-  return !method || !fails(function () {
-    // eslint-disable-next-line no-useless-call,no-throw-literal
-    method.call(null, argument || function () {
-      throw 1;
-    }, 1);
-  });
-};
-
-var $forEach$1 = arrayIteration.forEach; // `Array.prototype.forEach` method implementation
-// https://tc39.github.io/ecma262/#sec-array.prototype.foreach
-
-var arrayForEach = sloppyArrayMethod('forEach') ? function forEach(callbackfn
-/* , thisArg */
-) {
-  return $forEach$1(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
-} : [].forEach;
-
-// https://tc39.github.io/ecma262/#sec-array.prototype.foreach
-
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: [].forEach != arrayForEach
-}, {
-  forEach: arrayForEach
-});
-
-var forEach = entryVirtual('Array').forEach;
-
-var forEach$1 = forEach;
-
-var ArrayPrototype = Array.prototype;
-var DOMIterables = {
-  DOMTokenList: true,
-  NodeList: true
-};
-
-var forEach_1 = function (it) {
-  var own = it.forEach;
-  return it === ArrayPrototype || it instanceof Array && own === ArrayPrototype.forEach // eslint-disable-next-line no-prototype-builtins
-  || DOMIterables.hasOwnProperty(classof(it)) ? forEach$1 : own;
-};
-
-var forEach$2 = forEach_1;
-
-var userAgent = getBuiltIn('navigator', 'userAgent') || '';
-
-var process = global_1.process;
-var versions = process && process.versions;
-var v8 = versions && versions.v8;
-var match, version;
-
-if (v8) {
-  match = v8.split('.');
-  version = match[0] + match[1];
-} else if (userAgent) {
-  match = userAgent.match(/Edge\/(\d+)/);
-
-  if (!match || match[1] >= 74) {
-    match = userAgent.match(/Chrome\/(\d+)/);
-    if (match) version = match[1];
-  }
-}
-
-var v8Version = version && +version;
-
-var SPECIES$1 = wellKnownSymbol('species');
-
-var arrayMethodHasSpeciesSupport = function (METHOD_NAME) {
-  // We can't use this feature detection in V8 since it causes
-  // deoptimization and serious performance degradation
-  // https://github.com/zloirock/core-js/issues/677
-  return v8Version >= 51 || !fails(function () {
-    var array = [];
-    var constructor = array.constructor = {};
-
-    constructor[SPECIES$1] = function () {
-      return {
-        foo: 1
-      };
-    };
-
-    return array[METHOD_NAME](Boolean).foo !== 1;
-  });
-};
-
-var $map = arrayIteration.map;
-var HAS_SPECIES_SUPPORT = arrayMethodHasSpeciesSupport('map'); // FF49- issue
-
-var USES_TO_LENGTH = HAS_SPECIES_SUPPORT && !fails(function () {
-  [].map.call({
-    length: -1,
-    0: 1
-  }, function (it) {
-    throw it;
-  });
-}); // `Array.prototype.map` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.map
-// with adding support of @@species
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: !HAS_SPECIES_SUPPORT || !USES_TO_LENGTH
-}, {
-  map: function map(callbackfn
-  /* , thisArg */
-  ) {
-    return $map(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
-  }
-});
-
-var map = entryVirtual('Array').map;
-
-var ArrayPrototype$1 = Array.prototype;
-
-var map_1 = function (it) {
-  var own = it.map;
-  return it === ArrayPrototype$1 || it instanceof Array && own === ArrayPrototype$1.map ? map : own;
-};
-
-var map$1 = map_1;
-
-var map$2 = map$1;
-
-var trim$3 = stringTrim.trim;
-var nativeParseInt = global_1.parseInt;
-var hex = /^[+-]?0[Xx]/;
-var FORCED$1 = nativeParseInt(whitespaces + '08') !== 8 || nativeParseInt(whitespaces + '0x16') !== 22; // `parseInt` method
-// https://tc39.github.io/ecma262/#sec-parseint-string-radix
-
-var _parseInt = FORCED$1 ? function parseInt(string, radix) {
-  var S = trim$3(String(string));
-  return nativeParseInt(S, radix >>> 0 || (hex.test(S) ? 16 : 10));
-} : nativeParseInt;
-
-// https://tc39.github.io/ecma262/#sec-parseint-string-radix
-
-_export({
-  global: true,
-  forced: parseInt != _parseInt
-}, {
-  parseInt: _parseInt
-});
-
-var _parseInt$1 = path.parseInt;
-
-var _parseInt$2 = _parseInt$1;
-
-var _parseInt$3 = _parseInt$2;
-
-var propertyIsEnumerable = objectPropertyIsEnumerable.f; // `Object.{ entries, values }` methods implementation
-
-var createMethod$4 = function (TO_ENTRIES) {
-  return function (it) {
-    var O = toIndexedObject(it);
-    var keys = objectKeys(O);
-    var length = keys.length;
-    var i = 0;
-    var result = [];
-    var key;
-
-    while (length > i) {
-      key = keys[i++];
-
-      if (!descriptors || propertyIsEnumerable.call(O, key)) {
-        result.push(TO_ENTRIES ? [key, O[key]] : O[key]);
-      }
-    }
-
-    return result;
-  };
-};
-
-var objectToArray = {
-  // `Object.entries` method
-  // https://tc39.github.io/ecma262/#sec-object.entries
-  entries: createMethod$4(true),
-  // `Object.values` method
-  // https://tc39.github.io/ecma262/#sec-object.values
-  values: createMethod$4(false)
-};
-
-var $values = objectToArray.values; // `Object.values` method
-// https://tc39.github.io/ecma262/#sec-object.values
-
-_export({
-  target: 'Object',
-  stat: true
-}, {
-  values: function values(O) {
-    return $values(O);
-  }
-});
-
-var values = path.Object.values;
-
-var values$1 = values;
-
-var values$2 = values$1;
-
-var $filter = arrayIteration.filter;
-var HAS_SPECIES_SUPPORT$1 = arrayMethodHasSpeciesSupport('filter'); // Edge 14- issue
-
-var USES_TO_LENGTH$1 = HAS_SPECIES_SUPPORT$1 && !fails(function () {
-  [].filter.call({
-    length: -1,
-    0: 1
-  }, function (it) {
-    throw it;
-  });
-}); // `Array.prototype.filter` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.filter
-// with adding support of @@species
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: !HAS_SPECIES_SUPPORT$1 || !USES_TO_LENGTH$1
-}, {
-  filter: function filter(callbackfn
-  /* , thisArg */
-  ) {
-    return $filter(this, callbackfn, arguments.length > 1 ? arguments[1] : undefined);
-  }
-});
-
-var filter = entryVirtual('Array').filter;
-
-var ArrayPrototype$2 = Array.prototype;
-
-var filter_1 = function (it) {
-  var own = it.filter;
-  return it === ArrayPrototype$2 || it instanceof Array && own === ArrayPrototype$2.filter ? filter : own;
-};
-
-var filter$1 = filter_1;
-
-var filter$2 = filter$1;
-
-var IS_CONCAT_SPREADABLE = wellKnownSymbol('isConcatSpreadable');
-var MAX_SAFE_INTEGER = 0x1FFFFFFFFFFFFF;
-var MAXIMUM_ALLOWED_INDEX_EXCEEDED = 'Maximum allowed index exceeded'; // We can't use this feature detection in V8 since it causes
-// deoptimization and serious performance degradation
-// https://github.com/zloirock/core-js/issues/679
-
-var IS_CONCAT_SPREADABLE_SUPPORT = v8Version >= 51 || !fails(function () {
-  var array = [];
-  array[IS_CONCAT_SPREADABLE] = false;
-  return array.concat()[0] !== array;
-});
-var SPECIES_SUPPORT = arrayMethodHasSpeciesSupport('concat');
-
-var isConcatSpreadable = function (O) {
-  if (!isObject(O)) return false;
-  var spreadable = O[IS_CONCAT_SPREADABLE];
-  return spreadable !== undefined ? !!spreadable : isArray(O);
-};
-
-var FORCED$2 = !IS_CONCAT_SPREADABLE_SUPPORT || !SPECIES_SUPPORT; // `Array.prototype.concat` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.concat
-// with adding support of @@isConcatSpreadable and @@species
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: FORCED$2
-}, {
-  concat: function concat(arg) {
-    // eslint-disable-line no-unused-vars
-    var O = toObject(this);
-    var A = arraySpeciesCreate(O, 0);
-    var n = 0;
-    var i, k, length, len, E;
-
-    for (i = -1, length = arguments.length; i < length; i++) {
-      E = i === -1 ? O : arguments[i];
-
-      if (isConcatSpreadable(E)) {
-        len = toLength(E.length);
-        if (n + len > MAX_SAFE_INTEGER) throw TypeError(MAXIMUM_ALLOWED_INDEX_EXCEEDED);
-
-        for (k = 0; k < len; k++, n++) if (k in E) createProperty(A, n, E[k]);
-      } else {
-        if (n >= MAX_SAFE_INTEGER) throw TypeError(MAXIMUM_ALLOWED_INDEX_EXCEEDED);
-        createProperty(A, n++, E);
-      }
-    }
-
-    A.length = n;
-    return A;
-  }
-});
-
-var concat = entryVirtual('Array').concat;
-
-var ArrayPrototype$3 = Array.prototype;
-
-var concat_1 = function (it) {
-  var own = it.concat;
-  return it === ArrayPrototype$3 || it instanceof Array && own === ArrayPrototype$3.concat ? concat : own;
-};
-
-var concat$1 = concat_1;
-
-var concat$2 = concat$1;
-
-function _arrayWithoutHoles(arr) {
-  if (isArray$3(arr)) {
-    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-}
-
-var arrayWithoutHoles = _arrayWithoutHoles;
-
-var callWithSafeIterationClosing = function (iterator, fn, value, ENTRIES) {
-  try {
-    return ENTRIES ? fn(anObject(value)[0], value[1]) : fn(value); // 7.4.6 IteratorClose(iterator, completion)
-  } catch (error) {
-    var returnMethod = iterator['return'];
-    if (returnMethod !== undefined) anObject(returnMethod.call(iterator));
-    throw error;
-  }
-};
-
-var ITERATOR$4 = wellKnownSymbol('iterator');
-var ArrayPrototype$4 = Array.prototype; // check on default Array iterator
-
-var isArrayIteratorMethod = function (it) {
-  return it !== undefined && (iterators.Array === it || ArrayPrototype$4[ITERATOR$4] === it);
-};
-
-// https://tc39.github.io/ecma262/#sec-array.from
-
-
-var arrayFrom = function from(arrayLike
-/* , mapfn = undefined, thisArg = undefined */
-) {
-  var O = toObject(arrayLike);
-  var C = typeof this == 'function' ? this : Array;
-  var argumentsLength = arguments.length;
-  var mapfn = argumentsLength > 1 ? arguments[1] : undefined;
-  var mapping = mapfn !== undefined;
-  var index = 0;
-  var iteratorMethod = getIteratorMethod(O);
-  var length, result, step, iterator, next;
-  if (mapping) mapfn = bindContext(mapfn, argumentsLength > 2 ? arguments[2] : undefined, 2); // if the target is not iterable or it's an array with the default iterator - use a simple case
-
-  if (iteratorMethod != undefined && !(C == Array && isArrayIteratorMethod(iteratorMethod))) {
-    iterator = iteratorMethod.call(O);
-    next = iterator.next;
-    result = new C();
-
-    for (; !(step = next.call(iterator)).done; index++) {
-      createProperty(result, index, mapping ? callWithSafeIterationClosing(iterator, mapfn, [step.value, index], true) : step.value);
-    }
-  } else {
-    length = toLength(O.length);
-    result = new C(length);
-
-    for (; length > index; index++) {
-      createProperty(result, index, mapping ? mapfn(O[index], index) : O[index]);
-    }
-  }
-
-  result.length = index;
-  return result;
-};
-
-var ITERATOR$5 = wellKnownSymbol('iterator');
-var SAFE_CLOSING = false;
-
-try {
-  var called = 0;
-  var iteratorWithReturn = {
-    next: function () {
-      return {
-        done: !!called++
-      };
-    },
-    'return': function () {
-      SAFE_CLOSING = true;
-    }
-  };
-
-  iteratorWithReturn[ITERATOR$5] = function () {
-    return this;
-  }; // eslint-disable-next-line no-throw-literal
-
-
-  Array.from(iteratorWithReturn, function () {
-    throw 2;
-  });
-} catch (error) {
-  /* empty */
-}
-
-var checkCorrectnessOfIteration = function (exec, SKIP_CLOSING) {
-  if (!SKIP_CLOSING && !SAFE_CLOSING) return false;
-  var ITERATION_SUPPORT = false;
-
-  try {
-    var object = {};
-
-    object[ITERATOR$5] = function () {
-      return {
-        next: function () {
-          return {
-            done: ITERATION_SUPPORT = true
-          };
-        }
-      };
-    };
-
-    exec(object);
-  } catch (error) {
-    /* empty */
-  }
-
-  return ITERATION_SUPPORT;
-};
-
-var INCORRECT_ITERATION = !checkCorrectnessOfIteration(function (iterable) {
-  Array.from(iterable);
-}); // `Array.from` method
-// https://tc39.github.io/ecma262/#sec-array.from
-
-_export({
-  target: 'Array',
-  stat: true,
-  forced: INCORRECT_ITERATION
-}, {
-  from: arrayFrom
-});
-
-var from_1 = path.Array.from;
-
-var from_1$1 = from_1;
-
-var from_1$2 = from_1$1;
-
-function _iterableToArray(iter) {
-  if (isIterable$1(Object(iter)) || Object.prototype.toString.call(iter) === "[object Arguments]") return from_1$2(iter);
-}
-
-var iterableToArray = _iterableToArray;
-
-function _nonIterableSpread() {
-  throw new TypeError("Invalid attempt to spread non-iterable instance");
-}
-
-var nonIterableSpread = _nonIterableSpread;
-
-function _toConsumableArray(arr) {
-  return arrayWithoutHoles(arr) || iterableToArray(arr) || nonIterableSpread();
-}
-
-var toConsumableArray = _toConsumableArray;
-
-var SPECIES$2 = wellKnownSymbol('species');
-var nativeSlice = [].slice;
-var max$1 = Math.max; // `Array.prototype.slice` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.slice
-// fallback for not array-like ES3 strings and DOM objects
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: !arrayMethodHasSpeciesSupport('slice')
-}, {
-  slice: function slice(start, end) {
-    var O = toIndexedObject(this);
-    var length = toLength(O.length);
-    var k = toAbsoluteIndex(start, length);
-    var fin = toAbsoluteIndex(end === undefined ? length : end, length); // inline `ArraySpeciesCreate` for usage native `Array#slice` where it's possible
-
-    var Constructor, result, n;
-
-    if (isArray(O)) {
-      Constructor = O.constructor; // cross-realm fallback
-
-      if (typeof Constructor == 'function' && (Constructor === Array || isArray(Constructor.prototype))) {
-        Constructor = undefined;
-      } else if (isObject(Constructor)) {
-        Constructor = Constructor[SPECIES$2];
-        if (Constructor === null) Constructor = undefined;
-      }
-
-      if (Constructor === Array || Constructor === undefined) {
-        return nativeSlice.call(O, k, fin);
-      }
-    }
-
-    result = new (Constructor === undefined ? Array : Constructor)(max$1(fin - k, 0));
-
-    for (n = 0; k < fin; k++, n++) if (k in O) createProperty(result, n, O[k]);
-
-    result.length = n;
-    return result;
-  }
-});
-
-var slice = entryVirtual('Array').slice;
-
-var ArrayPrototype$5 = Array.prototype;
-
-var slice_1 = function (it) {
-  var own = it.slice;
-  return it === ArrayPrototype$5 || it instanceof Array && own === ArrayPrototype$5.slice ? slice : own;
-};
-
-var slice$1 = slice_1;
-
-var slice$2 = slice$1;
-
-var FAILS_ON_PRIMITIVES$2 = fails(function () {
-  objectGetPrototypeOf(1);
-}); // `Object.getPrototypeOf` method
-// https://tc39.github.io/ecma262/#sec-object.getprototypeof
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: FAILS_ON_PRIMITIVES$2,
-  sham: !correctPrototypeGetter
-}, {
-  getPrototypeOf: function getPrototypeOf(it) {
-    return objectGetPrototypeOf(toObject(it));
-  }
-});
-
-var getPrototypeOf = path.Object.getPrototypeOf;
-
-var getPrototypeOf$1 = getPrototypeOf;
-
-var getPrototypeOf$2 = getPrototypeOf$1;
-
-var $indexOf = arrayIncludes.indexOf;
-var nativeIndexOf = [].indexOf;
-var NEGATIVE_ZERO = !!nativeIndexOf && 1 / [1].indexOf(1, -0) < 0;
-var SLOPPY_METHOD = sloppyArrayMethod('indexOf'); // `Array.prototype.indexOf` method
-// https://tc39.github.io/ecma262/#sec-array.prototype.indexof
-
-_export({
-  target: 'Array',
-  proto: true,
-  forced: NEGATIVE_ZERO || SLOPPY_METHOD
-}, {
-  indexOf: function indexOf(searchElement
-  /* , fromIndex = 0 */
-  ) {
-    return NEGATIVE_ZERO // convert -0 to +0
-    ? nativeIndexOf.apply(this, arguments) || 0 : $indexOf(this, searchElement, arguments.length > 1 ? arguments[1] : undefined);
-  }
-});
-
-var indexOf$1 = entryVirtual('Array').indexOf;
-
-var ArrayPrototype$6 = Array.prototype;
-
-var indexOf_1 = function (it) {
-  var own = it.indexOf;
-  return it === ArrayPrototype$6 || it instanceof Array && own === ArrayPrototype$6.indexOf ? indexOf$1 : own;
-};
-
-var indexOf$2 = indexOf_1;
-
-var indexOf$3 = indexOf$2;
-
-var isArray$4 = isArray$1;
-
-var isArray$5 = isArray$4;
-
-var nativeAssign = Object.assign;
-var defineProperty$7 = Object.defineProperty; // `Object.assign` method
-// https://tc39.github.io/ecma262/#sec-object.assign
-
-var objectAssign = !nativeAssign || fails(function () {
-  // should have correct order of operations (Edge bug)
-  if (descriptors && nativeAssign({
-    b: 1
-  }, nativeAssign(defineProperty$7({}, 'a', {
-    enumerable: true,
-    get: function () {
-      defineProperty$7(this, 'b', {
-        value: 3,
-        enumerable: false
-      });
-    }
-  }), {
-    b: 2
-  })).b !== 1) return true; // should work with symbols and should have deterministic property order (V8 bug)
-
-  var A = {};
-  var B = {}; // eslint-disable-next-line no-undef
-
-  var symbol = Symbol();
-  var alphabet = 'abcdefghijklmnopqrst';
-  A[symbol] = 7;
-  alphabet.split('').forEach(function (chr) {
-    B[chr] = chr;
-  });
-  return nativeAssign({}, A)[symbol] != 7 || objectKeys(nativeAssign({}, B)).join('') != alphabet;
-}) ? function assign(target, source) {
-  // eslint-disable-line no-unused-vars
-  var T = toObject(target);
-  var argumentsLength = arguments.length;
-  var index = 1;
-  var getOwnPropertySymbols = objectGetOwnPropertySymbols.f;
-  var propertyIsEnumerable = objectPropertyIsEnumerable.f;
-
-  while (argumentsLength > index) {
-    var S = indexedObject(arguments[index++]);
-    var keys = getOwnPropertySymbols ? objectKeys(S).concat(getOwnPropertySymbols(S)) : objectKeys(S);
-    var length = keys.length;
-    var j = 0;
-    var key;
-
-    while (length > j) {
-      key = keys[j++];
-      if (!descriptors || propertyIsEnumerable.call(S, key)) T[key] = S[key];
-    }
-  }
-
-  return T;
-} : nativeAssign;
-
-// https://tc39.github.io/ecma262/#sec-object.assign
-
-_export({
-  target: 'Object',
-  stat: true,
-  forced: Object.assign !== objectAssign
-}, {
-  assign: objectAssign
-});
-
-var assign = path.Object.assign;
-
-var assign$1 = assign;
-
-var assign$2 = assign$1;
-
-// https://tc39.github.io/ecma262/#sec-symbol.iterator
-
-defineWellKnownSymbol('iterator');
-
-var iterator = wrappedWellKnownSymbol.f('iterator');
-
-var iterator$1 = iterator;
-
-var iterator$2 = iterator$1;
-
-// https://tc39.github.io/ecma262/#sec-symbol.asynciterator
-
-defineWellKnownSymbol('asyncIterator');
-
-// https://tc39.github.io/ecma262/#sec-symbol.hasinstance
-
-defineWellKnownSymbol('hasInstance');
-
-// https://tc39.github.io/ecma262/#sec-symbol.isconcatspreadable
-
-defineWellKnownSymbol('isConcatSpreadable');
-
-// https://tc39.github.io/ecma262/#sec-symbol.match
-
-defineWellKnownSymbol('match');
-
-defineWellKnownSymbol('matchAll');
-
-// https://tc39.github.io/ecma262/#sec-symbol.replace
-
-defineWellKnownSymbol('replace');
-
-// https://tc39.github.io/ecma262/#sec-symbol.search
-
-defineWellKnownSymbol('search');
-
-// https://tc39.github.io/ecma262/#sec-symbol.species
-
-defineWellKnownSymbol('species');
-
-// https://tc39.github.io/ecma262/#sec-symbol.split
-
-defineWellKnownSymbol('split');
-
-// https://tc39.github.io/ecma262/#sec-symbol.toprimitive
-
-defineWellKnownSymbol('toPrimitive');
-
-// https://tc39.github.io/ecma262/#sec-symbol.tostringtag
-
-defineWellKnownSymbol('toStringTag');
-
-// https://tc39.github.io/ecma262/#sec-symbol.unscopables
-
-defineWellKnownSymbol('unscopables');
-
-// https://tc39.github.io/ecma262/#sec-math-@@tostringtag
-
-setToStringTag(Math, 'Math', true);
-
-// https://tc39.github.io/ecma262/#sec-json-@@tostringtag
-
-setToStringTag(global_1.JSON, 'JSON', true);
-
-var symbol = path.Symbol;
-
-// https://github.com/tc39/proposal-using-statement
-
-defineWellKnownSymbol('asyncDispose');
-
-// https://github.com/tc39/proposal-using-statement
-
-defineWellKnownSymbol('dispose');
-
-// https://github.com/tc39/proposal-observable
-
-defineWellKnownSymbol('observable');
-
-// https://github.com/tc39/proposal-pattern-matching
-
-defineWellKnownSymbol('patternMatch');
-
-defineWellKnownSymbol('replaceAll');
-
-var symbol$1 = symbol;
-
-var symbol$2 = symbol$1;
-
-var _typeof_1 = createCommonjsModule(function (module) {
-  function _typeof(obj) {
-    if (typeof symbol$2 === "function" && typeof iterator$2 === "symbol") {
-      module.exports = _typeof = function _typeof(obj) {
-        return typeof obj;
-      };
-    } else {
-      module.exports = _typeof = function _typeof(obj) {
-        return obj && typeof symbol$2 === "function" && obj.constructor === symbol$2 && obj !== symbol$2.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
-  }
-
-  module.exports = _typeof;
-});
-
-var byteToHex = [];
-
-for (var i = 0; i < 256; i++) {
-  byteToHex[i] = (i + 0x100).toString(16).substr(1);
-}
-/**
- * Represent binary UUID into it's string representation.
- *
- * @param buf - Buffer containing UUID bytes.
- * @param offset - Offset from the start of the buffer where the UUID is saved (not needed if the buffer starts with the UUID).
- *
- * @returns String representation of the UUID.
- */
-
-
-function stringifyUUID(buf, offset) {
-  var i = offset || 0;
-  var bth = byteToHex;
-  return bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + '-' + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]] + bth[buf[i++]];
-}
-
-var random = function () {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    // WHATWG crypto-based RNG - http://wiki.whatwg.org/wiki/Crypto
-    // Moderately fast, high quality
-    var _rnds8 = new Uint8Array(16);
-
-    return function whatwgRNG() {
-      crypto.getRandomValues(_rnds8);
-      return _rnds8;
-    };
-  } // Math.random()-based (RNG)
-  //
-  // If all else fails, use Math.random().
-  // It's fast, but is of unspecified quality.
-
-
-  var _rnds = new Array(16);
-
-  return function () {
-    for (var i = 0, r; i < 16; i++) {
-      if ((i & 0x03) === 0) {
-        r = Math.random() * 0x100000000;
-      }
-
-      _rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return _rnds;
-  }; //     uuid.js
-  //
-  //     Copyright (c) 2010-2012 Robert Kieffer
-  //     MIT License - http://opensource.org/licenses/mit-license.php
-  // Unique ID creation requires a high quality random # generator.  We feature
-  // detect to determine the best RNG source, normalizing to a function that
-  // returns 128-bits of randomness, since that's what's usually required
-  // return require('./rng');
-}();
-
-var byteToHex$1 = [];
-
-for (var i$1 = 0; i$1 < 256; i$1++) {
-  byteToHex$1[i$1] = (i$1 + 0x100).toString(16).substr(1);
-} // **`v1()` - Generate time-based UUID**
-//
-// Inspired by https://github.com/LiosK/UUID.js
-// and http://docs.python.org/library/uuid.html
-// random #'s we need to init node and clockseq
-
-
-var seedBytes = random(); // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
-
-var defaultNodeId = [seedBytes[0] | 0x01, seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]]; // Per 4.2.2, randomize (14 bit) clockseq
-
-var defaultClockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff; // Previous uuid creation time
-/**
- * UUIDv4 options.
- */
-
-/**
- * Generate UUIDv4
- *
- * @param options - Options to be used instead of default generated values.
- * String 'binary' is a shorthand for uuid4({}, new Array(16)).
- * @param buf - If present the buffer will be filled with the generated UUID.
- * @param offset - Offset of the UUID from the start of the buffer.
- *
- * @returns UUIDv4
- */
-
-
-function uuid4() {
-  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var buf = arguments.length > 1 ? arguments[1] : undefined;
-  var offset = arguments.length > 2 ? arguments[2] : undefined; // Deprecated - 'format' argument, as supported in v1.2
-
-  var i = buf && offset || 0;
-
-  if (typeof options === 'string') {
-    buf = options === 'binary' ? new Array(16) : undefined;
-    options = {};
-  }
-
-  var rnds = options.random || (options.rng || random)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-
-  rnds[6] = rnds[6] & 0x0f | 0x40;
-  rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
-
-  if (buf) {
-    for (var ii = 0; ii < 16; ii++) {
-      buf[i + ii] = rnds[ii];
-    }
-  }
-
-  return buf || stringifyUUID(rnds);
-} // Rollup will complain about mixing default and named exports in UMD build,
-
-function ownKeys$1(object, enumerableOnly) { var keys = keys$3(object); if (getOwnPropertySymbols$2) { var symbols = getOwnPropertySymbols$2(object); if (enumerableOnly) symbols = filter$2(symbols).call(symbols, function (sym) { return getOwnPropertyDescriptor$3(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context11; forEach$2(_context11 = ownKeys$1(Object(source), true)).call(_context11, function (key) { defineProperty$6(target, key, source[key]); }); } else if (getOwnPropertyDescriptors$2) { defineProperties$1(target, getOwnPropertyDescriptors$2(source)); } else { var _context12; forEach$2(_context12 = ownKeys$1(Object(source))).call(_context12, function (key) { defineProperty$2(target, key, getOwnPropertyDescriptor$3(source, key)); }); } } return target; }
-// for example '/Date(1198908717056)/' or '/Date(1198908717056-0700)/'
-// code from http://momentjs.com/
-
-var ASPDateRegex = /^\/?Date\((-?\d+)/i; // Color REs
-
-var fullHexRE = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
-var shortHexRE = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-var rgbRE = /^rgb\( *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *\)$/i;
-var rgbaRE = /^rgba\( *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *(1?\d{1,2}|2[0-4]\d|25[0-5]) *, *([01]|0?\.\d+) *\)$/i;
-/**
- * Hue, Saturation, Value.
- */
-
-/**
- * Test whether given object is a number.
- *
- * @param value - Input value of unknown type.
- *
- * @returns True if number, false otherwise.
- */
-function isNumber(value) {
-  return value instanceof Number || typeof value === "number";
-}
-/**
- * Remove everything in the DOM object.
- *
- * @param DOMobject - Node whose child nodes will be recursively deleted.
- */
-
-function recursiveDOMDelete(DOMobject) {
-  if (DOMobject) {
-    while (DOMobject.hasChildNodes() === true) {
-      var child = DOMobject.firstChild;
-
-      if (child) {
-        recursiveDOMDelete(child);
-        DOMobject.removeChild(child);
-      }
-    }
-  }
-}
-/**
- * Test whether given object is a string.
- *
- * @param value - Input value of unknown type.
- *
- * @returns True if string, false otherwise.
- */
-
-function isString(value) {
-  return value instanceof String || typeof value === "string";
-}
-/**
- * Test whether given object is a object (not primitive or null).
- *
- * @param value - Input value of unknown type.
- *
- * @returns True if not null object, false otherwise.
- */
-
-function isObject$1(value) {
-  return _typeof_1(value) === "object" && value !== null;
-}
-/**
- * Test whether given object is a Date, or a String containing a Date.
- *
- * @param value - Input value of unknown type.
- *
- * @returns True if Date instance or string date representation, false otherwise.
- */
-
-function isDate(value) {
-  if (value instanceof Date) {
-    return true;
-  } else if (isString(value)) {
-    // test whether this string contains a date
-    var match = ASPDateRegex.exec(value);
-
-    if (match) {
-      return true;
-    } else if (!isNaN(Date.parse(value))) {
-      return true;
-    }
-  }
-
-  return false;
-}
-/**
- * Copy property from b to a if property present in a.
- * If property in b explicitly set to null, delete it if `allowDeletion` set.
- *
- * Internal helper routine, should not be exported. Not added to `exports` for that reason.
- *
- * @param a - Target object.
- * @param b - Source object.
- * @param prop - Name of property to copy from b to a.
- * @param allowDeletion - If true, delete property in a if explicitly set to null in b.
- */
-
-function copyOrDelete(a, b, prop, allowDeletion) {
-  var doDeletion = false;
-
-  if (allowDeletion === true) {
-    doDeletion = b[prop] === null && a[prop] !== undefined;
-  }
-
-  if (doDeletion) {
-    delete a[prop];
-  } else {
-    a[prop] = b[prop]; // Remember, this is a reference copy!
-  }
-}
-/**
- * Fill an object with a possibly partially defined other object.
- *
- * Only copies values for the properties already present in a.
- * That means an object is not created on a property if only the b object has it.
- *
- * @param a - The object that will have it's properties updated.
- * @param b - The object with property updates.
- * @param allowDeletion - If true, delete properties in a that are explicitly set to null in b.
- */
-
-
-function fillIfDefined(a, b) {
-  var allowDeletion = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  // NOTE: iteration of properties of a
-  // NOTE: prototype properties iterated over as well
-  for (var prop in a) {
-    if (b[prop] !== undefined) {
-      if (b[prop] === null || _typeof_1(b[prop]) !== "object") {
-        // Note: typeof null === 'object'
-        copyOrDelete(a, b, prop, allowDeletion);
-      } else {
-        var aProp = a[prop];
-        var bProp = b[prop];
-
-        if (isObject$1(aProp) && isObject$1(bProp)) {
-          fillIfDefined(aProp, bProp, allowDeletion);
-        }
-      }
-    }
-  }
-}
-/**
- * Copy the values of all of the enumerable own properties from one or more source objects to a
- * target object. Returns the target object.
- *
- * @param target - The target object to copy to.
- * @param source - The source object from which to copy properties.
- *
- * @returns The target object.
- */
-
-var extend = assign$2;
-/**
- * Extend object a with selected properties of object b or a series of objects.
- *
- * @remarks
- * Only properties with defined values are copied.
- *
- * @param props - Properties to be copied to a.
- * @param a - The target.
- * @param others - The sources.
- *
- * @returns Argument a.
- */
-
-function selectiveExtend(props, a) {
-  if (!isArray$5(props)) {
-    throw new Error("Array with property names expected as first argument");
-  }
-
-  for (var _len = arguments.length, others = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-    others[_key - 2] = arguments[_key];
-  }
-
-  for (var _i = 0, _others = others; _i < _others.length; _i++) {
-    var other = _others[_i];
-
-    for (var p = 0; p < props.length; p++) {
-      var prop = props[p];
-
-      if (other && Object.prototype.hasOwnProperty.call(other, prop)) {
-        a[prop] = other[prop];
-      }
-    }
-  }
-
-  return a;
-}
-/**
- * Extend object a with selected properties of object b.
- * Only properties with defined values are copied.
- *
- * @remarks
- * Previous version of this routine implied that multiple source objects could
- * be used; however, the implementation was **wrong**. Since multiple (\>1)
- * sources weren't used anywhere in the `vis.js` code, this has been removed
- *
- * @param props - Names of first-level properties to copy over.
- * @param a - Target object.
- * @param b - Source object.
- * @param allowDeletion - If true, delete property in a if explicitly set to null in b.
- *
- * @returns Argument a.
- */
-
-function selectiveDeepExtend(props, a, b) {
-  var allowDeletion = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-  // TODO: add support for Arrays to deepExtend
-  if (isArray$5(b)) {
-    throw new TypeError("Arrays are not supported by deepExtend");
-  }
-
-  for (var p = 0; p < props.length; p++) {
-    var prop = props[p];
-
-    if (Object.prototype.hasOwnProperty.call(b, prop)) {
-      if (b[prop] && b[prop].constructor === Object) {
-        if (a[prop] === undefined) {
-          a[prop] = {};
-        }
-
-        if (a[prop].constructor === Object) {
-          deepExtend(a[prop], b[prop], false, allowDeletion);
-        } else {
-          copyOrDelete(a, b, prop, allowDeletion);
-        }
-      } else if (isArray$5(b[prop])) {
-        throw new TypeError("Arrays are not supported by deepExtend");
-      } else {
-        copyOrDelete(a, b, prop, allowDeletion);
-      }
-    }
-  }
-
-  return a;
-}
-/**
- * Extend object `a` with properties of object `b`, ignoring properties which
- * are explicitly specified to be excluded.
- *
- * @remarks
- * The properties of `b` are considered for copying. Properties which are
- * themselves objects are are also extended. Only properties with defined
- * values are copied.
- *
- * @param propsToExclude - Names of properties which should *not* be copied.
- * @param a - Object to extend.
- * @param b - Object to take properties from for extension.
- * @param allowDeletion - If true, delete properties in a that are explicitly
- * set to null in b.
- *
- * @returns Argument a.
- */
-
-function selectiveNotDeepExtend(propsToExclude, a, b) {
-  var allowDeletion = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-  // TODO: add support for Arrays to deepExtend
-  // NOTE: array properties have an else-below; apparently, there is a problem here.
-  if (isArray$5(b)) {
-    throw new TypeError("Arrays are not supported by deepExtend");
-  }
-
-  for (var prop in b) {
-    if (!Object.prototype.hasOwnProperty.call(b, prop)) {
-      continue;
-    } // Handle local properties only
-
-
-    if (indexOf$3(propsToExclude).call(propsToExclude, prop) !== -1) {
-      continue;
-    } // In exclusion list, skip
-
-
-    if (b[prop] && b[prop].constructor === Object) {
-      if (a[prop] === undefined) {
-        a[prop] = {};
-      }
-
-      if (a[prop].constructor === Object) {
-        deepExtend(a[prop], b[prop]); // NOTE: allowDeletion not propagated!
-      } else {
-        copyOrDelete(a, b, prop, allowDeletion);
-      }
-    } else if (isArray$5(b[prop])) {
-      a[prop] = [];
-
-      for (var i = 0; i < b[prop].length; i++) {
-        a[prop].push(b[prop][i]);
-      }
-    } else {
-      copyOrDelete(a, b, prop, allowDeletion);
-    }
-  }
-
-  return a;
-}
-/**
- * Deep extend an object a with the properties of object b.
- *
- * @param a - Target object.
- * @param b - Source object.
- * @param protoExtend - If true, the prototype values will also be extended.
- * (That is the options objects that inherit from others will also get the
- * inherited options).
- * @param allowDeletion - If true, the values of fields that are null will be deleted.
- *
- * @returns Argument a.
- */
-
-function deepExtend(a, b) {
-  var protoExtend = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-  var allowDeletion = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-  for (var prop in b) {
-    if (Object.prototype.hasOwnProperty.call(b, prop) || protoExtend === true) {
-      if (_typeof_1(b[prop]) === "object" && b[prop] !== null && getPrototypeOf$2(b[prop]) === Object.prototype) {
-        if (a[prop] === undefined) {
-          a[prop] = deepExtend({}, b[prop], protoExtend); // NOTE: allowDeletion not propagated!
-        } else if (_typeof_1(a[prop]) === "object" && a[prop] !== null && getPrototypeOf$2(a[prop]) === Object.prototype) {
-          deepExtend(a[prop], b[prop], protoExtend); // NOTE: allowDeletion not propagated!
-        } else {
-          copyOrDelete(a, b, prop, allowDeletion);
-        }
-      } else if (isArray$5(b[prop])) {
-        var _context;
-
-        a[prop] = slice$2(_context = b[prop]).call(_context);
-      } else {
-        copyOrDelete(a, b, prop, allowDeletion);
-      }
-    }
-  }
-
-  return a;
-}
-/**
- * Test whether all elements in two arrays are equal.
- *
- * @param a - First array.
- * @param b - Second array.
- *
- * @returns True if both arrays have the same length and same elements (1 = '1').
- */
-
-function equalArray(a, b) {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  for (var i = 0, len = a.length; i < len; i++) {
-    if (a[i] != b[i]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-/**
- * Get the type of an object, for example exports.getType([]) returns 'Array'.
- *
- * @param object - Input value of unknown type.
- *
- * @returns Detected type.
- */
-
-function getType(object) {
-  var type = _typeof_1(object);
-
-  if (type === "object") {
-    if (object === null) {
-      return "null";
-    }
-
-    if (object instanceof Boolean) {
-      return "Boolean";
-    }
-
-    if (object instanceof Number) {
-      return "Number";
-    }
-
-    if (object instanceof String) {
-      return "String";
-    }
-
-    if (isArray$5(object)) {
-      return "Array";
-    }
-
-    if (object instanceof Date) {
-      return "Date";
-    }
-
-    return "Object";
-  }
-
-  if (type === "number") {
-    return "Number";
-  }
-
-  if (type === "boolean") {
-    return "Boolean";
-  }
-
-  if (type === "string") {
-    return "String";
-  }
-
-  if (type === undefined) {
-    return "undefined";
-  }
-
-  return type;
-}
-
-/**
- * Used to extend an array and copy it. This is used to propagate paths recursively.
- *
- * @param arr - First part.
- * @param newValue - The value to be aadded into the array.
- *
- * @returns A new array with all items from arr and newValue (which is last).
- */
-function copyAndExtendArray(arr, newValue) {
-  var _context2;
-
-  return concat$2(_context2 = []).call(_context2, toConsumableArray(arr), [newValue]);
-}
-/**
- * Used to extend an array and copy it. This is used to propagate paths recursively.
- *
- * @param arr - The array to be copied.
- *
- * @returns Shallow copy of arr.
- */
-
-function copyArray(arr) {
-  return slice$2(arr).call(arr);
-}
-/**
- * Retrieve the absolute left value of a DOM element.
- *
- * @param elem - A dom element, for example a div.
- *
- * @returns The absolute left position of this element in the browser page.
- */
-
-function getAbsoluteLeft(elem) {
-  return elem.getBoundingClientRect().left;
-}
-/**
- * Retrieve the absolute right value of a DOM element.
- *
- * @param elem - A dom element, for example a div.
- *
- * @returns The absolute right position of this element in the browser page.
- */
-
-function getAbsoluteRight(elem) {
-  return elem.getBoundingClientRect().right;
-}
-/**
- * Retrieve the absolute top value of a DOM element.
- *
- * @param elem - A dom element, for example a div.
- *
- * @returns The absolute top position of this element in the browser page.
- */
-
-function getAbsoluteTop(elem) {
-  return elem.getBoundingClientRect().top;
-}
-/**
- * Add a className to the given elements style.
- *
- * @param elem - The element to which the classes will be added.
- * @param classNames - Space separated list of classes.
- */
-
-function addClassName(elem, classNames) {
-  var classes = elem.className.split(" ");
-  var newClasses = classNames.split(" ");
-  classes = concat$2(classes).call(classes, filter$2(newClasses).call(newClasses, function (className) {
-    return indexOf$3(classes).call(classes, className) < 0;
-  }));
-  elem.className = classes.join(" ");
-}
-/**
- * Remove a className from the given elements style.
- *
- * @param elem - The element from which the classes will be removed.
- * @param classNames - Space separated list of classes.
- */
-
-function removeClassName(elem, classNames) {
-  var classes = elem.className.split(" ");
-  var oldClasses = classNames.split(" ");
-  classes = filter$2(classes).call(classes, function (className) {
-    return indexOf$3(oldClasses).call(oldClasses, className) < 0;
-  });
-  elem.className = classes.join(" ");
-}
-
-/**
- * For each method for both arrays and objects.
- * In case of an array, the built-in Array.forEach() is applied (**No, it's not!**).
- * In case of an Object, the method loops over all properties of the object.
- *
- * @param object - An Object or Array to be iterated over.
- * @param callback - Array.forEach-like callback.
- */
-function forEach$3(object, callback) {
-  if (isArray$5(object)) {
-    // array
-    var len = object.length;
-
-    for (var i = 0; i < len; i++) {
-      callback(object[i], i, object);
-    }
-  } else {
-    // object
-    for (var _key2 in object) {
-      if (Object.prototype.hasOwnProperty.call(object, _key2)) {
-        callback(object[_key2], _key2, object);
-      }
-    }
-  }
-}
-/**
- * Convert an object into an array: all objects properties are put into the array. The resulting array is unordered.
- *
- * @param o - Object that contains the properties and methods.
- *
- * @returns An array of unordered values.
- */
-
-var toArray = values$2;
-/**
- * Update a property in an object.
- *
- * @param object - The object whose property will be updated.
- * @param key - Name of the property to be updated.
- * @param value - The new value to be assigned.
- *
- * @returns Whether the value was updated (true) or already strictly the same in the original object (false).
- */
-
-function updateProperty(object, key, value) {
-  if (object[key] !== value) {
-    object[key] = value;
-    return true;
-  } else {
-    return false;
-  }
-}
-/**
- * Throttle the given function to be only executed once per animation frame.
- *
- * @param fn - The original function.
- *
- * @returns The throttled function.
- */
-
-function throttle(fn) {
-  var scheduled = false;
-  return function () {
-    if (!scheduled) {
-      scheduled = true;
-      requestAnimationFrame(function () {
-        scheduled = false;
-        fn();
-      });
-    }
-  };
-}
-/**
- * Add and event listener. Works for all browsers.
- *
- * @param element - The element to bind the event listener to.
- * @param action - Same as Element.addEventListener(action, —, —).
- * @param listener - Same as Element.addEventListener(—, listener, —).
- * @param useCapture - Same as Element.addEventListener(—, —, useCapture).
- */
-
-function addEventListener(element, action, listener, useCapture) {
-  if (element.addEventListener) {
-    var _context3;
-
-    if (useCapture === undefined) {
-      useCapture = false;
-    }
-
-    if (action === "mousewheel" && indexOf$3(_context3 = navigator.userAgent).call(_context3, "Firefox") >= 0) {
-      action = "DOMMouseScroll"; // For Firefox
-    }
-
-    element.addEventListener(action, listener, useCapture);
-  } else {
-    // @TODO: IE types? Does anyone care?
-    element.attachEvent("on" + action, listener); // IE browsers
-  }
-}
-/**
- * Remove an event listener from an element.
- *
- * @param element - The element to bind the event listener to.
- * @param action - Same as Element.removeEventListener(action, —, —).
- * @param listener - Same as Element.removeEventListener(—, listener, —).
- * @param useCapture - Same as Element.removeEventListener(—, —, useCapture).
- */
-
-function removeEventListener(element, action, listener, useCapture) {
-  if (element.removeEventListener) {
-    var _context4;
-
-    // non-IE browsers
-    if (useCapture === undefined) {
-      useCapture = false;
-    }
-
-    if (action === "mousewheel" && indexOf$3(_context4 = navigator.userAgent).call(_context4, "Firefox") >= 0) {
-      action = "DOMMouseScroll"; // For Firefox
-    }
-
-    element.removeEventListener(action, listener, useCapture);
-  } else {
-    // @TODO: IE types? Does anyone care?
-    element.detachEvent("on" + action, listener); // IE browsers
-  }
-}
-/**
- * Cancels the event's default action if it is cancelable, without stopping further propagation of the event.
- *
- * @param event - The event whose default action should be prevented.
- */
-
-function preventDefault(event) {
-  if (!event) {
-    event = window.event;
-  }
-
-  if (!event) ; else if (event.preventDefault) {
-    event.preventDefault(); // non-IE browsers
-  } else {
-    // @TODO: IE types? Does anyone care?
-    event.returnValue = false; // IE browsers
-  }
-}
-/**
- * Get HTML element which is the target of the event.
- *
- * @param event - The event.
- *
- * @returns The element or null if not obtainable.
- */
-
-function getTarget() {
-  var event = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : window.event;
-  // code from http://www.quirksmode.org/js/events_properties.html
-  // @TODO: EventTarget can be almost anything, is it okay to return only Elements?
-  var target = null;
-
-  if (!event) ; else if (event.target) {
-    target = event.target;
-  } else if (event.srcElement) {
-    target = event.srcElement;
-  }
-
-  if (!(target instanceof Element)) {
-    return null;
-  }
-
-  if (target.nodeType != null && target.nodeType == 3) {
-    // defeat Safari bug
-    target = target.parentNode;
-
-    if (!(target instanceof Element)) {
-      return null;
-    }
-  }
-
-  return target;
-}
-/**
- * Check if given element contains given parent somewhere in the DOM tree.
- *
- * @param element - The element to be tested.
- * @param parent - The ancestor (not necessarily parent) of the element.
- *
- * @returns True if parent is an ancestor of the element, false otherwise.
- */
-
-function hasParent(element, parent) {
-  var elem = element;
-
-  while (elem) {
-    if (elem === parent) {
-      return true;
-    } else if (elem.parentNode) {
-      elem = elem.parentNode;
-    } else {
-      return false;
-    }
-  }
-
-  return false;
-}
-var option = {
-  /**
-   * Convert a value into a boolean.
-   *
-   * @param value - Value to be converted intoboolean, a function will be executed as `(() => unknown)`.
-   * @param defaultValue - If the value or the return value of the function == null then this will be returned.
-   *
-   * @returns Corresponding boolean value, if none then the default value, if none then null.
-   */
-  asBoolean: function asBoolean(value, defaultValue) {
-    if (typeof value == "function") {
-      value = value();
-    }
-
-    if (value != null) {
-      return value != false;
-    }
-
-    return defaultValue || null;
-  },
-
-  /**
-   * Convert a value into a number.
-   *
-   * @param value - Value to be converted intonumber, a function will be executed as `(() => unknown)`.
-   * @param defaultValue - If the value or the return value of the function == null then this will be returned.
-   *
-   * @returns Corresponding **boxed** number value, if none then the default value, if none then null.
-   */
-  asNumber: function asNumber(value, defaultValue) {
-    if (typeof value == "function") {
-      value = value();
-    }
-
-    if (value != null) {
-      return Number(value) || defaultValue || null;
-    }
-
-    return defaultValue || null;
-  },
-
-  /**
-   * Convert a value into a string.
-   *
-   * @param value - Value to be converted intostring, a function will be executed as `(() => unknown)`.
-   * @param defaultValue - If the value or the return value of the function == null then this will be returned.
-   *
-   * @returns Corresponding **boxed** string value, if none then the default value, if none then null.
-   */
-  asString: function asString(value, defaultValue) {
-    if (typeof value == "function") {
-      value = value();
-    }
-
-    if (value != null) {
-      return String(value);
-    }
-
-    return defaultValue || null;
-  },
-
-  /**
-   * Convert a value into a size.
-   *
-   * @param value - Value to be converted intosize, a function will be executed as `(() => unknown)`.
-   * @param defaultValue - If the value or the return value of the function == null then this will be returned.
-   *
-   * @returns Corresponding string value (number + 'px'), if none then the default value, if none then null.
-   */
-  asSize: function asSize(value, defaultValue) {
-    if (typeof value == "function") {
-      value = value();
-    }
-
-    if (isString(value)) {
-      return value;
-    } else if (isNumber(value)) {
-      return value + "px";
-    } else {
-      return defaultValue || null;
-    }
-  },
-
-  /**
-   * Convert a value into a DOM Element.
-   *
-   * @param value - Value to be converted into DOM Element, a function will be executed as `(() => unknown)`.
-   * @param defaultValue - If the value or the return value of the function == null then this will be returned.
-   *
-   * @returns The DOM Element, if none then the default value, if none then null.
-   */
-  asElement: function asElement(value, defaultValue) {
-    if (typeof value == "function") {
-      value = value();
-    }
-
-    return value || defaultValue || null;
-  }
-};
-/**
- * Convert hex color string into RGB color object.
- *
- * @remarks
- * {@link http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb}
- *
- * @param hex - Hex color string (3 or 6 digits, with or without #).
- *
- * @returns RGB color object.
- */
-
-function hexToRGB(hex) {
-  var result;
-
-  switch (hex.length) {
-    case 3:
-    case 4:
-      result = shortHexRE.exec(hex);
-      return result ? {
-        r: _parseInt$3(result[1] + result[1], 16),
-        g: _parseInt$3(result[2] + result[2], 16),
-        b: _parseInt$3(result[3] + result[3], 16)
-      } : null;
-
-    case 6:
-    case 7:
-      result = fullHexRE.exec(hex);
-      return result ? {
-        r: _parseInt$3(result[1], 16),
-        g: _parseInt$3(result[2], 16),
-        b: _parseInt$3(result[3], 16)
-      } : null;
-
-    default:
-      return null;
-  }
-}
-/**
- * This function takes string color in hex or RGB format and adds the opacity, RGBA is passed through unchanged.
- *
- * @param color - The color string (hex, RGB, RGBA).
- * @param opacity - The new opacity.
- *
- * @returns RGBA string, for example 'rgba(255, 0, 127, 0.3)'.
- */
-
-function overrideOpacity(color, opacity) {
-  if (indexOf$3(color).call(color, "rgba") !== -1) {
-    return color;
-  } else if (indexOf$3(color).call(color, "rgb") !== -1) {
-    var rgb = color.substr(indexOf$3(color).call(color, "(") + 1).replace(")", "").split(",");
-    return "rgba(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + "," + opacity + ")";
-  } else {
-    var _rgb = hexToRGB(color);
-
-    if (_rgb == null) {
-      return color;
-    } else {
-      return "rgba(" + _rgb.r + "," + _rgb.g + "," + _rgb.b + "," + opacity + ")";
-    }
-  }
-}
-/**
- * Convert RGB \<0, 255\> into hex color string.
- *
- * @param red - Red channel.
- * @param green - Green channel.
- * @param blue - Blue channel.
- *
- * @returns Hex color string (for example: '#0acdc0').
- */
-
-function RGBToHex(red, green, blue) {
-  var _context5;
-
-  return "#" + slice$2(_context5 = ((1 << 24) + (red << 16) + (green << 8) + blue).toString(16)).call(_context5, 1);
-}
-
-/**
- * Parse a color property into an object with border, background, and highlight colors.
- *
- * @param inputColor - Shorthand color string or input color object.
- * @param defaultColor - Full color object to fill in missing values in inputColor.
- *
- * @returns Color object.
- */
-function parseColor(inputColor, defaultColor) {
-  if (isString(inputColor)) {
-    var colorStr = inputColor;
-
-    if (isValidRGB(colorStr)) {
-      var _context6;
-
-      var rgb = map$2(_context6 = colorStr.substr(4).substr(0, colorStr.length - 5).split(",")).call(_context6, function (value) {
-        return _parseInt$3(value);
-      });
-
-      colorStr = RGBToHex(rgb[0], rgb[1], rgb[2]);
-    }
-
-    if (isValidHex(colorStr) === true) {
-      var hsv = hexToHSV(colorStr);
-      var lighterColorHSV = {
-        h: hsv.h,
-        s: hsv.s * 0.8,
-        v: Math.min(1, hsv.v * 1.02)
-      };
-      var darkerColorHSV = {
-        h: hsv.h,
-        s: Math.min(1, hsv.s * 1.25),
-        v: hsv.v * 0.8
-      };
-      var darkerColorHex = HSVToHex(darkerColorHSV.h, darkerColorHSV.s, darkerColorHSV.v);
-      var lighterColorHex = HSVToHex(lighterColorHSV.h, lighterColorHSV.s, lighterColorHSV.v);
-      return {
-        background: colorStr,
-        border: darkerColorHex,
-        highlight: {
-          background: lighterColorHex,
-          border: darkerColorHex
-        },
-        hover: {
-          background: lighterColorHex,
-          border: darkerColorHex
-        }
-      };
-    } else {
-      return {
-        background: colorStr,
-        border: colorStr,
-        highlight: {
-          background: colorStr,
-          border: colorStr
-        },
-        hover: {
-          background: colorStr,
-          border: colorStr
-        }
-      };
-    }
-  } else {
-    if (defaultColor) {
-      var color = {
-        background: inputColor.background || defaultColor.background,
-        border: inputColor.border || defaultColor.border,
-        highlight: isString(inputColor.highlight) ? {
-          border: inputColor.highlight,
-          background: inputColor.highlight
-        } : {
-          background: inputColor.highlight && inputColor.highlight.background || defaultColor.highlight.background,
-          border: inputColor.highlight && inputColor.highlight.border || defaultColor.highlight.border
-        },
-        hover: isString(inputColor.hover) ? {
-          border: inputColor.hover,
-          background: inputColor.hover
-        } : {
-          border: inputColor.hover && inputColor.hover.border || defaultColor.hover.border,
-          background: inputColor.hover && inputColor.hover.background || defaultColor.hover.background
-        }
-      };
-      return color;
-    } else {
-      var _color = {
-        background: inputColor.background || undefined,
-        border: inputColor.border || undefined,
-        highlight: isString(inputColor.highlight) ? {
-          border: inputColor.highlight,
-          background: inputColor.highlight
-        } : {
-          background: inputColor.highlight && inputColor.highlight.background || undefined,
-          border: inputColor.highlight && inputColor.highlight.border || undefined
-        },
-        hover: isString(inputColor.hover) ? {
-          border: inputColor.hover,
-          background: inputColor.hover
-        } : {
-          border: inputColor.hover && inputColor.hover.border || undefined,
-          background: inputColor.hover && inputColor.hover.background || undefined
-        }
-      };
-      return _color;
-    }
-  }
-}
-/**
- * Convert RGB \<0, 255\> into HSV object.
- *
- * @remarks
- * {@link http://www.javascripter.net/faq/rgb2hsv.htm}
- *
- * @param red - Red channel.
- * @param green - Green channel.
- * @param blue - Blue channel.
- *
- * @returns HSV color object.
- */
-
-function RGBToHSV(red, green, blue) {
-  red = red / 255;
-  green = green / 255;
-  blue = blue / 255;
-  var minRGB = Math.min(red, Math.min(green, blue));
-  var maxRGB = Math.max(red, Math.max(green, blue)); // Black-gray-white
-
-  if (minRGB === maxRGB) {
-    return {
-      h: 0,
-      s: 0,
-      v: minRGB
-    };
-  } // Colors other than black-gray-white:
-
-
-  var d = red === minRGB ? green - blue : blue === minRGB ? red - green : blue - red;
-  var h = red === minRGB ? 3 : blue === minRGB ? 1 : 5;
-  var hue = 60 * (h - d / (maxRGB - minRGB)) / 360;
-  var saturation = (maxRGB - minRGB) / maxRGB;
-  var value = maxRGB;
-  return {
-    h: hue,
-    s: saturation,
-    v: value
-  };
-}
-var cssUtil = {
-  // split a string with css styles into an object with key/values
-  split: function split(cssText) {
-    var _context7;
-
-    var styles = {};
-
-    forEach$2(_context7 = cssText.split(";")).call(_context7, function (style) {
-      if (trim$2(style).call(style) != "") {
-        var _context8, _context9;
-
-        var parts = style.split(":");
-
-        var _key3 = trim$2(_context8 = parts[0]).call(_context8);
-
-        var _value = trim$2(_context9 = parts[1]).call(_context9);
-
-        styles[_key3] = _value;
-      }
-    });
-
-    return styles;
-  },
-  // build a css text string from an object with key/values
-  join: function join(styles) {
-    var _context10;
-
-    return map$2(_context10 = keys$3(styles)).call(_context10, function (key) {
-      return key + ": " + styles[key];
-    }).join("; ");
-  }
-};
-/**
- * Append a string with css styles to an element.
- *
- * @param element - The element that will receive new styles.
- * @param cssText - The styles to be appended.
- */
-
-function addCssText(element, cssText) {
-  var currentStyles = cssUtil.split(element.style.cssText);
-  var newStyles = cssUtil.split(cssText);
-
-  var styles = _objectSpread({}, currentStyles, {}, newStyles);
-
-  element.style.cssText = cssUtil.join(styles);
-}
-/**
- * Remove a string with css styles from an element.
- *
- * @param element - The element from which styles should be removed.
- * @param cssText - The styles to be removed.
- */
-
-function removeCssText(element, cssText) {
-  var styles = cssUtil.split(element.style.cssText);
-  var removeStyles = cssUtil.split(cssText);
-
-  for (var _key4 in removeStyles) {
-    if (Object.prototype.hasOwnProperty.call(removeStyles, _key4)) {
-      delete styles[_key4];
-    }
-  }
-
-  element.style.cssText = cssUtil.join(styles);
-}
-/**
- * Convert HSV \<0, 1\> into RGB color object.
- *
- * @remarks
- * {@link https://gist.github.com/mjijackson/5311256}
- *
- * @param h - Hue.
- * @param s - Saturation.
- * @param v - Value.
- *
- * @returns RGB color object.
- */
-
-function HSVToRGB(h, s, v) {
-  var r;
-  var g;
-  var b;
-  var i = Math.floor(h * 6);
-  var f = h * 6 - i;
-  var p = v * (1 - s);
-  var q = v * (1 - f * s);
-  var t = v * (1 - (1 - f) * s);
-
-  switch (i % 6) {
-    case 0:
-      r = v, g = t, b = p;
-      break;
-
-    case 1:
-      r = q, g = v, b = p;
-      break;
-
-    case 2:
-      r = p, g = v, b = t;
-      break;
-
-    case 3:
-      r = p, g = q, b = v;
-      break;
-
-    case 4:
-      r = t, g = p, b = v;
-      break;
-
-    case 5:
-      r = v, g = p, b = q;
-      break;
-  }
-
-  return {
-    r: Math.floor(r * 255),
-    g: Math.floor(g * 255),
-    b: Math.floor(b * 255)
-  };
-}
-/**
- * Convert HSV \<0, 1\> into hex color string.
- *
- * @param h - Hue.
- * @param s - Saturation.
- * @param v - Value.
- *
- * @returns Hex color string.
- */
-
-function HSVToHex(h, s, v) {
-  var rgb = HSVToRGB(h, s, v);
-  return RGBToHex(rgb.r, rgb.g, rgb.b);
-}
-/**
- * Convert hex color string into HSV \<0, 1\>.
- *
- * @param hex - Hex color string.
- *
- * @returns HSV color object.
- */
-
-function hexToHSV(hex) {
-  var rgb = hexToRGB(hex);
-
-  if (!rgb) {
-    throw new TypeError("'".concat(hex, "' is not a valid color."));
-  }
-
-  return RGBToHSV(rgb.r, rgb.g, rgb.b);
-}
-/**
- * Validate hex color string.
- *
- * @param hex - Unknown string that may contain a color.
- *
- * @returns True if the string is valid, false otherwise.
- */
-
-function isValidHex(hex) {
-  var isOk = /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(hex);
-  return isOk;
-}
-/**
- * Validate RGB color string.
- *
- * @param rgb - Unknown string that may contain a color.
- *
- * @returns True if the string is valid, false otherwise.
- */
-
-function isValidRGB(rgb) {
-  return rgbRE.test(rgb);
-}
-/**
- * Validate RGBA color string.
- *
- * @param rgba - Unknown string that may contain a color.
- *
- * @returns True if the string is valid, false otherwise.
- */
-
-function isValidRGBA(rgba) {
-  return rgbaRE.test(rgba);
-}
-/**
- * This recursively redirects the prototype of JSON objects to the referenceObject.
- * This is used for default options.
- *
- * @param fields - Names of properties to be bridged.
- * @param referenceObject - The original object.
- *
- * @returns A new object inheriting from the referenceObject.
- */
-
-function selectiveBridgeObject(fields, referenceObject) {
-  if (referenceObject !== null && _typeof_1(referenceObject) === "object") {
-    // !!! typeof null === 'object'
-    var objectTo = create$2(referenceObject);
-
-    for (var i = 0; i < fields.length; i++) {
-      if (Object.prototype.hasOwnProperty.call(referenceObject, fields[i])) {
-        if (_typeof_1(referenceObject[fields[i]]) == "object") {
-          objectTo[fields[i]] = bridgeObject(referenceObject[fields[i]]);
-        }
-      }
-    }
-
-    return objectTo;
-  } else {
-    return null;
-  }
-}
-
-/**
- * This recursively redirects the prototype of JSON objects to the referenceObject.
- * This is used for default options.
- *
- * @param referenceObject - The original object.
- *
- * @returns The Element if the referenceObject is an Element, or a new object inheriting from the referenceObject.
- */
-function bridgeObject(referenceObject) {
-  if (referenceObject === null || _typeof_1(referenceObject) !== "object") {
-    return null;
-  }
-
-  if (referenceObject instanceof Element) {
-    // Avoid bridging DOM objects
-    return referenceObject;
-  }
-
-  var objectTo = create$2(referenceObject);
-
-  for (var i in referenceObject) {
-    if (Object.prototype.hasOwnProperty.call(referenceObject, i)) {
-      if (_typeof_1(referenceObject[i]) == "object") {
-        objectTo[i] = bridgeObject(referenceObject[i]);
-      }
-    }
-  }
-
-  return objectTo;
-}
-/**
- * This method provides a stable sort implementation, very fast for presorted data.
- *
- * @param a - The array to be sorted (in-place).
- * @param compare - An order comparator.
- *
- * @returns The argument a.
- */
-
-function insertSort(a, compare) {
-  for (var i = 0; i < a.length; i++) {
-    var k = a[i];
-    var j = void 0;
-
-    for (j = i; j > 0 && compare(k, a[j - 1]) < 0; j--) {
-      a[j] = a[j - 1];
-    }
-
-    a[j] = k;
-  }
-
-  return a;
-}
-/**
- * This is used to set the options of subobjects in the options object.
- *
- * A requirement of these subobjects is that they have an 'enabled' element
- * which is optional for the user but mandatory for the program.
- *
- * The added value here of the merge is that option 'enabled' is set as required.
- *
- * @param mergeTarget - Either this.options or the options used for the groups.
- * @param options - Options.
- * @param option - Option key in the options argument.
- * @param globalOptions - Global options, passed in to determine value of option 'enabled'.
- */
-
-function mergeOptions(mergeTarget, options, option) {
-  var globalOptions = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-
-  // Local helpers
-  var isPresent = function isPresent(obj) {
-    return obj !== null && obj !== undefined;
-  };
-
-  var isObject = function isObject(obj) {
-    return obj !== null && _typeof_1(obj) === "object";
-  }; // https://stackoverflow.com/a/34491287/1223531
-
-
-  var isEmpty = function isEmpty(obj) {
-    for (var x in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, x)) {
-        return false;
-      }
-    }
-
-    return true;
-  }; // Guards
-
-
-  if (!isObject(mergeTarget)) {
-    throw new Error("Parameter mergeTarget must be an object");
-  }
-
-  if (!isObject(options)) {
-    throw new Error("Parameter options must be an object");
-  }
-
-  if (!isPresent(option)) {
-    throw new Error("Parameter option must have a value");
-  }
-
-  if (!isObject(globalOptions)) {
-    throw new Error("Parameter globalOptions must be an object");
-  } //
-  // Actual merge routine, separated from main logic
-  // Only a single level of options is merged. Deeper levels are ref'd. This may actually be an issue.
-  //
-
-
-  var doMerge = function doMerge(target, options, option) {
-    if (!isObject(target[option])) {
-      target[option] = {};
-    }
-
-    var src = options[option];
-    var dst = target[option];
-
-    for (var prop in src) {
-      if (Object.prototype.hasOwnProperty.call(src, prop)) {
-        dst[prop] = src[prop];
-      }
-    }
-  }; // Local initialization
-
-
-  var srcOption = options[option];
-  var globalPassed = isObject(globalOptions) && !isEmpty(globalOptions);
-  var globalOption = globalPassed ? globalOptions[option] : undefined;
-  var globalEnabled = globalOption ? globalOption.enabled : undefined; /////////////////////////////////////////
-  // Main routine
-  /////////////////////////////////////////
-
-  if (srcOption === undefined) {
-    return; // Nothing to do
-  }
-
-  if (typeof srcOption === "boolean") {
-    if (!isObject(mergeTarget[option])) {
-      mergeTarget[option] = {};
-    }
-
-    mergeTarget[option].enabled = srcOption;
-    return;
-  }
-
-  if (srcOption === null && !isObject(mergeTarget[option])) {
-    // If possible, explicit copy from globals
-    if (isPresent(globalOption)) {
-      mergeTarget[option] = create$2(globalOption);
-    } else {
-      return; // Nothing to do
-    }
-  }
-
-  if (!isObject(srcOption)) {
-    return;
-  } //
-  // Ensure that 'enabled' is properly set. It is required internally
-  // Note that the value from options will always overwrite the existing value
-  //
-
-
-  var enabled = true; // default value
-
-  if (srcOption.enabled !== undefined) {
-    enabled = srcOption.enabled;
-  } else {
-    // Take from globals, if present
-    if (globalEnabled !== undefined) {
-      enabled = globalOption.enabled;
-    }
-  }
-
-  doMerge(mergeTarget, options, option);
-  mergeTarget[option].enabled = enabled;
-}
-
-/**
- * This function does a binary search for a visible item in a sorted list. If we find a visible item, the code that uses
- * this function will then iterate in both directions over this sorted list to find all visible items.
- *
- * @param orderedItems - Items ordered by start.
- * @param comparator - -1 is lower, 0 is equal, 1 is higher.
- * @param field - Property name on an item (That is item[field]).
- * @param field2 - Second property name on an item (That is item[field][field2]).
- *
- * @returns Index of the found item or -1 if nothing was found.
- */
-function binarySearchCustom(orderedItems, comparator, field, field2) {
-  var maxIterations = 10000;
-  var iteration = 0;
-  var low = 0;
-  var high = orderedItems.length - 1;
-
-  while (low <= high && iteration < maxIterations) {
-    var middle = Math.floor((low + high) / 2);
-    var item = orderedItems[middle];
-
-    var _value2 = field2 === undefined ? item[field] : item[field][field2];
-
-    var searchResult = comparator(_value2);
-
-    if (searchResult == 0) {
-      // jihaa, found a visible item!
-      return middle;
-    } else if (searchResult == -1) {
-      // it is too small --> increase low
-      low = middle + 1;
-    } else {
-      // it is too big --> decrease high
-      high = middle - 1;
-    }
-
-    iteration++;
-  }
-
-  return -1;
-}
-/**
- * This function does a binary search for a specific value in a sorted array.
- * If it does not exist but is in between of two values, we return either the
- * one before or the one after, depending on user input If it is found, we
- * return the index, else -1.
- *
- * @param orderedItems - Sorted array.
- * @param target - The searched value.
- * @param field - Name of the property in items to be searched.
- * @param sidePreference - If the target is between two values, should the index of the before or the after be returned?
- * @param comparator - An optional comparator, returning -1, 0, 1 for \<, ===, \>.
- *
- * @returns The index of found value or -1 if nothing was found.
- */
-
-function binarySearchValue(orderedItems, target, field, sidePreference, comparator) {
-  var maxIterations = 10000;
-  var iteration = 0;
-  var low = 0;
-  var high = orderedItems.length - 1;
-  var prevValue;
-  var value;
-  var nextValue;
-  var middle;
-  comparator = comparator != undefined ? comparator : function (a, b) {
-    return a == b ? 0 : a < b ? -1 : 1;
-  };
-
-  while (low <= high && iteration < maxIterations) {
-    // get a new guess
-    middle = Math.floor(0.5 * (high + low));
-    prevValue = orderedItems[Math.max(0, middle - 1)][field];
-    value = orderedItems[middle][field];
-    nextValue = orderedItems[Math.min(orderedItems.length - 1, middle + 1)][field];
-
-    if (comparator(value, target) == 0) {
-      // we found the target
-      return middle;
-    } else if (comparator(prevValue, target) < 0 && comparator(value, target) > 0) {
-      // target is in between of the previous and the current
-      return sidePreference == "before" ? Math.max(0, middle - 1) : middle;
-    } else if (comparator(value, target) < 0 && comparator(nextValue, target) > 0) {
-      // target is in between of the current and the next
-      return sidePreference == "before" ? middle : Math.min(orderedItems.length - 1, middle + 1);
-    } else {
-      // didnt find the target, we need to change our boundaries.
-      if (comparator(value, target) < 0) {
-        // it is too small --> increase low
-        low = middle + 1;
-      } else {
-        // it is too big --> decrease high
-        high = middle - 1;
-      }
-    }
-
-    iteration++;
-  } // didnt find anything. Return -1.
-
-
-  return -1;
-}
-/*
- * Easing Functions.
- * Only considering the t value for the range [0, 1] => [0, 1].
- *
- * Inspiration: from http://gizma.com/easing/
- * https://gist.github.com/gre/1650294
- */
-
-var easingFunctions = {
-  /**
-   * Provides no easing and no acceleration.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  linear: function linear(t) {
-    return t;
-  },
-
-  /**
-   * Accelerate from zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInQuad: function easeInQuad(t) {
-    return t * t;
-  },
-
-  /**
-   * Decelerate to zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeOutQuad: function easeOutQuad(t) {
-    return t * (2 - t);
-  },
-
-  /**
-   * Accelerate until halfway, then decelerate.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInOutQuad: function easeInOutQuad(t) {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-  },
-
-  /**
-   * Accelerate from zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInCubic: function easeInCubic(t) {
-    return t * t * t;
-  },
-
-  /**
-   * Decelerate to zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeOutCubic: function easeOutCubic(t) {
-    return --t * t * t + 1;
-  },
-
-  /**
-   * Accelerate until halfway, then decelerate.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInOutCubic: function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-  },
-
-  /**
-   * Accelerate from zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInQuart: function easeInQuart(t) {
-    return t * t * t * t;
-  },
-
-  /**
-   * Decelerate to zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeOutQuart: function easeOutQuart(t) {
-    return 1 - --t * t * t * t;
-  },
-
-  /**
-   * Accelerate until halfway, then decelerate.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInOutQuart: function easeInOutQuart(t) {
-    return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t;
-  },
-
-  /**
-   * Accelerate from zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInQuint: function easeInQuint(t) {
-    return t * t * t * t * t;
-  },
-
-  /**
-   * Decelerate to zero velocity.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeOutQuint: function easeOutQuint(t) {
-    return 1 + --t * t * t * t * t;
-  },
-
-  /**
-   * Accelerate until halfway, then decelerate.
-   *
-   * @param t - Time.
-   *
-   * @returns Value at time t.
-   */
-  easeInOutQuint: function easeInOutQuint(t) {
-    return t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t;
-  }
-};
-/**
- * Experimentaly compute the width of the scrollbar for this browser.
- *
- * @returns The width in pixels.
- */
-
-function getScrollBarWidth() {
-  var inner = document.createElement("p");
-  inner.style.width = "100%";
-  inner.style.height = "200px";
-  var outer = document.createElement("div");
-  outer.style.position = "absolute";
-  outer.style.top = "0px";
-  outer.style.left = "0px";
-  outer.style.visibility = "hidden";
-  outer.style.width = "200px";
-  outer.style.height = "150px";
-  outer.style.overflow = "hidden";
-  outer.appendChild(inner);
-  document.body.appendChild(outer);
-  var w1 = inner.offsetWidth;
-  outer.style.overflow = "scroll";
-  var w2 = inner.offsetWidth;
-
-  if (w1 == w2) {
-    w2 = outer.clientWidth;
-  }
-
-  document.body.removeChild(outer);
-  return w1 - w2;
-} // @TODO: This doesn't work properly.
-// It works only for single property objects,
-// otherwise it combines all of the types in a union.
-// export function topMost<K1 extends string, V1> (
-//   pile: Record<K1, undefined | V1>[],
-//   accessors: K1 | [K1]
-// ): undefined | V1
-// export function topMost<K1 extends string, K2 extends string, V1, V2> (
-//   pile: Record<K1, undefined | V1 | Record<K2, undefined | V2>>[],
-//   accessors: [K1, K2]
-// ): undefined | V1 | V2
-// export function topMost<K1 extends string, K2 extends string, K3 extends string, V1, V2, V3> (
-//   pile: Record<K1, undefined | V1 | Record<K2, undefined | V2 | Record<K3, undefined | V3>>>[],
-//   accessors: [K1, K2, K3]
-// ): undefined | V1 | V2 | V3
-
-/**
- * Get the top most property value from a pile of objects.
- *
- * @param pile - Array of objects, no required format.
- * @param accessors - Array of property names.
- * For example `object['foo']['bar']` → `['foo', 'bar']`.
- *
- * @returns Value of the property with given accessors path from the first pile item where it's not undefined.
- */
-
-function topMost(pile, accessors) {
-  var candidate;
-
-  if (!isArray$5(accessors)) {
-    accessors = [accessors];
-  }
-
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
-
-  try {
-    for (var _iterator = getIterator$1(pile), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var member = _step.value;
-
-      if (member) {
-        candidate = member[accessors[0]];
-
-        for (var i = 1; i < accessors.length; i++) {
-          if (candidate) {
-            candidate = candidate[accessors[i]];
-          }
-        }
-
-        if (typeof candidate !== "undefined") {
-          break;
-        }
-      }
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return != null) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
-  }
-
-  return candidate;
-}
-
-var util = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	isNumber: isNumber,
-	recursiveDOMDelete: recursiveDOMDelete,
-	isString: isString,
-	isObject: isObject$1,
-	isDate: isDate,
-	fillIfDefined: fillIfDefined,
-	extend: extend,
-	selectiveExtend: selectiveExtend,
-	selectiveDeepExtend: selectiveDeepExtend,
-	selectiveNotDeepExtend: selectiveNotDeepExtend,
-	deepExtend: deepExtend,
-	equalArray: equalArray,
-	getType: getType,
-	copyAndExtendArray: copyAndExtendArray,
-	copyArray: copyArray,
-	getAbsoluteLeft: getAbsoluteLeft,
-	getAbsoluteRight: getAbsoluteRight,
-	getAbsoluteTop: getAbsoluteTop,
-	addClassName: addClassName,
-	removeClassName: removeClassName,
-	forEach: forEach$3,
-	toArray: toArray,
-	updateProperty: updateProperty,
-	throttle: throttle,
-	addEventListener: addEventListener,
-	removeEventListener: removeEventListener,
-	preventDefault: preventDefault,
-	getTarget: getTarget,
-	hasParent: hasParent,
-	option: option,
-	hexToRGB: hexToRGB,
-	overrideOpacity: overrideOpacity,
-	RGBToHex: RGBToHex,
-	parseColor: parseColor,
-	RGBToHSV: RGBToHSV,
-	addCssText: addCssText,
-	removeCssText: removeCssText,
-	HSVToRGB: HSVToRGB,
-	HSVToHex: HSVToHex,
-	hexToHSV: hexToHSV,
-	isValidHex: isValidHex,
-	isValidRGB: isValidRGB,
-	isValidRGBA: isValidRGBA,
-	selectiveBridgeObject: selectiveBridgeObject,
-	bridgeObject: bridgeObject,
-	insertSort: insertSort,
-	mergeOptions: mergeOptions,
-	binarySearchCustom: binarySearchCustom,
-	binarySearchValue: binarySearchValue,
-	easingFunctions: easingFunctions,
-	getScrollBarWidth: getScrollBarWidth,
-	topMost: topMost,
-	randomUUID: uuid4
-});
-
-// New API (tree shakeable).
-
-/* harmony default export */ __webpack_exports__["default"] = (util);
-
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
@@ -47721,7 +43670,7 @@ const readAuthMessage = (decoder, y, permissionDeniedHandler) => {
 /*!***********************************************!*\
   !*** ./node_modules/y-protocols/awareness.js ***!
   \***********************************************/
-/*! exports provided: outdatedTimeout, Awareness, removeAwarenessStates, encodeAwarenessUpdate, applyAwarenessUpdate */
+/*! exports provided: outdatedTimeout, Awareness, removeAwarenessStates, encodeAwarenessUpdate, modifyAwarenessUpdate, applyAwarenessUpdate */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -47730,16 +43679,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Awareness", function() { return Awareness; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "removeAwarenessStates", function() { return removeAwarenessStates; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeAwarenessUpdate", function() { return encodeAwarenessUpdate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "modifyAwarenessUpdate", function() { return modifyAwarenessUpdate; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "applyAwarenessUpdate", function() { return applyAwarenessUpdate; });
 /* harmony import */ var lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/encoding.js */ "./node_modules/lib0/encoding.js");
 /* harmony import */ var lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lib0/decoding.js */ "./node_modules/lib0/decoding.js");
 /* harmony import */ var lib0_time_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/time.js */ "./node_modules/lib0/time.js");
 /* harmony import */ var lib0_math_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lib0/math.js */ "./node_modules/lib0/math.js");
 /* harmony import */ var lib0_observable_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lib0/observable.js */ "./node_modules/lib0/observable.js");
-/* harmony import */ var yjs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! yjs */ "./node_modules/yjs/dist/yjs.mjs");
+/* harmony import */ var lib0_function_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lib0/function.js */ "./node_modules/lib0/function.js");
+/* harmony import */ var yjs__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! yjs */ "./node_modules/yjs/dist/yjs.mjs");
 /**
  * @module awareness-protocol
  */
+
 
 
 
@@ -47815,10 +43767,11 @@ class Awareness extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_4__["Observa
     this.setLocalState({})
   }
   destroy () {
+    super.destroy()
     clearInterval(this._checkInterval)
   }
   /**
-   * @return {Object<string,Object>|null}
+   * @return {Object<string,any>|null}
    */
   getLocalState () {
     return this.states.get(this.doc.clientID) || null
@@ -47830,6 +43783,7 @@ class Awareness extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_4__["Observa
     const clientID = this.doc.clientID
     const currLocalMeta = this.meta.get(clientID)
     const clock = currLocalMeta === undefined ? 0 : currLocalMeta.clock + 1
+    const prevState = this.states.get(clientID)
     if (state === null) {
       this.states.delete(clientID)
     } else {
@@ -47841,19 +43795,28 @@ class Awareness extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_4__["Observa
     })
     const added = []
     const updated = []
+    const filteredUpdated = []
     const removed = []
     if (state === null) {
       removed.push(clientID)
-    } else if (currLocalMeta === undefined) {
-      added.push(clientID)
+    } else if (prevState == null) {
+      if (state != null) {
+        added.push(clientID)
+      }
     } else {
       updated.push(clientID)
+      if (!lib0_function_js__WEBPACK_IMPORTED_MODULE_5__["equalityDeep"](prevState, state)) {
+        filteredUpdated.push(clientID)
+      }
     }
-    this.emit('change', [{ added, updated, removed }, 'local'])
+    if (added.length > 0 || filteredUpdated.length > 0 || removed.length > 0) {
+      this.emit('change', [{ added, updated: filteredUpdated, removed }, 'local'])
+    }
+    this.emit('update', [{ added, updated, removed }, 'local'])
   }
   /**
    * @param {string} field
-   * @param {Object} value
+   * @param {any} value
    */
   setLocalStateField (field, value) {
     const state = this.getLocalState()
@@ -47896,6 +43859,7 @@ const removeAwarenessStates = (awareness, clients, origin) => {
   }
   if (removed.length > 0) {
     awareness.emit('change', [{ added: [], updated: [], removed }, origin])
+    awareness.emit('update', [{ added: [], updated: [], removed }, origin])
   }
 }
 
@@ -47920,6 +43884,33 @@ const encodeAwarenessUpdate = (awareness, clients, states = awareness.states) =>
 }
 
 /**
+ * Modify the content of an awareness update before re-encoding it to an awareness update.
+ *
+ * This might be useful when you have a central server that wants to ensure that clients
+ * cant hijack somebody elses identity.
+ *
+ * @param {Uint8Array} update
+ * @param {function(any):any} modify
+ * @return {Uint8Array}
+ */
+const modifyAwarenessUpdate = (update, modify) => {
+  const decoder = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["createDecoder"](update)
+  const encoder = lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["createEncoder"]()
+  const len = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarUint"](decoder)
+  lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["writeVarUint"](encoder, len)
+  for (let i = 0; i < len; i++) {
+    const clientID = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarUint"](decoder)
+    const clock = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarUint"](decoder)
+    const state = JSON.parse(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarString"](decoder))
+    const modifiedState = modify(state)
+    lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["writeVarUint"](encoder, clientID)
+    lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["writeVarUint"](encoder, clock)
+    lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["writeVarString"](encoder, JSON.stringify(modifiedState))
+  }
+  return lib0_encoding_js__WEBPACK_IMPORTED_MODULE_0__["toUint8Array"](encoder)
+}
+
+/**
  * @param {Awareness} awareness
  * @param {Uint8Array} update
  * @param {any} origin This will be added to the emitted change event
@@ -47929,6 +43920,7 @@ const applyAwarenessUpdate = (awareness, update, origin) => {
   const timestamp = lib0_time_js__WEBPACK_IMPORTED_MODULE_2__["getUnixTime"]()
   const added = []
   const updated = []
+  const filteredUpdated = []
   const removed = []
   const len = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarUint"](decoder)
   for (let i = 0; i < len; i++) {
@@ -47936,6 +43928,7 @@ const applyAwarenessUpdate = (awareness, update, origin) => {
     let clock = lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarUint"](decoder)
     const state = JSON.parse(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_1__["readVarString"](decoder))
     const clientMeta = awareness.meta.get(clientID)
+    const prevState = awareness.states.get(clientID)
     const currClock = clientMeta === undefined ? 0 : clientMeta.clock
     if (currClock < clock || (currClock === clock && state === null && awareness.states.has(clientID))) {
       if (state === null) {
@@ -47959,12 +43952,20 @@ const applyAwarenessUpdate = (awareness, update, origin) => {
       } else if (clientMeta !== undefined && state === null) {
         removed.push(clientID)
       } else if (state !== null) {
+        if (!lib0_function_js__WEBPACK_IMPORTED_MODULE_5__["equalityDeep"](state, prevState)) {
+          filteredUpdated.push(clientID)
+        }
         updated.push(clientID)
       }
     }
   }
-  if (added.length > 0 || updated.length > 0 || removed.length > 0) {
+  if (added.length > 0 || filteredUpdated.length > 0 || removed.length > 0) {
     awareness.emit('change', [{
+      added, updated: filteredUpdated, removed
+    }, origin])
+  }
+  if (added.length > 0 || updated.length > 0 || removed.length > 0) {
+    awareness.emit('update', [{
       added, updated, removed
     }, origin])
   }
@@ -48226,7 +44227,7 @@ const readMessage = (provider, buf, emitSynced) => {
  */
 const setupWS = provider => {
   if (provider.shouldConnect && provider.ws === null) {
-    const websocket = new WebSocket(provider.url)
+    const websocket = new provider._WS(provider.url)
     websocket.binaryType = 'arraybuffer'
     provider.ws = websocket
     provider.wsconnecting = true
@@ -48317,9 +44318,14 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
    * @param {string} serverUrl
    * @param {string} roomname
    * @param {Y.Doc} doc
-   * @param {{connect:boolean,awareness:awarenessProtocol.Awareness,db:any|null,params:Object<string,string>}} conf
+   * @param {object} [opts]
+   * @param {boolean} [opts.connect]
+   * @param {awarenessProtocol.Awareness} [opts.awareness]
+   * @param {Object<string,string>} [opts.params]
+   * @param {typeof WebSocket} [opts.WebSocketPolyfill] Optionall provide a WebSocket polyfill
+   * @param {number} [opts.resyncInterval] Request server state every `resyncInterval` milliseconds
    */
-  constructor (serverUrl, roomname, doc, { connect = true, awareness = new y_protocols_awareness_js__WEBPACK_IMPORTED_MODULE_7__["Awareness"](doc), db = null, params = {} } = /** @type {any} */ ({})) {
+  constructor (serverUrl, roomname, doc, { connect = true, awareness = new y_protocols_awareness_js__WEBPACK_IMPORTED_MODULE_7__["Awareness"](doc), params = {}, WebSocketPolyfill = WebSocket, resyncInterval = -1 } = {}) {
     super()
     // ensure that url is always ends with /
     while (serverUrl[serverUrl.length - 1] === '/') {
@@ -48330,11 +44336,11 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
     this.url = serverUrl + '/' + roomname + (encodedParams.length === 0 ? '' : '?' + encodedParams)
     this.roomname = roomname
     this.doc = doc
+    this._WS = WebSocketPolyfill
     /**
      * @type {Object<string,Object>}
      */
     this._localAwarenessState = {}
-    this.db = db
     this.awareness = awareness
     this.wsconnected = false
     this.wsconnecting = false
@@ -48355,6 +44361,32 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
      * @type {boolean}
      */
     this.shouldConnect = connect
+
+    /**
+     * @type {NodeJS.Timeout | number}
+     */
+    this._resyncInterval = 0
+    if (resyncInterval > 0) {
+      this._resyncInterval = setInterval(() => {
+        if (this.ws) {
+          if (!this.synced) {
+            alert(`
+  Please report that this message was shown to https://github.com/yjs/y-websocket/issues
+
+  Thank you! ❤
+
+  (Sorry for showing this message..`)
+            console.warn('Client was unsynced anyway')
+          }
+          // resend sync step 1
+          const encoder = lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"]()
+          lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"](encoder, messageSync)
+          y_protocols_sync_js__WEBPACK_IMPORTED_MODULE_5__["writeSyncStep1"](encoder, doc)
+          this.ws.send(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"](encoder))
+        }
+      }, resyncInterval)
+    }
+
     /**
      * @param {ArrayBuffer} data
      */
@@ -48394,7 +44426,7 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
     window.addEventListener('beforeunload', () => {
       y_protocols_awareness_js__WEBPACK_IMPORTED_MODULE_7__["removeAwarenessStates"](this.awareness, [doc.clientID], 'window unload')
     })
-    awareness.on('change', this._awarenessUpdateHandler)
+    awareness.on('update', this._awarenessUpdateHandler)
     this._checkInterval = setInterval(() => {
       if (this.wsconnected && messageReconnectTimeout < lib0_time_js__WEBPACK_IMPORTED_MODULE_2__["getUnixTime"]() - this.wsLastMessageReceived) {
         // no message received in a long time - not even your own awareness
@@ -48422,9 +44454,12 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
   }
 
   destroy () {
+    if (this._resyncInterval !== 0) {
+      clearInterval(/** @type {NodeJS.Timeout} */ (this._resyncInterval))
+    }
     clearInterval(this._checkInterval)
     this.disconnect()
-    this.awareness.off('change', this._awarenessUpdateHandler)
+    this.awareness.off('update', this._awarenessUpdateHandler)
     this.doc.off('update', this._updateHandler)
     super.destroy()
   }
@@ -48494,11 +44529,12 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_9__[
 /*!***************************************!*\
   !*** ./node_modules/yjs/dist/yjs.mjs ***!
   \***************************************/
-/*! exports provided: AbstractStruct, AbstractType, Array, ContentAny, ContentBinary, ContentDeleted, ContentEmbed, ContentFormat, ContentJSON, ContentString, ContentType, Doc, GC, ID, Item, Map, PermanentUserData, RelativePosition, Snapshot, Text, Transaction, UndoManager, XmlElement, XmlFragment, XmlHook, XmlText, YArrayEvent, YEvent, YMapEvent, YXmlEvent, applyUpdate, compareIDs, compareRelativePositions, createAbsolutePositionFromRelativePosition, createDeleteSet, createDeleteSetFromStructStore, createID, createRelativePositionFromJSON, createRelativePositionFromTypeIndex, createSnapshot, decodeSnapshot, emptySnapshot, encodeSnapshot, encodeStateAsUpdate, encodeStateVector, equalSnapshots, findRootTypeKey, getState, getTypeChildren, isDeleted, isParentOf, iterateDeletedStructs, readRelativePosition, readUpdate, snapshot, transact, tryGc, typeListToArraySnapshot, typeMapGetSnapshot, writeRelativePosition */
+/*! exports provided: AbstractConnector, AbstractStruct, AbstractType, Array, ContentAny, ContentBinary, ContentDeleted, ContentEmbed, ContentFormat, ContentJSON, ContentString, ContentType, Doc, GC, ID, Item, Map, PermanentUserData, RelativePosition, Snapshot, Text, Transaction, UndoManager, XmlElement, XmlFragment, XmlHook, XmlText, YArrayEvent, YEvent, YMapEvent, YTextEvent, YXmlEvent, applyUpdate, applyUpdateV2, compareIDs, compareRelativePositions, createAbsolutePositionFromRelativePosition, createDeleteSet, createDeleteSetFromStructStore, createID, createRelativePositionFromJSON, createRelativePositionFromTypeIndex, createSnapshot, decodeSnapshot, decodeSnapshotV2, decodeStateVector, decodeStateVectorV2, emptySnapshot, encodeSnapshot, encodeSnapshotV2, encodeStateAsUpdate, encodeStateAsUpdateV2, encodeStateVector, encodeStateVectorV2, equalSnapshots, findRootTypeKey, getState, getTypeChildren, isDeleted, isParentOf, iterateDeletedStructs, logType, readRelativePosition, readUpdate, readUpdateV2, snapshot, transact, tryGc, typeListToArraySnapshot, typeMapGetSnapshot, writeRelativePosition */
 /***/ (function(__webpack_module__, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AbstractConnector", function() { return AbstractConnector; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AbstractStruct", function() { return AbstractStruct; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AbstractType", function() { return AbstractType; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Array", function() { return YArray; });
@@ -48528,8 +44564,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "YArrayEvent", function() { return YArrayEvent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "YEvent", function() { return YEvent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "YMapEvent", function() { return YMapEvent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "YTextEvent", function() { return YTextEvent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "YXmlEvent", function() { return YXmlEvent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "applyUpdate", function() { return applyUpdate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "applyUpdateV2", function() { return applyUpdateV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareIDs", function() { return compareIDs; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "compareRelativePositions", function() { return compareRelativePositions; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createAbsolutePositionFromRelativePosition", function() { return createAbsolutePositionFromRelativePosition; });
@@ -48540,10 +44578,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createRelativePositionFromTypeIndex", function() { return createRelativePositionFromTypeIndex; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createSnapshot", function() { return createSnapshot; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "decodeSnapshot", function() { return decodeSnapshot; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "decodeSnapshotV2", function() { return decodeSnapshotV2; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "decodeStateVector", function() { return decodeStateVector; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "decodeStateVectorV2", function() { return decodeStateVectorV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "emptySnapshot", function() { return emptySnapshot; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeSnapshot", function() { return encodeSnapshot; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeSnapshotV2", function() { return encodeSnapshotV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeStateAsUpdate", function() { return encodeStateAsUpdate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeStateAsUpdateV2", function() { return encodeStateAsUpdateV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeStateVector", function() { return encodeStateVector; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "encodeStateVectorV2", function() { return encodeStateVectorV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "equalSnapshots", function() { return equalSnapshots; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findRootTypeKey", function() { return findRootTypeKey; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getState", function() { return getState; });
@@ -48551,30 +44595,32 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isDeleted", function() { return isDeleted; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isParentOf", function() { return isParentOf; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "iterateDeletedStructs", function() { return iterateDeletedStructs; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "logType", function() { return logType; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readRelativePosition", function() { return readRelativePosition; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUpdate", function() { return readUpdate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "readUpdateV2", function() { return readUpdateV2; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "snapshot", function() { return snapshot; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "transact", function() { return transact; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "tryGc", function() { return tryGc; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "typeListToArraySnapshot", function() { return typeListToArraySnapshot; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "typeMapGetSnapshot", function() { return typeMapGetSnapshot; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "writeRelativePosition", function() { return writeRelativePosition; });
-/* harmony import */ var lib0_array_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/array.js */ "./node_modules/lib0/array.js");
-/* harmony import */ var lib0_math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lib0/math.js */ "./node_modules/lib0/math.js");
-/* harmony import */ var lib0_map_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/map.js */ "./node_modules/lib0/map.js");
-/* harmony import */ var lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lib0/encoding.js */ "./node_modules/lib0/encoding.js");
-/* harmony import */ var lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lib0/decoding.js */ "./node_modules/lib0/decoding.js");
-/* harmony import */ var lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lib0/observable.js */ "./node_modules/lib0/observable.js");
+/* harmony import */ var lib0_observable_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/observable.js */ "./node_modules/lib0/observable.js");
+/* harmony import */ var lib0_array_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lib0/array.js */ "./node_modules/lib0/array.js");
+/* harmony import */ var lib0_math_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/math.js */ "./node_modules/lib0/math.js");
+/* harmony import */ var lib0_map_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! lib0/map.js */ "./node_modules/lib0/map.js");
+/* harmony import */ var lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lib0/encoding.js */ "./node_modules/lib0/encoding.js");
+/* harmony import */ var lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lib0/decoding.js */ "./node_modules/lib0/decoding.js");
 /* harmony import */ var lib0_random_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! lib0/random.js */ "./node_modules/lib0/random.js");
-/* harmony import */ var lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! lib0/binary.js */ "./node_modules/lib0/binary.js");
-/* harmony import */ var lib0_function_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! lib0/function.js */ "./node_modules/lib0/function.js");
-/* harmony import */ var lib0_error_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! lib0/error.js */ "./node_modules/lib0/error.js");
-/* harmony import */ var lib0_set_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! lib0/set.js */ "./node_modules/lib0/set.js");
-/* harmony import */ var lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! lib0/logging.js */ "./node_modules/lib0/logging.js");
-/* harmony import */ var lib0_time_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! lib0/time.js */ "./node_modules/lib0/time.js");
-/* harmony import */ var lib0_iterator_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! lib0/iterator.js */ "./node_modules/lib0/iterator.js");
-/* harmony import */ var lib0_object_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! lib0/object.js */ "./node_modules/lib0/object.js");
-/* harmony import */ var lib0_buffer_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! lib0/buffer.js */ "./node_modules/lib0/buffer.js");
+/* harmony import */ var lib0_buffer_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! lib0/buffer.js */ "./node_modules/lib0/buffer.js");
+/* harmony import */ var lib0_error_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! lib0/error.js */ "./node_modules/lib0/error.js");
+/* harmony import */ var lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! lib0/binary.js */ "./node_modules/lib0/binary.js");
+/* harmony import */ var lib0_function_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! lib0/function.js */ "./node_modules/lib0/function.js");
+/* harmony import */ var lib0_set_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! lib0/set.js */ "./node_modules/lib0/set.js");
+/* harmony import */ var lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! lib0/logging.js */ "./node_modules/lib0/logging.js");
+/* harmony import */ var lib0_time_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! lib0/time.js */ "./node_modules/lib0/time.js");
+/* harmony import */ var lib0_iterator_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! lib0/iterator.js */ "./node_modules/lib0/iterator.js");
+/* harmony import */ var lib0_object_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! lib0/object.js */ "./node_modules/lib0/object.js");
 
 
 
@@ -48591,6 +44637,26 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+/**
+ * This is an abstract interface that all Connectors should implement to keep them interchangeable.
+ *
+ * @note This interface is experimental and it is not advised to actually inherit this class.
+ *       It just serves as typing information.
+ *
+ * @extends {Observable<any>}
+ */
+class AbstractConnector extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_0__["Observable"] {
+  /**
+   * @param {Doc} ydoc
+   * @param {any} awareness
+   */
+  constructor (ydoc, awareness) {
+    super();
+    this.doc = ydoc;
+    this.awareness = awareness;
+  }
+}
 
 class DeleteItem {
   /**
@@ -48655,7 +44721,7 @@ const findIndexDS = (dis, clock) => {
   let left = 0;
   let right = dis.length - 1;
   while (left <= right) {
-    const midindex = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_1__["floor"])((left + right) / 2);
+    const midindex = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["floor"])((left + right) / 2);
     const mid = dis[midindex];
     const midclock = mid.clock;
     if (midclock <= clock) {
@@ -48729,7 +44795,7 @@ const mergeDeleteSets = dss => {
          */
         const dels = delsLeft.slice();
         for (let i = dssI + 1; i < dss.length; i++) {
-          Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_0__["appendTo"])(dels, dss[i].clients.get(client) || []);
+          Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_1__["appendTo"])(dels, dss[i].clients.get(client) || []);
         }
         merged.clients.set(client, dels);
       }
@@ -48741,14 +44807,15 @@ const mergeDeleteSets = dss => {
 
 /**
  * @param {DeleteSet} ds
- * @param {ID} id
+ * @param {number} client
+ * @param {number} clock
  * @param {number} length
  *
  * @private
  * @function
  */
-const addToDeleteSet = (ds, id, length) => {
-  Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(ds.clients, id.client, () => []).push(new DeleteItem(id.clock, length));
+const addToDeleteSet = (ds, client, clock, length) => {
+  Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(ds.clients, client, () => []).push(new DeleteItem(clock, length));
 };
 
 const createDeleteSet = () => new DeleteSet();
@@ -48788,28 +44855,29 @@ const createDeleteSetFromStructStore = ss => {
 };
 
 /**
- * @param {encoding.Encoder} encoder
+ * @param {AbstractDSEncoder} encoder
  * @param {DeleteSet} ds
  *
  * @private
  * @function
  */
 const writeDeleteSet = (encoder, ds) => {
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, ds.clients.size);
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, ds.clients.size);
   ds.clients.forEach((dsitems, client) => {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, client);
+    encoder.resetDsCurVal();
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, client);
     const len = dsitems.length;
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, len);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, len);
     for (let i = 0; i < len; i++) {
       const item = dsitems[i];
-      Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, item.clock);
-      Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, item.len);
+      encoder.writeDsClock(item.clock);
+      encoder.writeDsLen(item.len);
     }
   });
 };
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractDSDecoder} decoder
  * @return {DeleteSet}
  *
  * @private
@@ -48817,19 +44885,27 @@ const writeDeleteSet = (encoder, ds) => {
  */
 const readDeleteSet = decoder => {
   const ds = new DeleteSet();
-  const numClients = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+  const numClients = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
   for (let i = 0; i < numClients; i++) {
-    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-    const numberOfDeletes = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-    for (let i = 0; i < numberOfDeletes; i++) {
-      addToDeleteSet(ds, createID(client, Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder)), Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder));
+    decoder.resetDsCurVal();
+    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    const numberOfDeletes = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    if (numberOfDeletes > 0) {
+      const dsField = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(ds.clients, client, () => []);
+      for (let i = 0; i < numberOfDeletes; i++) {
+        dsField.push(new DeleteItem(decoder.readDsClock(), decoder.readDsLen()));
+      }
     }
   }
   return ds
 };
 
 /**
- * @param {decoding.Decoder} decoder
+ * @todo YDecoder also contains references to String and other Decoders. Would make sense to exchange YDecoder.toUint8Array for YDecoder.DsToUint8Array()..
+ */
+
+/**
+ * @param {AbstractDSDecoder} decoder
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
@@ -48838,18 +44914,19 @@ const readDeleteSet = decoder => {
  */
 const readAndApplyDeleteSet = (decoder, transaction, store) => {
   const unappliedDS = new DeleteSet();
-  const numClients = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+  const numClients = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
   for (let i = 0; i < numClients; i++) {
-    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-    const numberOfDeletes = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+    decoder.resetDsCurVal();
+    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    const numberOfDeletes = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
     const structs = store.clients.get(client) || [];
     const state = getState(store, client);
     for (let i = 0; i < numberOfDeletes; i++) {
-      const clock = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-      const len = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+      const clock = decoder.readDsClock();
+      const clockEnd = clock + decoder.readDsLen();
       if (clock < state) {
-        if (state < clock + len) {
-          addToDeleteSet(unappliedDS, createID(client, state), clock + len - state);
+        if (state < clockEnd) {
+          addToDeleteSet(unappliedDS, client, state, clockEnd - state);
         }
         let index = findIndexSS(structs, clock);
         /**
@@ -48866,10 +44943,10 @@ const readAndApplyDeleteSet = (decoder, transaction, store) => {
         while (index < structs.length) {
           // @ts-ignore
           struct = structs[index++];
-          if (struct.id.clock < clock + len) {
+          if (struct.id.clock < clockEnd) {
             if (!struct.deleted) {
-              if (clock + len < struct.id.clock + struct.length) {
-                structs.splice(index, 0, splitItem(transaction, struct, clock + len - struct.id.clock));
+              if (clockEnd < struct.id.clock + struct.length) {
+                structs.splice(index, 0, splitItem(transaction, struct, clockEnd - struct.id.clock));
               }
               struct.delete(transaction);
             }
@@ -48878,15 +44955,15 @@ const readAndApplyDeleteSet = (decoder, transaction, store) => {
           }
         }
       } else {
-        addToDeleteSet(unappliedDS, createID(client, clock), len);
+        addToDeleteSet(unappliedDS, client, clock, clockEnd - clock);
       }
     }
   }
   if (unappliedDS.clients.size > 0) {
     // TODO: no need for encoding+decoding ds anymore
-    const unappliedDSEncoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+    const unappliedDSEncoder = new DSEncoderV2();
     writeDeleteSet(unappliedDSEncoder, unappliedDS);
-    store.pendingDeleteReaders.push(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(unappliedDSEncoder)));
+    store.pendingDeleteReaders.push(new DSDecoderV2(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])((unappliedDSEncoder.toUint8Array()))));
   }
 };
 
@@ -48900,7 +44977,7 @@ const generateNewClientId = lib0_random_js__WEBPACK_IMPORTED_MODULE_6__["uint32"
  * A Yjs instance handles the state of shared data.
  * @extends Observable<string>
  */
-class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Observable"] {
+class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_0__["Observable"] {
   /**
    * @param {Object} conf configuration
    * @param {boolean} [conf.gc] Disable garbage collection (default: gc=true)
@@ -48968,7 +45045,7 @@ class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Observable"] 
    * @public
    */
   get (name, TypeConstructor = AbstractType) {
-    const type = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(this.share, name, () => {
+    const type = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(this.share, name, () => {
       // @ts-ignore
       const t = new TypeConstructor();
       t._integrate(this, null);
@@ -49003,47 +45080,65 @@ class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Observable"] 
 
   /**
    * @template T
-   * @param {string} name
+   * @param {string} [name]
    * @return {YArray<T>}
    *
    * @public
    */
-  getArray (name) {
+  getArray (name = '') {
     // @ts-ignore
     return this.get(name, YArray)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YText}
    *
    * @public
    */
-  getText (name) {
+  getText (name = '') {
     // @ts-ignore
     return this.get(name, YText)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YMap<any>}
    *
    * @public
    */
-  getMap (name) {
+  getMap (name = '') {
     // @ts-ignore
     return this.get(name, YMap)
   }
 
   /**
-   * @param {string} name
+   * @param {string} [name]
    * @return {YXmlFragment}
    *
    * @public
    */
-  getXmlFragment (name) {
+  getXmlFragment (name = '') {
     // @ts-ignore
     return this.get(name, YXmlFragment)
+  }
+
+  /**
+   * Converts the entire document into a js object, recursively traversing each yjs type
+   *
+   * @return {Object<string, any>}
+   */
+  toJSON () {
+    /**
+     * @type {Object<string, any>}
+     */
+    const doc = {};
+
+    this.share.forEach((value, key) => {
+      doc[key] = value.toJSON();
+    });
+
+    return doc
   }
 
   /**
@@ -49071,9 +45166,581 @@ class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Observable"] 
   }
 }
 
+class DSDecoderV1 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    this.restDecoder = decoder;
+  }
+
+  resetDsCurVal () {
+    // nop
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsClock () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder)
+  }
+
+  /**
+   * @return {number}
+   */
+  readDsLen () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder)
+  }
+}
+
+class UpdateDecoderV1 extends DSDecoderV1 {
+  /**
+   * @return {ID}
+   */
+  readLeftID () {
+    return createID(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder), Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder))
+  }
+
+  /**
+   * @return {ID}
+   */
+  readRightID () {
+    return createID(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder), Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder))
+  }
+
+  /**
+   * Read the next client id.
+   * Use this in favor of readID whenever possible to reduce the number of objects created.
+   */
+  readClient () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder)
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readInfo () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readUint8"])(this.restDecoder)
+  }
+
+  /**
+   * @return {string}
+   */
+  readString () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarString"])(this.restDecoder)
+  }
+
+  /**
+   * @return {boolean} isKey
+   */
+  readParentInfo () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder) === 1
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readTypeRef () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder)
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @return {number} len
+   */
+  readLen () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder)
+  }
+
+  /**
+   * @return {any}
+   */
+  readAny () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readAny"])(this.restDecoder)
+  }
+
+  /**
+   * @return {Uint8Array}
+   */
+  readBuf () {
+    return Object(lib0_buffer_js__WEBPACK_IMPORTED_MODULE_7__["copyUint8Array"])(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(this.restDecoder))
+  }
+
+  /**
+   * Legacy implementation uses JSON parse. We use any-decoding in v2.
+   *
+   * @return {any}
+   */
+  readJSON () {
+    return JSON.parse(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarString"])(this.restDecoder))
+  }
+
+  /**
+   * @return {string}
+   */
+  readKey () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarString"])(this.restDecoder)
+  }
+}
+
+class DSDecoderV2 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    this.dsCurrVal = 0;
+    this.restDecoder = decoder;
+  }
+
+  resetDsCurVal () {
+    this.dsCurrVal = 0;
+  }
+
+  readDsClock () {
+    this.dsCurrVal += Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder);
+    return this.dsCurrVal
+  }
+
+  readDsLen () {
+    const diff = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(this.restDecoder) + 1;
+    this.dsCurrVal += diff;
+    return diff
+  }
+}
+
+class UpdateDecoderV2 extends DSDecoderV2 {
+  /**
+   * @param {decoding.Decoder} decoder
+   */
+  constructor (decoder) {
+    super(decoder);
+    /**
+     * List of cached keys. If the keys[id] does not exist, we read a new key
+     * from stringEncoder and push it to keys.
+     *
+     * @type {Array<string>}
+     */
+    this.keys = [];
+    Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readUint8"])(decoder); // read feature flag - currently unused
+    this.keyClockDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["IntDiffOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.clientDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["UintOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.leftClockDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["IntDiffOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.rightClockDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["IntDiffOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.infoDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["RleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder), lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readUint8"]);
+    this.stringDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["StringDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.parentInfoDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["RleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder), lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readUint8"]);
+    this.typeRefDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["UintOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+    this.lenDecoder = new lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["UintOptRleDecoder"](Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(decoder));
+  }
+
+  /**
+   * @return {ID}
+   */
+  readLeftID () {
+    return new ID(this.clientDecoder.read(), this.leftClockDecoder.read())
+  }
+
+  /**
+   * @return {ID}
+   */
+  readRightID () {
+    return new ID(this.clientDecoder.read(), this.rightClockDecoder.read())
+  }
+
+  /**
+   * Read the next client id.
+   * Use this in favor of readID whenever possible to reduce the number of objects created.
+   */
+  readClient () {
+    return this.clientDecoder.read()
+  }
+
+  /**
+   * @return {number} info An unsigned 8-bit integer
+   */
+  readInfo () {
+    return /** @type {number} */ (this.infoDecoder.read())
+  }
+
+  /**
+   * @return {string}
+   */
+  readString () {
+    return this.stringDecoder.read()
+  }
+
+  /**
+   * @return {boolean}
+   */
+  readParentInfo () {
+    return this.parentInfoDecoder.read() === 1
+  }
+
+  /**
+   * @return {number} An unsigned 8-bit integer
+   */
+  readTypeRef () {
+    return this.typeRefDecoder.read()
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @return {number}
+   */
+  readLen () {
+    return this.lenDecoder.read()
+  }
+
+  /**
+   * @return {any}
+   */
+  readAny () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readAny"])(this.restDecoder)
+  }
+
+  /**
+   * @return {Uint8Array}
+   */
+  readBuf () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint8Array"])(this.restDecoder)
+  }
+
+  /**
+   * This is mainly here for legacy purposes.
+   *
+   * Initial we incoded objects using JSON. Now we use the much faster lib0/any-encoder. This method mainly exists for legacy purposes for the v1 encoder.
+   *
+   * @return {any}
+   */
+  readJSON () {
+    return Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readAny"])(this.restDecoder)
+  }
+
+  /**
+   * @return {string}
+   */
+  readKey () {
+    const keyClock = this.keyClockDecoder.read();
+    if (keyClock < this.keys.length) {
+      return this.keys[keyClock]
+    } else {
+      const key = this.stringDecoder.read();
+      this.keys.push(key);
+      return key
+    }
+  }
+}
+
+class DSEncoderV1 {
+  constructor () {
+    this.restEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["Encoder"]();
+  }
+
+  toUint8Array () {
+    return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(this.restEncoder)
+  }
+
+  resetDsCurVal () {
+    // nop
+  }
+
+  /**
+   * @param {number} clock
+   */
+  writeDsClock (clock) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, clock);
+  }
+
+  /**
+   * @param {number} len
+   */
+  writeDsLen (len) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, len);
+  }
+}
+
+class UpdateEncoderV1 extends DSEncoderV1 {
+  /**
+   * @param {ID} id
+   */
+  writeLeftID (id) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, id.client);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, id.clock);
+  }
+
+  /**
+   * @param {ID} id
+   */
+  writeRightID (id) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, id.client);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, id.clock);
+  }
+
+  /**
+   * Use writeClient and writeClock instead of writeID if possible.
+   * @param {number} client
+   */
+  writeClient (client) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, client);
+  }
+
+  /**
+   * @param {number} info An unsigned 8-bit integer
+   */
+  writeInfo (info) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"])(this.restEncoder, info);
+  }
+
+  /**
+   * @param {string} s
+   */
+  writeString (s) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarString"])(this.restEncoder, s);
+  }
+
+  /**
+   * @param {boolean} isYKey
+   */
+  writeParentInfo (isYKey) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, isYKey ? 1 : 0);
+  }
+
+  /**
+   * @param {number} info An unsigned 8-bit integer
+   */
+  writeTypeRef (info) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, info);
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @param {number} len
+   */
+  writeLen (len) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, len);
+  }
+
+  /**
+   * @param {any} any
+   */
+  writeAny (any) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeAny"])(this.restEncoder, any);
+  }
+
+  /**
+   * @param {Uint8Array} buf
+   */
+  writeBuf (buf) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(this.restEncoder, buf);
+  }
+
+  /**
+   * @param {any} embed
+   */
+  writeJSON (embed) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarString"])(this.restEncoder, JSON.stringify(embed));
+  }
+
+  /**
+   * @param {string} key
+   */
+  writeKey (key) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarString"])(this.restEncoder, key);
+  }
+}
+
+class DSEncoderV2 {
+  constructor () {
+    this.restEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["Encoder"](); // encodes all the rest / non-optimized
+    this.dsCurrVal = 0;
+  }
+
+  toUint8Array () {
+    return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(this.restEncoder)
+  }
+
+  resetDsCurVal () {
+    this.dsCurrVal = 0;
+  }
+
+  /**
+   * @param {number} clock
+   */
+  writeDsClock (clock) {
+    const diff = clock - this.dsCurrVal;
+    this.dsCurrVal = clock;
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, diff);
+  }
+
+  /**
+   * @param {number} len
+   */
+  writeDsLen (len) {
+    if (len === 0) {
+      Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])();
+    }
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(this.restEncoder, len - 1);
+    this.dsCurrVal += len;
+  }
+}
+
+class UpdateEncoderV2 extends DSEncoderV2 {
+  constructor () {
+    super();
+    /**
+     * @type {Map<string,number>}
+     */
+    this.keyMap = new Map();
+    /**
+     * Refers to the next uniqe key-identifier to me used.
+     * See writeKey method for more information.
+     *
+     * @type {number}
+     */
+    this.keyClock = 0;
+    this.keyClockEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["IntDiffOptRleEncoder"]();
+    this.clientEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["UintOptRleEncoder"]();
+    this.leftClockEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["IntDiffOptRleEncoder"]();
+    this.rightClockEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["IntDiffOptRleEncoder"]();
+    this.infoEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["RleEncoder"](lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"]);
+    this.stringEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["StringEncoder"]();
+    this.parentInfoEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["RleEncoder"](lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"]);
+    this.typeRefEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["UintOptRleEncoder"]();
+    this.lenEncoder = new lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["UintOptRleEncoder"]();
+  }
+
+  toUint8Array () {
+    const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["createEncoder"])();
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"])(encoder, 0); // this is a feature flag that we might use in the future
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.keyClockEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.clientEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.leftClockEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.rightClockEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(this.infoEncoder));
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.stringEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(this.parentInfoEncoder));
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.typeRefEncoder.toUint8Array());
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(encoder, this.lenEncoder.toUint8Array());
+    // @note The rest encoder is appended! (note the missing var)
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8Array"])(encoder, Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(this.restEncoder));
+    return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["toUint8Array"])(encoder)
+  }
+
+  /**
+   * @param {ID} id
+   */
+  writeLeftID (id) {
+    this.clientEncoder.write(id.client);
+    this.leftClockEncoder.write(id.clock);
+  }
+
+  /**
+   * @param {ID} id
+   */
+  writeRightID (id) {
+    this.clientEncoder.write(id.client);
+    this.rightClockEncoder.write(id.clock);
+  }
+
+  /**
+   * @param {number} client
+   */
+  writeClient (client) {
+    this.clientEncoder.write(client);
+  }
+
+  /**
+   * @param {number} info An unsigned 8-bit integer
+   */
+  writeInfo (info) {
+    this.infoEncoder.write(info);
+  }
+
+  /**
+   * @param {string} s
+   */
+  writeString (s) {
+    this.stringEncoder.write(s);
+  }
+
+  /**
+   * @param {boolean} isYKey
+   */
+  writeParentInfo (isYKey) {
+    this.parentInfoEncoder.write(isYKey ? 1 : 0);
+  }
+
+  /**
+   * @param {number} info An unsigned 8-bit integer
+   */
+  writeTypeRef (info) {
+    this.typeRefEncoder.write(info);
+  }
+
+  /**
+   * Write len of a struct - well suited for Opt RLE encoder.
+   *
+   * @param {number} len
+   */
+  writeLen (len) {
+    this.lenEncoder.write(len);
+  }
+
+  /**
+   * @param {any} any
+   */
+  writeAny (any) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeAny"])(this.restEncoder, any);
+  }
+
+  /**
+   * @param {Uint8Array} buf
+   */
+  writeBuf (buf) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint8Array"])(this.restEncoder, buf);
+  }
+
+  /**
+   * This is mainly here for legacy purposes.
+   *
+   * Initial we incoded objects using JSON. Now we use the much faster lib0/any-encoder. This method mainly exists for legacy purposes for the v1 encoder.
+   *
+   * @param {any} embed
+   */
+  writeJSON (embed) {
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeAny"])(this.restEncoder, embed);
+  }
+
+  /**
+   * Property keys are often reused. For example, in y-prosemirror the key `bold` might
+   * occur very often. For a 3d application, the key `position` might occur very often.
+   *
+   * We cache these keys in a Map and refer to them via a unique number.
+   *
+   * @param {string} key
+   */
+  writeKey (key) {
+    const clock = this.keyMap.get(key);
+    if (clock === undefined) {
+      this.keyClockEncoder.write(this.keyClock++);
+      this.stringEncoder.write(key);
+    } else {
+      this.keyClockEncoder.write(this.keyClock++);
+    }
+  }
+}
+
+let DefaultDSEncoder = DSEncoderV1;
+let DefaultDSDecoder = DSDecoderV1;
+let DefaultUpdateEncoder = UpdateEncoderV1;
+let DefaultUpdateDecoder = UpdateDecoderV1;
+
 /**
- * @param {encoding.Encoder} encoder
- * @param {Array<AbstractStruct>} structs All structs by `client`
+ * @param {AbstractUpdateEncoder} encoder
+ * @param {Array<GC|Item>} structs All structs by `client`
  * @param {number} client
  * @param {number} clock write structs starting with `ID(client,clock)`
  *
@@ -49083,41 +45750,19 @@ const writeStructs = (encoder, structs, client, clock) => {
   // write first id
   const startNewStructs = findIndexSS(structs, clock);
   // write # encoded structs
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, structs.length - startNewStructs);
-  writeID(encoder, createID(client, clock));
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, structs.length - startNewStructs);
+  encoder.writeClient(client);
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, clock);
   const firstStruct = structs[startNewStructs];
   // write first struct with an offset
-  firstStruct.write(encoder, clock - firstStruct.id.clock, 0);
+  firstStruct.write(encoder, clock - firstStruct.id.clock);
   for (let i = startNewStructs + 1; i < structs.length; i++) {
-    structs[i].write(encoder, 0, 0);
+    structs[i].write(encoder, 0);
   }
 };
 
 /**
- * @param {decoding.Decoder} decoder
- * @param {number} numOfStructs
- * @param {ID} nextID
- * @return {Array<GCRef|ItemRef>}
- *
- * @private
- * @function
- */
-const readStructRefs = (decoder, numOfStructs, nextID) => {
-  /**
-   * @type {Array<GCRef|ItemRef>}
-   */
-  const refs = [];
-  for (let i = 0; i < numOfStructs; i++) {
-    const info = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readUint8"])(decoder);
-    const ref = (lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BITS5"] & info) === 0 ? new GCRef(decoder, nextID, info) : new ItemRef(decoder, nextID, info);
-    nextID = createID(nextID.client, nextID.clock + ref.length);
-    refs.push(ref);
-  }
-  return refs
-};
-
-/**
- * @param {encoding.Encoder} encoder
+ * @param {AbstractUpdateEncoder} encoder
  * @param {StructStore} store
  * @param {Map<number,number>} _sm
  *
@@ -49139,31 +45784,93 @@ const writeClientsStructs = (encoder, store, _sm) => {
     }
   });
   // write # states that were updated
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, sm.size);
-  sm.forEach((clock, client) => {
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, sm.size);
+  // Write items with higher client ids first
+  // This heavily improves the conflict algorithm.
+  Array.from(sm.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, clock]) => {
     // @ts-ignore
     writeStructs(encoder, store.clients.get(client), client, clock);
   });
 };
 
 /**
- * @param {decoding.Decoder} decoder The decoder object to read data from.
- * @return {Map<number,Array<GCRef|ItemRef>>}
+ * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
+ * @param {Map<number,Array<GC|Item>>} clientRefs
+ * @param {Doc} doc
+ * @return {Map<number,Array<GC|Item>>}
  *
  * @private
  * @function
  */
-const readClientsStructRefs = decoder => {
-  /**
-   * @type {Map<number,Array<GCRef|ItemRef>>}
-   */
-  const clientRefs = new Map();
-  const numOfStateUpdates = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+const readClientsStructRefs = (decoder, clientRefs, doc) => {
+  const numOfStateUpdates = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
   for (let i = 0; i < numOfStateUpdates; i++) {
-    const numberOfStructs = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-    const nextID = readID(decoder);
-    const refs = readStructRefs(decoder, numberOfStructs, nextID);
-    clientRefs.set(nextID.client, refs);
+    const numberOfStructs = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    /**
+     * @type {Array<GC|Item>}
+     */
+    const refs = new Array(numberOfStructs);
+    const client = decoder.readClient();
+    let clock = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    // const start = performance.now()
+    clientRefs.set(client, refs);
+    for (let i = 0; i < numberOfStructs; i++) {
+      const info = decoder.readInfo();
+      if ((lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BITS5"] & info) !== 0) {
+        /**
+         * The optimized implementation doesn't use any variables because inlining variables is faster.
+         * Below a non-optimized version is shown that implements the basic algorithm with
+         * a few comments
+         */
+        const cantCopyParentInfo = (info & (lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT7"] | lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT8"])) === 0;
+        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+        // and we read the next string as parentYKey.
+        // It indicates how we store/retrieve parent from `y.share`
+        // @type {string|null}
+        const struct = new Item(
+          createID(client, clock),
+          null, // leftd
+          (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT8"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT8"] ? decoder.readLeftID() : null, // origin
+          null, // right
+          (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT7"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT7"] ? decoder.readRightID() : null, // right origin
+          cantCopyParentInfo ? (decoder.readParentInfo() ? doc.get(decoder.readString()) : decoder.readLeftID()) : null, // parent
+          cantCopyParentInfo && (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT6"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT6"] ? decoder.readString() : null, // parentSub
+          readItemContent(decoder, info) // item content
+        );
+        /* A non-optimized implementation of the above algorithm:
+
+        // The item that was originally to the left of this item.
+        const origin = (info & binary.BIT8) === binary.BIT8 ? decoder.readLeftID() : null
+        // The item that was originally to the right of this item.
+        const rightOrigin = (info & binary.BIT7) === binary.BIT7 ? decoder.readRightID() : null
+        const cantCopyParentInfo = (info & (binary.BIT7 | binary.BIT8)) === 0
+        const hasParentYKey = cantCopyParentInfo ? decoder.readParentInfo() : false
+        // If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
+        // and we read the next string as parentYKey.
+        // It indicates how we store/retrieve parent from `y.share`
+        // @type {string|null}
+        const parentYKey = cantCopyParentInfo && hasParentYKey ? decoder.readString() : null
+
+        const struct = new Item(
+          createID(client, clock),
+          null, // leftd
+          origin, // origin
+          null, // right
+          rightOrigin, // right origin
+          cantCopyParentInfo && !hasParentYKey ? decoder.readLeftID() : (parentYKey !== null ? doc.get(parentYKey) : null), // parent
+          cantCopyParentInfo && (info & binary.BIT6) === binary.BIT6 ? decoder.readString() : null, // parentSub
+          readItemContent(decoder, info) // item content
+        )
+        */
+        refs[i] = struct;
+        clock += struct.length;
+      } else {
+        const len = decoder.readLen();
+        refs[i] = new GC(createID(client, clock), len);
+        clock += len;
+      }
+    }
+    // console.log('time to read: ', performance.now() - start) // @todo remove
   }
   return clientRefs
 };
@@ -49194,33 +45901,55 @@ const readClientsStructRefs = decoder => {
  * @function
  */
 const resumeStructIntegration = (transaction, store) => {
-  const stack = store.pendingStack;
+  const stack = store.pendingStack; // @todo don't forget to append stackhead at the end
   const clientsStructRefs = store.pendingClientsStructRefs;
-  // iterate over all struct readers until we are done
-  while (stack.length !== 0 || clientsStructRefs.size !== 0) {
-    if (stack.length === 0) {
-      // take any first struct from clientsStructRefs and put it on the stack
-      const [client, structRefs] = clientsStructRefs.entries().next().value;
-      stack.push(structRefs.refs[structRefs.i++]);
-      if (structRefs.refs.length === structRefs.i) {
-        clientsStructRefs.delete(client);
+  // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
+  const clientsStructRefsIds = Array.from(clientsStructRefs.keys()).sort((a, b) => a - b);
+  if (clientsStructRefsIds.length === 0) {
+    return
+  }
+  const getNextStructTarget = () => {
+    let nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]));
+    while (nextStructsTarget.refs.length === nextStructsTarget.i) {
+      clientsStructRefsIds.pop();
+      if (clientsStructRefsIds.length > 0) {
+        nextStructsTarget = /** @type {{i:number,refs:Array<GC|Item>}} */ (clientsStructRefs.get(clientsStructRefsIds[clientsStructRefsIds.length - 1]));
+      } else {
+        store.pendingClientsStructRefs.clear();
+        return null
       }
     }
-    const ref = stack[stack.length - 1];
-    const m = ref._missing;
-    const client = ref.id.client;
-    const localClock = getState(store, client);
-    const offset = ref.id.clock < localClock ? localClock - ref.id.clock : 0;
-    if (ref.id.clock + offset !== localClock) {
+    return nextStructsTarget
+  };
+  let curStructsTarget = getNextStructTarget();
+  if (curStructsTarget === null && stack.length === 0) {
+    return
+  }
+  /**
+   * @type {GC|Item}
+   */
+  let stackHead = stack.length > 0
+    ? /** @type {GC|Item} */ (stack.pop())
+    : /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++];
+  // caching the state because it is used very often
+  const state = new Map();
+  // iterate over all struct readers until we are done
+  while (true) {
+    const localClock = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(state, stackHead.id.client, () => getState(store, stackHead.id.client));
+    const offset = stackHead.id.clock < localClock ? localClock - stackHead.id.clock : 0;
+    if (stackHead.id.clock + offset !== localClock) {
       // A previous message from this client is missing
       // check if there is a pending structRef with a smaller clock and switch them
-      const structRefs = clientsStructRefs.get(client);
-      if (structRefs !== undefined) {
+      /**
+       * @type {{ refs: Array<GC|Item>, i: number }}
+       */
+      const structRefs = clientsStructRefs.get(stackHead.id.client) || { refs: [], i: 0 };
+      if (structRefs.refs.length !== structRefs.i) {
         const r = structRefs.refs[structRefs.i];
-        if (r.id.clock < ref.id.clock) {
+        if (r.id.clock < stackHead.id.clock) {
           // put ref with smaller clock on stack instead and continue
-          structRefs.refs[structRefs.i] = ref;
-          stack[stack.length - 1] = r;
+          structRefs.refs[structRefs.i] = stackHead;
+          stackHead = r;
           // sort the set because this approach might bring the list out of order
           structRefs.refs = structRefs.refs.slice(structRefs.i).sort((r1, r2) => r1.id.clock - r2.id.clock);
           structRefs.i = 0;
@@ -49228,33 +45957,45 @@ const resumeStructIntegration = (transaction, store) => {
         }
       }
       // wait until missing struct is available
+      stack.push(stackHead);
       return
     }
-    while (m.length > 0) {
-      const missing = m[m.length - 1];
-      if (getState(store, missing.client) <= missing.clock) {
-        const client = missing.client;
-        // get the struct reader that has the missing struct
-        const structRefs = clientsStructRefs.get(client);
-        if (structRefs === undefined) {
-          // This update message causally depends on another update message.
-          return
-        }
-        stack.push(structRefs.refs[structRefs.i++]);
-        if (structRefs.i === structRefs.refs.length) {
-          clientsStructRefs.delete(client);
-        }
-        break
+    const missing = stackHead.getMissing(transaction, store);
+    if (missing === null) {
+      if (offset === 0 || offset < stackHead.length) {
+        stackHead.integrate(transaction, offset);
+        state.set(stackHead.id.client, stackHead.id.clock + stackHead.length);
       }
-      ref._missing.pop();
-    }
-    if (m.length === 0) {
-      if (offset < ref.length) {
-        ref.toStruct(transaction, store, offset).integrate(transaction);
+      // iterate to next stackHead
+      if (stack.length > 0) {
+        stackHead = /** @type {GC|Item} */ (stack.pop());
+      } else if (curStructsTarget !== null && curStructsTarget.i < curStructsTarget.refs.length) {
+        stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++]);
+      } else {
+        curStructsTarget = getNextStructTarget();
+        if (curStructsTarget === null) {
+          // we are done!
+          break
+        } else {
+          stackHead = /** @type {GC|Item} */ (curStructsTarget.refs[curStructsTarget.i++]);
+        }
       }
-      stack.pop();
+    } else {
+      // get the struct reader that has the missing struct
+      /**
+       * @type {{ refs: Array<GC|Item>, i: number }}
+       */
+      const structRefs = clientsStructRefs.get(missing) || { refs: [], i: 0 };
+      if (structRefs.refs.length === structRefs.i) {
+        // This update message causally depends on another update message.
+        stack.push(stackHead);
+        return
+      }
+      stack.push(stackHead);
+      stackHead = structRefs.refs[structRefs.i++];
     }
   }
+  store.pendingClientsStructRefs.clear();
 };
 
 /**
@@ -49273,7 +46014,7 @@ const tryResumePendingDeleteReaders = (transaction, store) => {
 };
 
 /**
- * @param {encoding.Encoder} encoder
+ * @param {AbstractUpdateEncoder} encoder
  * @param {Transaction} transaction
  *
  * @private
@@ -49283,14 +46024,14 @@ const writeStructsFromTransaction = (encoder, transaction) => writeClientsStruct
 
 /**
  * @param {StructStore} store
- * @param {Map<number, Array<GCRef|ItemRef>>} clientsStructsRefs
+ * @param {Map<number, Array<GC|Item>>} clientsStructsRefs
  *
  * @private
  * @function
  */
 const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
   const pendingClientsStructRefs = store.pendingClientsStructRefs;
-  for (const [client, structRefs] of clientsStructsRefs) {
+  clientsStructsRefs.forEach((structRefs, client) => {
     const pendingStructRefs = pendingClientsStructRefs.get(client);
     if (pendingStructRefs === undefined) {
       pendingClientsStructRefs.set(client, { refs: structRefs, i: 0 });
@@ -49303,7 +46044,22 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
       pendingStructRefs.i = 0;
       pendingStructRefs.refs = merged.sort((r1, r2) => r1.id.clock - r2.id.clock);
     }
-  }
+  });
+};
+
+/**
+ * @param {Map<number,{refs:Array<GC|Item>,i:number}>} pendingClientsStructRefs
+ */
+const cleanupPendingStructs = pendingClientsStructRefs => {
+  // cleanup pendingClientsStructs if not fully finished
+  pendingClientsStructRefs.forEach((refs, client) => {
+    if (refs.i === refs.refs.length) {
+      pendingClientsStructRefs.delete(client);
+    } else {
+      refs.refs.splice(0, refs.i);
+      refs.i = 0;
+    }
+  });
 };
 
 /**
@@ -49311,7 +46067,7 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
  *
  * This is called when data is received from a remote peer.
  *
- * @param {decoding.Decoder} decoder The decoder object to read data from.
+ * @param {AbstractUpdateDecoder} decoder The decoder object to read data from.
  * @param {Transaction} transaction
  * @param {StructStore} store
  *
@@ -49319,11 +46075,42 @@ const mergeReadStructsIntoPendingReads = (store, clientsStructsRefs) => {
  * @function
  */
 const readStructs = (decoder, transaction, store) => {
-  const clientsStructRefs = readClientsStructRefs(decoder);
+  const clientsStructRefs = new Map();
+  // let start = performance.now()
+  readClientsStructRefs(decoder, clientsStructRefs, transaction.doc);
+  // console.log('time to read structs: ', performance.now() - start) // @todo remove
+  // start = performance.now()
   mergeReadStructsIntoPendingReads(store, clientsStructRefs);
+  // console.log('time to merge: ', performance.now() - start) // @todo remove
+  // start = performance.now()
   resumeStructIntegration(transaction, store);
+  // console.log('time to integrate: ', performance.now() - start) // @todo remove
+  // start = performance.now()
+  cleanupPendingStructs(store.pendingClientsStructRefs);
+  // console.log('time to cleanup: ', performance.now() - start) // @todo remove
+  // start = performance.now()
   tryResumePendingDeleteReaders(transaction, store);
+  // console.log('time to resume delete readers: ', performance.now() - start) // @todo remove
+  // start = performance.now()
 };
+
+/**
+ * Read and apply a document update.
+ *
+ * This function has the same effect as `applyUpdate` but accepts an decoder.
+ *
+ * @param {decoding.Decoder} decoder
+ * @param {Doc} ydoc
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ * @param {AbstractUpdateDecoder} [structDecoder]
+ *
+ * @function
+ */
+const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
+  transact(ydoc, transaction => {
+    readStructs(structDecoder, transaction, ydoc.store);
+    readAndApplyDeleteSet(structDecoder, transaction, ydoc.store);
+  }, transactionOrigin, false);
 
 /**
  * Read and apply a document update.
@@ -49336,11 +46123,24 @@ const readStructs = (decoder, transaction, store) => {
  *
  * @function
  */
-const readUpdate = (decoder, ydoc, transactionOrigin) =>
-  transact(ydoc, transaction => {
-    readStructs(decoder, transaction, ydoc.store);
-    readAndApplyDeleteSet(decoder, transaction, ydoc.store);
-  }, transactionOrigin, false);
+const readUpdate = (decoder, ydoc, transactionOrigin) => readUpdateV2(decoder, ydoc, transactionOrigin, new DefaultUpdateDecoder(decoder));
+
+/**
+ * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
+ *
+ * This function has the same effect as `readUpdate` but accepts an Uint8Array instead of a Decoder.
+ *
+ * @param {Doc} ydoc
+ * @param {Uint8Array} update
+ * @param {any} [transactionOrigin] This will be stored on `transaction.origin` and `.on('update', (update, origin))`
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ *
+ * @function
+ */
+const applyUpdateV2 = (ydoc, update, transactionOrigin, YDecoder = UpdateDecoderV2) => {
+  const decoder = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(update);
+  readUpdateV2(decoder, ydoc, transactionOrigin, new YDecoder(decoder));
+};
 
 /**
  * Apply a document update created by, for example, `y.on('update', update => ..)` or `update = encodeStateAsUpdate()`.
@@ -49353,14 +46153,13 @@ const readUpdate = (decoder, ydoc, transactionOrigin) =>
  *
  * @function
  */
-const applyUpdate = (ydoc, update, transactionOrigin) =>
-  readUpdate(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(update), ydoc, transactionOrigin);
+const applyUpdate = (ydoc, update, transactionOrigin) => applyUpdateV2(ydoc, update, transactionOrigin, DefaultUpdateDecoder);
 
 /**
  * Write all the document as a single update message. If you specify the state of the remote client (`targetStateVector`) it will
  * only write the operations that are missing.
  *
- * @param {encoding.Encoder} encoder
+ * @param {AbstractUpdateEncoder} encoder
  * @param {Doc} doc
  * @param {Map<number,number>} [targetStateVector] The state of the target that receives the update. Leave empty to write all known structs
  *
@@ -49379,31 +46178,45 @@ const writeStateAsUpdate = (encoder, doc, targetStateVector = new Map()) => {
  *
  * @param {Doc} doc
  * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ * @param {AbstractUpdateEncoder} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
-const encodeStateAsUpdate = (doc, encodedTargetStateVector) => {
-  const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+const encodeStateAsUpdateV2 = (doc, encodedTargetStateVector, encoder = new UpdateEncoderV2()) => {
   const targetStateVector = encodedTargetStateVector == null ? new Map() : decodeStateVector(encodedTargetStateVector);
   writeStateAsUpdate(encoder, doc, targetStateVector);
-  return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(encoder)
+  return encoder.toUint8Array()
 };
+
+/**
+ * Write all the document as a single update message that can be applied on the remote document. If you specify the state of the remote client (`targetState`) it will
+ * only write the operations that are missing.
+ *
+ * Use `writeStateAsUpdate` instead if you are working with lib0/encoding.js#Encoder
+ *
+ * @param {Doc} doc
+ * @param {Uint8Array} [encodedTargetStateVector] The state of the target that receives the update. Leave empty to write all known structs
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateAsUpdate = (doc, encodedTargetStateVector) => encodeStateAsUpdateV2(doc, encodedTargetStateVector, new DefaultUpdateEncoder());
 
 /**
  * Read state vector from Decoder and return as Map
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractDSDecoder} decoder
  * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
  *
  * @function
  */
 const readStateVector = decoder => {
   const ss = new Map();
-  const ssLength = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+  const ssLength = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
   for (let i = 0; i < ssLength; i++) {
-    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
-    const clock = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+    const client = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
+    const clock = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder.restDecoder);
     ss.set(client, clock);
   }
   return ss
@@ -49417,28 +46230,34 @@ const readStateVector = decoder => {
  *
  * @function
  */
-const decodeStateVector = decodedState => readStateVector(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(decodedState));
+const decodeStateVectorV2 = decodedState => readStateVector(new DSDecoderV2(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(decodedState)));
 
 /**
- * Write State Vector to `lib0/encoding.js#Encoder`.
+ * Read decodedState and return State as Map.
  *
- * @param {encoding.Encoder} encoder
+ * @param {Uint8Array} decodedState
+ * @return {Map<number,number>} Maps `client` to the number next expected `clock` from that client.
+ *
+ * @function
+ */
+const decodeStateVector = decodedState => readStateVector(new DefaultDSDecoder(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(decodedState)));
+
+/**
+ * @param {AbstractDSEncoder} encoder
  * @param {Map<number,number>} sv
  * @function
  */
 const writeStateVector = (encoder, sv) => {
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, sv.size);
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, sv.size);
   sv.forEach((clock, client) => {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, client);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, clock);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, client); // @todo use a special client decoder that is based on mapping
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder.restEncoder, clock);
   });
   return encoder
 };
 
 /**
- * Write State Vector to `lib0/encoding.js#Encoder`.
- *
- * @param {encoding.Encoder} encoder
+ * @param {AbstractDSEncoder} encoder
  * @param {Doc} doc
  *
  * @function
@@ -49449,15 +46268,25 @@ const writeDocumentStateVector = (encoder, doc) => writeStateVector(encoder, get
  * Encode State as Uint8Array.
  *
  * @param {Doc} doc
+ * @param {AbstractDSEncoder} [encoder]
  * @return {Uint8Array}
  *
  * @function
  */
-const encodeStateVector = doc => {
-  const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+const encodeStateVectorV2 = (doc, encoder = new DSEncoderV2()) => {
   writeDocumentStateVector(encoder, doc);
-  return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(encoder)
+  return encoder.toUint8Array()
 };
+
+/**
+ * Encode State as Uint8Array.
+ *
+ * @param {Doc} doc
+ * @return {Uint8Array}
+ *
+ * @function
+ */
+const encodeStateVector = doc => encodeStateVectorV2(doc, new DefaultDSEncoder());
 
 /**
  * General event handler implementation.
@@ -49526,7 +46355,7 @@ const removeEventHandlerListener = (eventHandler, f) => {
  * @function
  */
 const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
-  Object(lib0_function_js__WEBPACK_IMPORTED_MODULE_8__["callAll"])(eventHandler.l, [arg0, arg1]);
+  Object(lib0_function_js__WEBPACK_IMPORTED_MODULE_10__["callAll"])(eventHandler.l, [arg0, arg1]);
 
 class ID {
   /**
@@ -49573,8 +46402,8 @@ const createID = (client, clock) => new ID(client, clock);
  * @function
  */
 const writeID = (encoder, id) => {
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, id.client);
-  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, id.clock);
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder, id.client);
+  Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder, id.clock);
 };
 
 /**
@@ -49589,7 +46418,7 @@ const writeID = (encoder, id) => {
  * @function
  */
 const readID = decoder =>
-  createID(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder), Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder));
+  createID(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder), Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder));
 
 /**
  * The top types are mapped from y.share.get(keyname) => type.
@@ -49604,12 +46433,12 @@ const readID = decoder =>
  */
 const findRootTypeKey = type => {
   // @ts-ignore _y must be defined, otherwise unexpected case
-  for (const [key, value] of type.doc.share) {
+  for (const [key, value] of type.doc.share.entries()) {
     if (value === type) {
       return key
     }
   }
-  throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+  throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
 };
 
 /**
@@ -49627,9 +46456,27 @@ const isParentOf = (parent, child) => {
     if (child.parent === parent) {
       return true
     }
-    child = child.parent._item;
+    child = /** @type {AbstractType<any>} */ (child.parent)._item;
   }
   return false
+};
+
+/**
+ * Convenient helper to log type information.
+ *
+ * Do not use in productive systems as the output can be immense!
+ *
+ * @param {AbstractType<any>} type
+ */
+const logType = type => {
+  const res = [];
+  let n = type._start;
+  while (n) {
+    res.push(n);
+    n = n.right;
+  }
+  console.log('Children: ', res);
+  console.log('Children content: ', res.filter(m => !m.deleted).map(m => m.content));
 };
 
 class PermanentUserData {
@@ -49666,12 +46513,12 @@ class PermanentUserData {
         event.changes.added.forEach(item => {
           item.content.getContent().forEach(encodedDs => {
             if (encodedDs instanceof Uint8Array) {
-              this.dss.set(userDescription, mergeDeleteSets([this.dss.get(userDescription) || createDeleteSet(), readDeleteSet(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(encodedDs))]));
+              this.dss.set(userDescription, mergeDeleteSets([this.dss.get(userDescription) || createDeleteSet(), readDeleteSet(new DSDecoderV1(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(encodedDs)))]));
             }
           });
         });
       });
-      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(encodedDs)))));
+      this.dss.set(userDescription, mergeDeleteSets(ds.map(encodedDs => readDeleteSet(new DSDecoderV1(encodedDs)))));
       ids.observe(/** @param {YArrayEvent<any>} event */ event =>
         event.changes.added.forEach(item => item.content.getContent().forEach(addClientId))
       );
@@ -49717,11 +46564,11 @@ class PermanentUserData {
               user.get('ids').push([clientid]);
             }
           });
-          const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+          const encoder = new DSEncoderV1();
           const ds = this.dss.get(userDescription);
           if (ds) {
             writeDeleteSet(encoder, ds);
-            user.get('ds').push([Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(encoder)]);
+            user.get('ds').push([encoder.toUint8Array()]);
           }
         }
       }, 0);
@@ -49731,9 +46578,9 @@ class PermanentUserData {
         const yds = user.get('ds');
         const ds = transaction.deleteSet;
         if (transaction.local && ds.clients.size > 0 && filter(transaction, ds)) {
-          const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+          const encoder = new DSEncoderV1();
           writeDeleteSet(encoder, ds);
-          yds.push([Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(encoder)]);
+          yds.push([encoder.toUint8Array()]);
         }
       });
     });
@@ -49752,7 +46599,7 @@ class PermanentUserData {
    * @return {string | null}
    */
   getUserByDeletedId (id) {
-    for (const [userDescription, ds] of this.dss) {
+    for (const [userDescription, ds] of this.dss.entries()) {
       if (isDeleted(ds, id)) {
         return userDescription
       }
@@ -49852,7 +46699,7 @@ const createRelativePosition = (type, item) => {
   if (type._item === null) {
     tname = findRootTypeKey(type);
   } else {
-    typeid = type._item.id;
+    typeid = createID(type._item.id.client, type._item.id.clock);
   }
   return new RelativePosition(typeid, tname, item)
 };
@@ -49890,18 +46737,18 @@ const createRelativePositionFromTypeIndex = (type, index) => {
 const writeRelativePosition = (encoder, rpos) => {
   const { type, tname, item } = rpos;
   if (item !== null) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, 0);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarUint"])(encoder, 0);
     writeID(encoder, item);
   } else if (tname !== null) {
     // case 2: found position at the end of the list and type is stored in y.share
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeUint8"])(encoder, 1);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, tname);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"])(encoder, 1);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeVarString"])(encoder, tname);
   } else if (type !== null) {
     // case 3: found position at the end of the list and type is attached to an item
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeUint8"])(encoder, 2);
+    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_4__["writeUint8"])(encoder, 2);
     writeID(encoder, type);
   } else {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
   }
   return encoder
 };
@@ -49916,14 +46763,14 @@ const readRelativePosition = decoder => {
   let type = null;
   let tname = null;
   let itemID = null;
-  switch (Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder)) {
+  switch (Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarUint"])(decoder)) {
     case 0:
       // case 1: found position somewhere in the linked list
       itemID = readID(decoder);
       break
     case 1:
       // case 2: found position at the end of the list and type is stored in y.share
-      tname = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder);
+      tname = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["readVarString"])(decoder);
       break
     case 2: {
       // case 3: found position at the end of the list and type is attached to an item
@@ -49956,7 +46803,7 @@ const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
     if (!(right instanceof Item)) {
       return null
     }
-    type = right.parent;
+    type = /** @type {AbstractType<any>} */ (right.parent);
     if (type._item === null || !type._item.deleted) {
       index = right.deleted || !right.countable ? 0 : res.diff;
       let n = right.left;
@@ -49983,7 +46830,7 @@ const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
         return null
       }
     } else {
-      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
     }
     index = type._length;
   }
@@ -50031,12 +46878,12 @@ const equalSnapshots = (snap1, snap2) => {
   if (sv1.size !== sv2.size || ds1.size !== ds2.size) {
     return false
   }
-  for (const [key, value] of sv1) {
+  for (const [key, value] of sv1.entries()) {
     if (sv2.get(key) !== value) {
       return false
     }
   }
-  for (const [client, dsitems1] of ds1) {
+  for (const [client, dsitems1] of ds1.entries()) {
     const dsitems2 = ds2.get(client) || [];
     if (dsitems1.length !== dsitems2.length) {
       return false
@@ -50054,23 +46901,35 @@ const equalSnapshots = (snap1, snap2) => {
 
 /**
  * @param {Snapshot} snapshot
+ * @param {AbstractDSEncoder} [encoder]
  * @return {Uint8Array}
  */
-const encodeSnapshot = snapshot => {
-  const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
+const encodeSnapshotV2 = (snapshot, encoder = new DSEncoderV2()) => {
   writeDeleteSet(encoder, snapshot.ds);
   writeStateVector(encoder, snapshot.sv);
-  return Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(encoder)
+  return encoder.toUint8Array()
+};
+
+/**
+ * @param {Snapshot} snapshot
+ * @return {Uint8Array}
+ */
+const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new DefaultDSEncoder());
+
+/**
+ * @param {Uint8Array} buf
+ * @param {AbstractDSDecoder} [decoder]
+ * @return {Snapshot}
+ */
+const decodeSnapshotV2 = (buf, decoder = new DSDecoderV2(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(buf))) => {
+  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
 };
 
 /**
  * @param {Uint8Array} buf
  * @return {Snapshot}
  */
-const decodeSnapshot = buf => {
-  const decoder = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["createDecoder"])(buf);
-  return new Snapshot(readDeleteSet(decoder), readStateVector(decoder))
-};
+const decodeSnapshot = buf => decodeSnapshotV2(buf, new DSDecoderV1(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_5__["createDecoder"])(buf)));
 
 /**
  * @param {DeleteSet} ds
@@ -50103,7 +46962,7 @@ const isVisible = (item, snapshot) => snapshot === undefined ? !item.deleted : (
  * @param {Snapshot} snapshot
  */
 const splitSnapshotAffectedStructs = (transaction, snapshot) => {
-  const meta = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(transaction.meta, splitSnapshotAffectedStructs, lib0_set_js__WEBPACK_IMPORTED_MODULE_10__["create"]);
+  const meta = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(transaction.meta, splitSnapshotAffectedStructs, lib0_set_js__WEBPACK_IMPORTED_MODULE_11__["create"]);
   const store = transaction.doc.store;
   // check if we already split for this snapshot
   if (!meta.has(snapshot)) {
@@ -50129,17 +46988,17 @@ class StructStore {
      * We could shift the array of refs instead, but shift is incredible
      * slow in Chrome for arrays with more than 100k elements
      * @see tryResumePendingStructRefs
-     * @type {Map<number,{i:number,refs:Array<GCRef|ItemRef>}>}
+     * @type {Map<number,{i:number,refs:Array<GC|Item>}>}
      */
     this.pendingClientsStructRefs = new Map();
     /**
      * Stack of pending structs waiting for struct dependencies
      * Maximum length of stack is structReaders.size
-     * @type {Array<GCRef|ItemRef>}
+     * @type {Array<GC|Item>}
      */
     this.pendingStack = [];
     /**
-     * @type {Array<decoding.Decoder>}
+     * @type {Array<DSDecoderV2>}
      */
     this.pendingDeleteReaders = [];
   }
@@ -50196,7 +47055,7 @@ const addStruct = (store, struct) => {
   } else {
     const lastStruct = structs[structs.length - 1];
     if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
-      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
     }
   }
   structs.push(struct);
@@ -50204,7 +47063,7 @@ const addStruct = (store, struct) => {
 
 /**
  * Perform a binary search on a sorted array
- * @param {Array<any>} structs
+ * @param {Array<Item|GC>} structs
  * @param {number} clock
  * @return {number}
  *
@@ -50214,10 +47073,18 @@ const addStruct = (store, struct) => {
 const findIndexSS = (structs, clock) => {
   let left = 0;
   let right = structs.length - 1;
+  let mid = structs[right];
+  let midclock = mid.id.clock;
+  if (midclock === clock) {
+    return right
+  }
+  // @todo does it even make sense to pivot the search?
+  // If a good split misses, it might actually increase the time to find the correct item.
+  // Currently, the only advantage is that search with pivoting might find the item on the first try.
+  let midindex = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["floor"])((clock / (midclock + mid.length - 1)) * right); // pivoting the search
   while (left <= right) {
-    const midindex = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_1__["floor"])((left + right) / 2);
-    const mid = structs[midindex];
-    const midclock = mid.id.clock;
+    mid = structs[midindex];
+    midclock = mid.id.clock;
     if (midclock <= clock) {
       if (clock < midclock + mid.length) {
         return midindex
@@ -50226,10 +47093,11 @@ const findIndexSS = (structs, clock) => {
     } else {
       right = midindex - 1;
     }
+    midindex = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["floor"])((left + right) / 2);
   }
   // Always check state before looking for a struct in StructStore
   // Therefore the case of not finding a struct is unexpected
-  throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+  throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
 };
 
 /**
@@ -50253,16 +47121,10 @@ const find = (store, id) => {
 
 /**
  * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
- * @param {StructStore} store
- * @param {ID} id
- * @return {Item}
- *
  * @private
  * @function
  */
-// @ts-ignore
-const getItem = (store, id) => find(store, id);
+const getItem = /** @type {function(StructStore,ID):Item} */ (find);
 
 /**
  * @param {Transaction} transaction
@@ -50425,9 +47287,9 @@ class Transaction {
      */
     this.changedParentTypes = new Map();
     /**
-     * @type {Set<ID>}
+     * @type {Array<AbstractStruct>}
      */
-    this._mergeStructs = new Set();
+    this._mergeStructs = [];
     /**
      * @type {any}
      */
@@ -50446,28 +47308,18 @@ class Transaction {
 }
 
 /**
+ * @param {AbstractUpdateEncoder} encoder
  * @param {Transaction} transaction
+ * @return {boolean} Whether data was written.
  */
-const computeUpdateMessageFromTransaction = transaction => {
-  if (transaction.deleteSet.clients.size === 0 && !Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["any"])(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
-    return null
+const writeUpdateMessageFromTransaction = (encoder, transaction) => {
+  if (transaction.deleteSet.clients.size === 0 && !Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["any"])(transaction.afterState, (clock, client) => transaction.beforeState.get(client) !== clock)) {
+    return false
   }
-  const encoder = Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["createEncoder"])();
   sortAndMergeDeleteSet(transaction.deleteSet);
   writeStructsFromTransaction(encoder, transaction);
   writeDeleteSet(encoder, transaction.deleteSet);
-  return encoder
-};
-
-/**
- * @param {Transaction} transaction
- *
- * @private
- * @function
- */
-const nextID = transaction => {
-  const y = transaction.doc;
-  return createID(y.clientID, getState(y.store, y.clientID))
+  return true
 };
 
 /**
@@ -50481,7 +47333,7 @@ const nextID = transaction => {
 const addChangedTypeToTransaction = (transaction, type, parentSub) => {
   const item = type._item;
   if (item === null || (item.id.clock < (transaction.beforeState.get(item.id.client) || 0) && !item.deleted)) {
-    Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(transaction.changed, type, lib0_set_js__WEBPACK_IMPORTED_MODULE_10__["create"]).add(parentSub);
+    Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(transaction.changed, type, lib0_set_js__WEBPACK_IMPORTED_MODULE_11__["create"]).add(parentSub);
   }
 };
 
@@ -50495,8 +47347,8 @@ const tryToMergeWithLeft = (structs, pos) => {
   if (left.deleted === right.deleted && left.constructor === right.constructor) {
     if (left.mergeWith(right)) {
       structs.splice(pos, 1);
-      if (right instanceof Item && right.parentSub !== null && right.parent._map.get(right.parentSub) === right) {
-        right.parent._map.set(right.parentSub, /** @type {Item} */ (left));
+      if (right instanceof Item && right.parentSub !== null && /** @type {AbstractType<any>} */ (right.parent)._map.get(right.parentSub) === right) {
+        /** @type {AbstractType<any>} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left));
       }
     }
   }
@@ -50508,8 +47360,8 @@ const tryToMergeWithLeft = (structs, pos) => {
  * @param {function(Item):boolean} gcFilter
  */
 const tryGcDeleteSet = (ds, store, gcFilter) => {
-  for (const [client, deleteItems] of ds.clients) {
-    const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client));
+  for (const [client, deleteItems] of ds.clients.entries()) {
+    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di];
       const endDeleteItemClock = deleteItem.clock + deleteItem.len;
@@ -50537,12 +47389,12 @@ const tryGcDeleteSet = (ds, store, gcFilter) => {
 const tryMergeDeleteSet = (ds, store) => {
   // try to merge deleted / gc'd items
   // merge from right to left for better efficiecy and so we don't miss any merge targets
-  for (const [client, deleteItems] of ds.clients) {
-    const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client));
+  ds.clients.forEach((deleteItems, client) => {
+    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
     for (let di = deleteItems.length - 1; di >= 0; di--) {
       const deleteItem = deleteItems[di];
       // start with merging the item next to the last deleted item
-      const mostRightIndexToCheck = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_1__["min"])(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
+      const mostRightIndexToCheck = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["min"])(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1));
       for (
         let si = mostRightIndexToCheck, struct = structs[si];
         si > 0 && struct.id.clock >= deleteItem.clock;
@@ -50551,7 +47403,7 @@ const tryMergeDeleteSet = (ds, store) => {
         tryToMergeWithLeft(structs, si);
       }
     }
-  }
+  });
 };
 
 /**
@@ -50574,6 +47426,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
     const doc = transaction.doc;
     const store = doc.store;
     const ds = transaction.deleteSet;
+    const mergeStructs = transaction._mergeStructs;
     try {
       sortAndMergeDeleteSet(ds);
       transaction.afterState = getStateVector(transaction.doc.store);
@@ -50618,7 +47471,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
         );
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]));
       });
-      Object(lib0_function_js__WEBPACK_IMPORTED_MODULE_8__["callAll"])(fs, []);
+      Object(lib0_function_js__WEBPACK_IMPORTED_MODULE_10__["callAll"])(fs, []);
     } finally {
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.
@@ -50628,24 +47481,23 @@ const cleanupTransactions = (transactionCleanups, i) => {
       tryMergeDeleteSet(ds, store);
 
       // on all affected store.clients props, try to merge
-      for (const [client, clock] of transaction.afterState) {
+      transaction.afterState.forEach((clock, client) => {
         const beforeClock = transaction.beforeState.get(client) || 0;
         if (beforeClock !== clock) {
-          const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client));
+          const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
           // we iterate from right to left so we can safely remove entries
-          const firstChangePos = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_1__["max"])(findIndexSS(structs, beforeClock), 1);
+          const firstChangePos = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["max"])(findIndexSS(structs, beforeClock), 1);
           for (let i = structs.length - 1; i >= firstChangePos; i--) {
             tryToMergeWithLeft(structs, i);
           }
         }
-      }
+      });
       // try to merge mergeStructs
       // @todo: it makes more sense to transform mergeStructs to a DS, sort it, and merge from right to left
       //        but at the moment DS does not handle duplicates
-      for (const mid of transaction._mergeStructs) {
-        const client = mid.client;
-        const clock = mid.clock;
-        const structs = /** @type {Array<AbstractStruct>} */ (store.clients.get(client));
+      for (let i = 0; i < mergeStructs.length; i++) {
+        const { client, clock } = mergeStructs[i].id;
+        const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
         const replacedStructPos = findIndexSS(structs, clock);
         if (replacedStructPos + 1 < structs.length) {
           tryToMergeWithLeft(structs, replacedStructPos + 1);
@@ -50656,18 +47508,27 @@ const cleanupTransactions = (transactionCleanups, i) => {
       }
       if (!transaction.local && transaction.afterState.get(doc.clientID) !== transaction.beforeState.get(doc.clientID)) {
         doc.clientID = generateNewClientId();
-        Object(lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__["print"])(lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__["ORANGE"], lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__["BOLD"], '[yjs] ', lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__["UNBOLD"], lib0_logging_js__WEBPACK_IMPORTED_MODULE_11__["RED"], 'Changed the client-id because another client seems to be using it.');
+        Object(lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__["print"])(lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__["ORANGE"], lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__["BOLD"], '[yjs] ', lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__["UNBOLD"], lib0_logging_js__WEBPACK_IMPORTED_MODULE_12__["RED"], 'Changed the client-id because another client seems to be using it.');
       }
       // @todo Merge all the transactions into one and provide send the data as a single update message
       doc.emit('afterTransactionCleanup', [transaction, doc]);
       if (doc._observers.has('update')) {
-        const updateMessage = computeUpdateMessageFromTransaction(transaction);
-        if (updateMessage !== null) {
-          doc.emit('update', [Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["toUint8Array"])(updateMessage), transaction.origin, doc]);
+        const encoder = new DefaultUpdateEncoder();
+        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+        if (hasContent) {
+          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc]);
+        }
+      }
+      if (doc._observers.has('updateV2')) {
+        const encoder = new UpdateEncoderV2();
+        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction);
+        if (hasContent) {
+          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc]);
         }
       }
       if (transactionCleanups.length <= i + 1) {
         doc._transactionCleanups = [];
+        doc.emit('afterAllTransactions', [doc, transactionCleanups]);
       } else {
         cleanupTransactions(transactionCleanups, i + 1);
       }
@@ -50691,6 +47552,9 @@ const transact = (doc, f, origin = null, local = true) => {
     initialCall = true;
     doc._transaction = new Transaction(doc, origin, local);
     transactionCleanups.push(doc._transaction);
+    if (transactionCleanups.length === 1) {
+      doc.emit('beforeAllTransactions', [doc]);
+    }
     doc.emit('beforeTransaction', [doc._transaction, doc]);
   }
   try {
@@ -50840,7 +47704,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  *
  * @extends {Observable<'stack-item-added'|'stack-item-popped'>}
  */
-class UndoManager extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Observable"] {
+class UndoManager extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_0__["Observable"] {
   /**
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
@@ -50887,7 +47751,7 @@ class UndoManager extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_5__["Obser
       }
       const beforeState = transaction.beforeState;
       const afterState = transaction.afterState;
-      const now = Object(lib0_time_js__WEBPACK_IMPORTED_MODULE_12__["getUnixTime"])();
+      const now = Object(lib0_time_js__WEBPACK_IMPORTED_MODULE_13__["getUnixTime"])();
       if (now - this.lastChange < captureTimeout && stack.length > 0 && !undoing && !redoing) {
         // append change to last stack op
         const lastOp = stack[stack.length - 1];
@@ -51063,8 +47927,8 @@ class YEvent {
     let changes = this._changes;
     if (changes === null) {
       const target = this.target;
-      const added = Object(lib0_set_js__WEBPACK_IMPORTED_MODULE_10__["create"])();
-      const deleted = Object(lib0_set_js__WEBPACK_IMPORTED_MODULE_10__["create"])();
+      const added = Object(lib0_set_js__WEBPACK_IMPORTED_MODULE_11__["create"])();
+      const deleted = Object(lib0_set_js__WEBPACK_IMPORTED_MODULE_11__["create"])();
       /**
        * @type {Array<{insert:Array<any>}|{delete:number}|{retain:number}>}
        */
@@ -51134,14 +47998,14 @@ class YEvent {
             if (this.deletes(item)) {
               if (prev !== null && this.deletes(prev)) {
                 action = 'delete';
-                oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_0__["last"])(prev.content.getContent());
+                oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_1__["last"])(prev.content.getContent());
               } else {
                 return
               }
             } else {
               if (prev !== null && this.deletes(prev)) {
                 action = 'update';
-                oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_0__["last"])(prev.content.getContent());
+                oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_1__["last"])(prev.content.getContent());
               } else {
                 action = 'add';
                 oldValue = undefined;
@@ -51150,7 +48014,7 @@ class YEvent {
           } else {
             if (this.deletes(item)) {
               action = 'delete';
-              oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_0__["last"])(/** @type {Item} */ item.content.getContent());
+              oldValue = Object(lib0_array_js__WEBPACK_IMPORTED_MODULE_1__["last"])(/** @type {Item} */ item.content.getContent());
             } else {
               return // nop
             }
@@ -51190,7 +48054,7 @@ const getPathTo = (parent, child) => {
     } else {
       // parent is array-ish
       let i = 0;
-      let c = child._item.parent._start;
+      let c = /** @type {AbstractType<any>} */ (child._item.parent)._start;
       while (c !== child._item && c !== null) {
         if (!c.deleted) {
           i++;
@@ -51199,9 +48063,199 @@ const getPathTo = (parent, child) => {
       }
       path.unshift(i);
     }
-    child = child._item.parent;
+    child = /** @type {AbstractType<any>} */ (child._item.parent);
   }
   return path
+};
+
+const maxSearchMarker = 80;
+
+/**
+ * A unique timestamp that identifies each marker.
+ *
+ * Time is relative,.. this is more like an ever-increasing clock.
+ *
+ * @type {number}
+ */
+let globalSearchMarkerTimestamp = 0;
+
+class ArraySearchMarker {
+  /**
+   * @param {Item} p
+   * @param {number} index
+   */
+  constructor (p, index) {
+    p.marker = true;
+    this.p = p;
+    this.index = index;
+    this.timestamp = globalSearchMarkerTimestamp++;
+  }
+}
+
+/**
+ * @param {ArraySearchMarker} marker
+ */
+const refreshMarkerTimestamp = marker => { marker.timestamp = globalSearchMarkerTimestamp++; };
+
+/**
+ * This is rather complex so this function is the only thing that should overwrite a marker
+ *
+ * @param {ArraySearchMarker} marker
+ * @param {Item} p
+ * @param {number} index
+ */
+const overwriteMarker = (marker, p, index) => {
+  marker.p.marker = false;
+  marker.p = p;
+  p.marker = true;
+  marker.index = index;
+  marker.timestamp = globalSearchMarkerTimestamp++;
+};
+
+/**
+ * @param {Array<ArraySearchMarker>} searchMarker
+ * @param {Item} p
+ * @param {number} index
+ */
+const markPosition = (searchMarker, p, index) => {
+  if (searchMarker.length >= maxSearchMarker) {
+    // override oldest marker (we don't want to create more objects)
+    const marker = searchMarker.reduce((a, b) => a.timestamp < b.timestamp ? a : b);
+    overwriteMarker(marker, p, index);
+    return marker
+  } else {
+    // create new marker
+    const pm = new ArraySearchMarker(p, index);
+    searchMarker.push(pm);
+    return pm
+  }
+};
+
+/**
+ * Search marker help us to find positions in the associative array faster.
+ *
+ * They speed up the process of finding a position without much bookkeeping.
+ *
+ * A maximum of `maxSearchMarker` objects are created.
+ *
+ * This function always returns a refreshed marker (updated timestamp)
+ *
+ * @param {AbstractType<any>} yarray
+ * @param {number} index
+ */
+const findMarker = (yarray, index) => {
+  if (yarray._start === null || index === 0 || yarray._searchMarker === null) {
+    return null
+  }
+  const marker = yarray._searchMarker.length === 0 ? null : yarray._searchMarker.reduce((a, b) => Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["abs"])(index - a.index) < Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["abs"])(index - b.index) ? a : b);
+  let p = yarray._start;
+  let pindex = 0;
+  if (marker !== null) {
+    p = marker.p;
+    pindex = marker.index;
+    refreshMarkerTimestamp(marker); // we used it, we might need to use it again
+  }
+  // iterate to right if possible
+  while (p.right !== null && pindex < index) {
+    if (!p.deleted && p.countable) {
+      if (index < pindex + p.length) {
+        break
+      }
+      pindex += p.length;
+    }
+    p = p.right;
+  }
+  // iterate to left if necessary (might be that pindex > index)
+  while (p.left !== null && pindex > index) {
+    p = p.left;
+    if (!p.deleted && p.countable) {
+      pindex -= p.length;
+    }
+  }
+  // we want to make sure that p can't be merged with left, because that would screw up everything
+  // in that cas just return what we have (it is most likely the best marker anyway)
+  // iterate to left until p can't be merged with left
+  while (p.left !== null && p.left.id.client === p.id.client && p.left.id.clock + p.left.length === p.id.clock) {
+    p = p.left;
+    if (!p.deleted && p.countable) {
+      pindex -= p.length;
+    }
+  }
+
+  // @todo remove!
+  // assure position
+  // {
+  //   let start = yarray._start
+  //   let pos = 0
+  //   while (start !== p) {
+  //     if (!start.deleted && start.countable) {
+  //       pos += start.length
+  //     }
+  //     start = /** @type {Item} */ (start.right)
+  //   }
+  //   if (pos !== pindex) {
+  //     debugger
+  //     throw new Error('Gotcha position fail!')
+  //   }
+  // }
+  // if (marker) {
+  //   if (window.lengthes == null) {
+  //     window.lengthes = []
+  //     window.getLengthes = () => window.lengthes.sort((a, b) => a - b)
+  //   }
+  //   window.lengthes.push(marker.index - pindex)
+  //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
+  // }
+  if (marker !== null && Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["abs"])(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
+    // adjust existing marker
+    overwriteMarker(marker, p, pindex);
+    return marker
+  } else {
+    // create new marker
+    return markPosition(yarray._searchMarker, p, pindex)
+  }
+};
+
+/**
+ * Update markers when a change happened.
+ *
+ * This should be called before doing a deletion!
+ *
+ * @param {Array<ArraySearchMarker>} searchMarker
+ * @param {number} index
+ * @param {number} len If insertion, len is positive. If deletion, len is negative.
+ */
+const updateMarkerChanges = (searchMarker, index, len) => {
+  for (let i = searchMarker.length - 1; i >= 0; i--) {
+    const m = searchMarker[i];
+    if (len > 0) {
+      /**
+       * @type {Item|null}
+       */
+      let p = m.p;
+      p.marker = false;
+      // Ideally we just want to do a simple position comparison, but this will only work if
+      // search markers don't point to deleted items for formats.
+      // Iterate marker to prev undeleted countable position so we know what to do when updating a position
+      while (p && (p.deleted || !p.countable)) {
+        p = p.left;
+        if (p && !p.deleted && p.countable) {
+          // adjust position. the loop should break now
+          m.index -= p.length;
+        }
+      }
+      if (p === null || p.marker === true) {
+        // remove search marker if updated position is null or if position is already marked
+        searchMarker.splice(i, 1);
+        continue
+      }
+      m.p = p;
+      p.marker = true;
+    }
+    if (index < m.index || (len > 0 && index === m.index)) { // a simple index <= m.index check would actually suffice
+      m.index = Object(lib0_math_js__WEBPACK_IMPORTED_MODULE_2__["max"])(index, m.index + len);
+    }
+  }
 };
 
 /**
@@ -51234,11 +48288,11 @@ const callTypeObservers = (type, transaction, event) => {
   const changedParentTypes = transaction.changedParentTypes;
   while (true) {
     // @ts-ignore
-    Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(changedParentTypes, type, () => []).push(event);
+    Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(changedParentTypes, type, () => []).push(event);
     if (type._item === null) {
       break
     }
-    type = type._item.parent;
+    type = /** @type {AbstractType<any>} */ (type._item.parent);
   }
   callEventHandlerListeners(changedType._eH, event, transaction);
 };
@@ -51276,6 +48330,10 @@ class AbstractType {
      * @type {EventHandler<Array<YEvent>,Transaction>}
      */
     this._dEH = createEventHandler();
+    /**
+     * @type {null | Array<ArraySearchMarker>}
+     */
+    this._searchMarker = null;
   }
 
   /**
@@ -51297,11 +48355,11 @@ class AbstractType {
    * @return {AbstractType<EventType>}
    */
   _copy () {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) { }
 
@@ -51323,7 +48381,11 @@ class AbstractType {
    * @param {Transaction} transaction
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
-  _callObserver (transaction, parentSubs) { /* skip if no type is specified */ }
+  _callObserver (transaction, parentSubs) {
+    if (!transaction.local && this._searchMarker) {
+      this._searchMarker.length = 0;
+    }
+  }
 
   /**
    * Observe all events that are created on this type.
@@ -51514,7 +48576,13 @@ const typeListCreateIterator = type => {
  * @function
  */
 const typeListGet = (type, index) => {
-  for (let n = type._start; n !== null; n = n.right) {
+  const marker = findMarker(type, index);
+  let n = type._start;
+  if (marker !== null) {
+    n = marker.p;
+    index -= marker.index;
+  }
+  for (; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index < n.length) {
         return n.content.getContent()[index]
@@ -51535,6 +48603,9 @@ const typeListGet = (type, index) => {
  */
 const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content) => {
   let left = referenceItem;
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
+  const store = doc.store;
   const right = referenceItem === null ? parent._start : referenceItem.right;
   /**
    * @type {Array<Object|Array<any>|number>}
@@ -51542,8 +48613,8 @@ const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content
   let jsonContent = [];
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentAny(jsonContent));
-      left.integrate(transaction);
+      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent));
+      left.integrate(transaction, 0);
       jsonContent = [];
     }
   };
@@ -51561,13 +48632,13 @@ const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content
         switch (c.constructor) {
           case Uint8Array:
           case ArrayBuffer:
-            left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))));
-            left.integrate(transaction);
+            left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))));
+            left.integrate(transaction, 0);
             break
           default:
             if (c instanceof AbstractType) {
-              left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentType(c));
-              left.integrate(transaction);
+              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(c));
+              left.integrate(transaction, 0);
             } else {
               throw new Error('Unexpected content type in insert operation')
             }
@@ -51588,9 +48659,24 @@ const typeListInsertGenericsAfter = (transaction, parent, referenceItem, content
  */
 const typeListInsertGenerics = (transaction, parent, index, content) => {
   if (index === 0) {
+    if (parent._searchMarker) {
+      updateMarkerChanges(parent._searchMarker, index, content.length);
+    }
     return typeListInsertGenericsAfter(transaction, parent, null, content)
   }
+  const startIndex = index;
+  const marker = findMarker(parent, index);
   let n = parent._start;
+  if (marker !== null) {
+    n = marker.p;
+    index -= marker.index;
+    // we need to iterate one to the left so that the algorithm works
+    if (index === 0) {
+      // @todo refactor this as it actually doesn't consider formats
+      n = n.prev; // important! get the left undeleted item so that we can actually decrease index
+      index += (n && n.countable && !n.deleted) ? n.length : 0;
+    }
+  }
   for (; n !== null; n = n.right) {
     if (!n.deleted && n.countable) {
       if (index <= n.length) {
@@ -51602,6 +48688,9 @@ const typeListInsertGenerics = (transaction, parent, index, content) => {
       }
       index -= n.length;
     }
+  }
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, startIndex, content.length);
   }
   return typeListInsertGenericsAfter(transaction, parent, n, content)
 };
@@ -51617,7 +48706,14 @@ const typeListInsertGenerics = (transaction, parent, index, content) => {
  */
 const typeListDelete = (transaction, parent, index, length) => {
   if (length === 0) { return }
+  const startIndex = index;
+  const startLength = length;
+  const marker = findMarker(parent, index);
   let n = parent._start;
+  if (marker !== null) {
+    n = marker.p;
+    index -= marker.index;
+  }
   // compute the first item to be deleted
   for (; n !== null && index > 0; n = n.right) {
     if (!n.deleted && n.countable) {
@@ -51639,7 +48735,10 @@ const typeListDelete = (transaction, parent, index, length) => {
     n = n.right;
   }
   if (length > 0) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["create"])('array length exceeded')
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["create"])('array length exceeded')
+  }
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, startIndex, -startLength + length /* in case we remove the above exception */);
   }
 };
 
@@ -51669,6 +48768,8 @@ const typeMapDelete = (transaction, parent, key) => {
  */
 const typeMapSet = (transaction, parent, key, value) => {
   const left = parent._map.get(key) || null;
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
   let content;
   if (value == null) {
     content = new ContentAny([value]);
@@ -51692,7 +48793,7 @@ const typeMapSet = (transaction, parent, key, value) => {
         }
     }
   }
-  new Item(nextID(transaction), left, left === null ? null : left.lastId, null, null, parent, key, content).integrate(transaction);
+  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0);
 };
 
 /**
@@ -51720,11 +48821,11 @@ const typeMapGetAll = (parent) => {
    * @type {Object<string,any>}
    */
   const res = {};
-  for (const [key, value] of parent._map) {
+  parent._map.forEach((value, key) => {
     if (!value.deleted) {
       res[key] = value.content.getContent()[value.length - 1];
     }
-  }
+  });
   return res
 };
 
@@ -51765,7 +48866,7 @@ const typeMapGetSnapshot = (parent, key, snapshot) => {
  * @private
  * @function
  */
-const createMapIterator = map => Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_13__["iteratorFilter"])(map.entries(), /** @param {any} entry */ entry => !entry[1].deleted);
+const createMapIterator = map => Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_14__["iteratorFilter"])(map.entries(), /** @param {any} entry */ entry => !entry[1].deleted);
 
 /**
  * @module YArray
@@ -51790,7 +48891,7 @@ class YArrayEvent extends YEvent {
  * A shared Array implementation.
  * @template T
  * @extends AbstractType<YArrayEvent<T>>
- * @implements {IterableIterator<T>}
+ * @implements {Iterable<T>}
  */
 class YArray extends AbstractType {
   constructor () {
@@ -51800,6 +48901,10 @@ class YArray extends AbstractType {
      * @private
      */
     this._prelimContent = [];
+    /**
+     * @type {Array<ArraySearchMarker>}
+     */
+    this._searchMarker = [];
   }
 
   /**
@@ -51833,6 +48938,7 @@ class YArray extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
+    super._callObserver(transaction, parentSubs);
     callTypeObservers(this, transaction, new YArrayEvent(this, transaction));
   }
 
@@ -51869,6 +48975,15 @@ class YArray extends AbstractType {
    */
   push (content) {
     this.insert(this.length, content);
+  }
+
+  /**
+   * Preppends content to this YArray.
+   *
+   * @param {Array<T>} content Array of content to preppend.
+   */
+  unshift (content) {
+    this.insert(0, content);
   }
 
   /**
@@ -51945,15 +49060,15 @@ class YArray extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YArrayRefID);
+    encoder.writeTypeRef(YArrayRefID);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  *
  * @private
  * @function
@@ -51981,16 +49096,26 @@ class YMapEvent extends YEvent {
  * A shared Map implementation.
  *
  * @extends AbstractType<YMapEvent<T>>
- * @implements {IterableIterator}
+ * @implements {Iterable<T>}
  */
 class YMap extends AbstractType {
-  constructor () {
+  /**
+   *
+   * @param {Iterable<readonly [string, any]>=} entries - an optional iterable to initialize the YMap
+   */
+  constructor (entries) {
     super();
     /**
      * @type {Map<string,any>?}
      * @private
      */
-    this._prelimContent = new Map();
+    this._prelimContent = null;
+
+    if (entries === undefined) {
+      this._prelimContent = new Map();
+    } else {
+      this._prelimContent = new Map(entries);
+    }
   }
 
   /**
@@ -52004,10 +49129,10 @@ class YMap extends AbstractType {
    * @param {Item} item
    */
   _integrate (y, item) {
-    super._integrate(y, item);
-    for (const [key, value] of /** @type {Map<string, any>} */ (this._prelimContent)) {
+    super._integrate(y, item)
+    ;/** @type {Map<string, any>} */ (this._prelimContent).forEach((value, key) => {
       this.set(key, value);
-    }
+    });
     this._prelimContent = null;
   }
 
@@ -52035,13 +49160,22 @@ class YMap extends AbstractType {
      * @type {Object<string,T>}
      */
     const map = {};
-    for (const [key, item] of this._map) {
+    this._map.forEach((item, key) => {
       if (!item.deleted) {
         const v = item.content.getContent()[item.length - 1];
         map[key] = v instanceof AbstractType ? v.toJSON() : v;
       }
-    }
+    });
     return map
+  }
+
+  /**
+   * Returns the size of the YMap (count of key/value pairs)
+   *
+   * @return {number}
+   */
+  get size () {
+    return [...createMapIterator(this._map)].length
   }
 
   /**
@@ -52050,7 +49184,7 @@ class YMap extends AbstractType {
    * @return {IterableIterator<string>}
    */
   keys () {
-    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_13__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => v[0])
+    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_14__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => v[0])
   }
 
   /**
@@ -52059,7 +49193,7 @@ class YMap extends AbstractType {
    * @return {IterableIterator<string>}
    */
   values () {
-    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_13__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_14__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
   }
 
   /**
@@ -52068,11 +49202,11 @@ class YMap extends AbstractType {
    * @return {IterableIterator<any>}
    */
   entries () {
-    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_13__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].content.getContent()[v[1].length - 1]])
+    return Object(lib0_iterator_js__WEBPACK_IMPORTED_MODULE_14__["iteratorMap"])(createMapIterator(this._map), /** @param {any} v */ v => [v[0], v[1].content.getContent()[v[1].length - 1]])
   }
 
   /**
-   * Executes a provided function on once on overy key-value pair.
+   * Executes a provided function on once on every key-value pair.
    *
    * @param {function(T,string,YMap<T>):void} f A function to execute on every element of this YArray.
    */
@@ -52081,11 +49215,11 @@ class YMap extends AbstractType {
      * @type {Object<string,T>}
      */
     const map = {};
-    for (const [key, item] of this._map) {
+    this._map.forEach((item, key) => {
       if (!item.deleted) {
         f(item.content.getContent()[item.length - 1], key, this);
       }
-    }
+    });
     return map
   }
 
@@ -52149,15 +49283,15 @@ class YMap extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YMapRefID);
+    encoder.writeTypeRef(YMapRefID);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  *
  * @private
  * @function
@@ -52169,77 +49303,81 @@ const readYMap = decoder => new YMap();
  * @param {any} b
  * @return {boolean}
  */
-const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && Object(lib0_object_js__WEBPACK_IMPORTED_MODULE_14__["equalFlat"])(a, b));
+const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && Object(lib0_object_js__WEBPACK_IMPORTED_MODULE_15__["equalFlat"])(a, b));
 
-class ItemListPosition {
+class ItemTextListPosition {
   /**
    * @param {Item|null} left
    * @param {Item|null} right
-   */
-  constructor (left, right) {
-    this.left = left;
-    this.right = right;
-  }
-}
-
-class ItemTextListPosition extends ItemListPosition {
-  /**
-   * @param {Item|null} left
-   * @param {Item|null} right
+   * @param {number} index
    * @param {Map<string,any>} currentAttributes
    */
-  constructor (left, right, currentAttributes) {
-    super(left, right);
+  constructor (left, right, index, currentAttributes) {
+    this.left = left;
+    this.right = right;
+    this.index = index;
     this.currentAttributes = currentAttributes;
   }
-}
 
-class ItemInsertionResult extends ItemListPosition {
   /**
-   * @param {Item|null} left
-   * @param {Item|null} right
-   * @param {Map<string,any>} negatedAttributes
+   * Only call this if you know that this.right is defined
    */
-  constructor (left, right, negatedAttributes) {
-    super(left, right);
-    this.negatedAttributes = negatedAttributes;
+  forward () {
+    if (this.right === null) {
+      Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])();
+    }
+    switch (this.right.content.constructor) {
+      case ContentEmbed:
+      case ContentString:
+        if (!this.right.deleted) {
+          this.index += this.right.length;
+        }
+        break
+      case ContentFormat:
+        if (!this.right.deleted) {
+          updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content));
+        }
+        break
+    }
+    this.left = this.right;
+    this.right = this.right.right;
   }
 }
 
 /**
  * @param {Transaction} transaction
- * @param {Map<string,any>} currentAttributes
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {number} count
+ * @param {ItemTextListPosition} pos
+ * @param {number} count steps to move forward
  * @return {ItemTextListPosition}
  *
  * @private
  * @function
  */
-const findNextPosition = (transaction, currentAttributes, left, right, count) => {
-  while (right !== null && count > 0) {
-    switch (right.content.constructor) {
+const findNextPosition = (transaction, pos, count) => {
+  while (pos.right !== null && count > 0) {
+    switch (pos.right.content.constructor) {
       case ContentEmbed:
       case ContentString:
-        if (!right.deleted) {
-          if (count < right.length) {
+        if (!pos.right.deleted) {
+          if (count < pos.right.length) {
             // split right
-            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + count));
+            getItemCleanStart(transaction, createID(pos.right.id.client, pos.right.id.clock + count));
           }
-          count -= right.length;
+          pos.index += pos.right.length;
+          count -= pos.right.length;
         }
         break
       case ContentFormat:
-        if (!right.deleted) {
-          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content));
+        if (!pos.right.deleted) {
+          updateCurrentAttributes(pos.currentAttributes, /** @type {ContentFormat} */ (pos.right.content));
         }
         break
     }
-    left = right;
-    right = right.right;
+    pos.left = pos.right;
+    pos.right = pos.right.right;
+    // pos.forward() - we don't forward because that would halve the performance because we already do the checks above
   }
-  return new ItemTextListPosition(left, right, currentAttributes)
+  return pos
 };
 
 /**
@@ -52253,8 +49391,14 @@ const findNextPosition = (transaction, currentAttributes, left, right, count) =>
  */
 const findPosition = (transaction, parent, index) => {
   const currentAttributes = new Map();
-  const right = parent._start;
-  return findNextPosition(transaction, currentAttributes, null, right, index)
+  const marker = findMarker(parent, index);
+  if (marker) {
+    const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes);
+    return findNextPosition(transaction, pos, index - marker.index)
+  } else {
+    const pos = new ItemTextListPosition(null, parent._start, 0, currentAttributes);
+    return findNextPosition(transaction, pos, index)
+  }
 };
 
 /**
@@ -52262,35 +49406,35 @@ const findPosition = (transaction, parent, index) => {
  *
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {Item|null} left
- * @param {Item|null} right
+ * @param {ItemTextListPosition} currPos
  * @param {Map<string,any>} negatedAttributes
- * @return {ItemListPosition}
  *
  * @private
  * @function
  */
-const insertNegatedAttributes = (transaction, parent, left, right, negatedAttributes) => {
+const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes) => {
   // check if we really need to remove attributes
   while (
-    right !== null && (
-      right.deleted === true || (
-        right.content.constructor === ContentFormat &&
-        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (right.content).key), /** @type {ContentFormat} */ (right.content).value)
+    currPos.right !== null && (
+      currPos.right.deleted === true || (
+        currPos.right.content.constructor === ContentFormat &&
+        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
       )
     )
   ) {
-    if (!right.deleted) {
-      negatedAttributes.delete(/** @type {ContentFormat} */ (right.content).key);
+    if (!currPos.right.deleted) {
+      negatedAttributes.delete(/** @type {ContentFormat} */ (currPos.right.content).key);
     }
-    left = right;
-    right = right.right;
+    currPos.forward();
   }
-  for (const [key, val] of negatedAttributes) {
-    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val));
-    left.integrate(transaction);
-  }
-  return { left, right }
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
+  let left = currPos.left;
+  const right = currPos.right;
+  negatedAttributes.forEach((val, key) => {
+    left = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+    left.integrate(transaction, 0);
+  });
 };
 
 /**
@@ -52310,116 +49454,110 @@ const updateCurrentAttributes = (currentAttributes, format) => {
 };
 
 /**
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {Map<string,any>} currentAttributes
+ * @param {ItemTextListPosition} currPos
  * @param {Object<string,any>} attributes
- * @return {ItemListPosition}
  *
  * @private
  * @function
  */
-const minimizeAttributeChanges = (left, right, currentAttributes, attributes) => {
+const minimizeAttributeChanges = (currPos, attributes) => {
   // go right while attributes[right.key] === right.value (or right is deleted)
   while (true) {
-    if (right === null) {
+    if (currPos.right === null) {
       break
-    } else if (right.deleted) ; else if (right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (right.content)).key] || null, /** @type {ContentFormat} */ (right.content).value)) {
-      // found a format, update currentAttributes and continue
-      updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content));
-    } else {
+    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] || null, /** @type {ContentFormat} */ (currPos.right.content).value))) ; else {
       break
     }
-    left = right;
-    right = right.right;
+    currPos.forward();
   }
-  return new ItemListPosition(left, right)
 };
 
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {Map<string,any>} currentAttributes
+ * @param {ItemTextListPosition} currPos
  * @param {Object<string,any>} attributes
- * @return {ItemInsertionResult}
+ * @return {Map<string,any>}
  *
  * @private
  * @function
  **/
-const insertAttributes = (transaction, parent, left, right, currentAttributes, attributes) => {
+const insertAttributes = (transaction, parent, currPos, attributes) => {
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
   const negatedAttributes = new Map();
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key];
-    const currentVal = currentAttributes.get(key) || null;
+    const currentVal = currPos.currentAttributes.get(key) || null;
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal);
-      left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentFormat(key, val));
-      left.integrate(transaction);
+      const { left, right } = currPos;
+      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val));
+      currPos.right.integrate(transaction, 0);
+      currPos.forward();
     }
   }
-  return new ItemInsertionResult(left, right, negatedAttributes)
+  return negatedAttributes
 };
 
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {Map<string,any>} currentAttributes
+ * @param {ItemTextListPosition} currPos
  * @param {string|object} text
  * @param {Object<string,any>} attributes
- * @return {ItemListPosition}
  *
  * @private
  * @function
  **/
-const insertText = (transaction, parent, left, right, currentAttributes, text, attributes) => {
-  for (const [key] of currentAttributes) {
+const insertText = (transaction, parent, currPos, text, attributes) => {
+  currPos.currentAttributes.forEach((val, key) => {
     if (attributes[key] === undefined) {
       attributes[key] = null;
     }
-  }
-  const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes);
-  const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes);
-  left = insertPos.left;
-  right = insertPos.right;
+  });
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
+  minimizeAttributeChanges(currPos, attributes);
+  const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
   // insert content
   const content = text.constructor === String ? new ContentString(/** @type {string} */ (text)) : new ContentEmbed(text);
-  left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, content);
-  left.integrate(transaction);
-  return insertNegatedAttributes(transaction, parent, left, insertPos.right, insertPos.negatedAttributes)
+  let { left, right, index } = currPos;
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength());
+  }
+  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content);
+  right.integrate(transaction, 0);
+  currPos.right = right;
+  currPos.index = index;
+  currPos.forward();
+  insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
 };
 
 /**
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {Map<string,any>} currentAttributes
+ * @param {ItemTextListPosition} currPos
  * @param {number} length
  * @param {Object<string,any>} attributes
- * @return {ItemListPosition}
  *
  * @private
  * @function
  */
-const formatText = (transaction, parent, left, right, currentAttributes, length, attributes) => {
-  const minPos = minimizeAttributeChanges(left, right, currentAttributes, attributes);
-  const insertPos = insertAttributes(transaction, parent, minPos.left, minPos.right, currentAttributes, attributes);
-  const negatedAttributes = insertPos.negatedAttributes;
-  left = insertPos.left;
-  right = insertPos.right;
+const formatText = (transaction, parent, currPos, length, attributes) => {
+  const doc = transaction.doc;
+  const ownClientId = doc.clientID;
+  minimizeAttributeChanges(currPos, attributes);
+  const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes);
   // iterate until first non-format or null is found
   // delete all formats with attributes[format.key] != null
-  while (length > 0 && right !== null) {
-    if (!right.deleted) {
-      switch (right.content.constructor) {
+  while (length > 0 && currPos.right !== null) {
+    if (!currPos.right.deleted) {
+      switch (currPos.right.content.constructor) {
         case ContentFormat: {
-          const { key, value } = /** @type {ContentFormat} */ (right.content);
+          const { key, value } = /** @type {ContentFormat} */ (currPos.right.content);
           const attr = attributes[key];
           if (attr !== undefined) {
             if (equalAttrs(attr, value)) {
@@ -52427,22 +49565,20 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
             } else {
               negatedAttributes.set(key, value);
             }
-            right.delete(transaction);
+            currPos.right.delete(transaction);
           }
-          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content));
           break
         }
         case ContentEmbed:
         case ContentString:
-          if (length < right.length) {
-            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length));
+          if (length < currPos.right.length) {
+            getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
           }
-          length -= right.length;
+          length -= currPos.right.length;
           break
       }
     }
-    left = right;
-    right = right.right;
+    currPos.forward();
   }
   // Quill just assumes that the editor starts with a newline and that it always
   // ends with a newline. We only insert that newline when a new newline is
@@ -52452,10 +49588,11 @@ const formatText = (transaction, parent, left, right, currentAttributes, length,
     for (; length > 0; length--) {
       newlines += '\n';
     }
-    left = new Item(nextID(transaction), left, left === null ? null : left.lastId, right, right === null ? null : right.id, parent, null, new ContentString(newlines));
-    left.integrate(transaction);
+    currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), currPos.left, currPos.left && currPos.left.lastId, currPos.right, currPos.right && currPos.right.id, parent, null, new ContentString(newlines));
+    currPos.right.integrate(transaction, 0);
+    currPos.forward();
   }
-  return insertNegatedAttributes(transaction, parent, left, right, negatedAttributes)
+  insertNegatedAttributes(transaction, parent, currPos, negatedAttributes);
 };
 
 /**
@@ -52540,8 +49677,8 @@ const cleanupYTextFormatting = type => {
   transact(/** @type {Doc} */ (type.doc), transaction => {
     let start = /** @type {Item} */ (type._start);
     let end = type._start;
-    let startAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["create"])();
-    const currentAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["copy"])(startAttributes);
+    let startAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["create"])();
+    const currentAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["copy"])(startAttributes);
     while (end) {
       if (end.deleted === false) {
         switch (end.content.constructor) {
@@ -52551,7 +49688,7 @@ const cleanupYTextFormatting = type => {
           case ContentEmbed:
           case ContentString:
             res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes);
-            startAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["copy"])(currentAttributes);
+            startAttributes = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["copy"])(currentAttributes);
             start = end;
             break
         }
@@ -52564,41 +49701,40 @@ const cleanupYTextFormatting = type => {
 
 /**
  * @param {Transaction} transaction
- * @param {Item|null} left
- * @param {Item|null} right
- * @param {Map<string,any>} currentAttributes
+ * @param {ItemTextListPosition} currPos
  * @param {number} length
- * @return {ItemListPosition}
+ * @return {ItemTextListPosition}
  *
  * @private
  * @function
  */
-const deleteText = (transaction, left, right, currentAttributes, length) => {
-  const startAttrs = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["copy"])(currentAttributes);
-  const start = right;
-  while (length > 0 && right !== null) {
-    if (right.deleted === false) {
-      switch (right.content.constructor) {
-        case ContentFormat:
-          updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (right.content));
-          break
+const deleteText = (transaction, currPos, length) => {
+  const startLength = length;
+  const startAttrs = Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["copy"])(currPos.currentAttributes);
+  const start = currPos.right;
+  while (length > 0 && currPos.right !== null) {
+    if (currPos.right.deleted === false) {
+      switch (currPos.right.content.constructor) {
         case ContentEmbed:
         case ContentString:
-          if (length < right.length) {
-            getItemCleanStart(transaction, createID(right.id.client, right.id.clock + length));
+          if (length < currPos.right.length) {
+            getItemCleanStart(transaction, createID(currPos.right.id.client, currPos.right.id.clock + length));
           }
-          length -= right.length;
-          right.delete(transaction);
+          length -= currPos.right.length;
+          currPos.right.delete(transaction);
           break
       }
     }
-    left = right;
-    right = right.right;
+    currPos.forward();
   }
   if (start) {
-    cleanupFormattingGap(transaction, start, right, startAttrs, Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["copy"])(currentAttributes));
+    cleanupFormattingGap(transaction, start, currPos.right, startAttrs, Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["copy"])(currPos.currentAttributes));
   }
-  return { left, right }
+  const parent = /** @type {AbstractType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent);
+  if (parent._searchMarker) {
+    updateMarkerChanges(parent._searchMarker, currPos.index, -startLength + length);
+  }
+  return currPos
 };
 
 /**
@@ -52698,11 +49834,11 @@ class YTextEvent extends YEvent {
                 op = { insert };
                 if (currentAttributes.size > 0) {
                   op.attributes = {};
-                  for (const [key, value] of currentAttributes) {
+                  currentAttributes.forEach((value, key) => {
                     if (value !== null) {
                       op.attributes[key] = value;
                     }
-                  }
+                  });
                 }
                 insert = '';
                 break
@@ -52860,6 +49996,10 @@ class YText extends AbstractType {
      * @type {Array<function():void>?}
      */
     this._pending = string !== undefined ? [() => this.insert(0, string)] : [];
+    /**
+     * @type {Array<ArraySearchMarker>}
+     */
+    this._searchMarker = [];
   }
 
   /**
@@ -52896,20 +50036,20 @@ class YText extends AbstractType {
    * @param {Set<null|string>} parentSubs Keys changed on this type. `null` if list was modified.
    */
   _callObserver (transaction, parentSubs) {
+    super._callObserver(transaction, parentSubs);
     const event = new YTextEvent(this, transaction);
     const doc = transaction.doc;
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
       // check if another formatting item was inserted
       let foundFormattingItem = false;
-      for (const [client, afterClock] of transaction.afterState) {
+      for (const [client, afterClock] of transaction.afterState.entries()) {
         const clock = transaction.beforeState.get(client) || 0;
         if (afterClock === clock) {
           continue
         }
         iterateStructs(transaction, /** @type {Array<Item|GC>} */ (doc.store.clients.get(client)), clock, afterClock, item => {
-          // @ts-ignore
-          if (!item.deleted && item.content.constructor === ContentFormat) {
+          if (!item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat) {
             foundFormattingItem = true;
           }
         });
@@ -52917,7 +50057,17 @@ class YText extends AbstractType {
           break
         }
       }
-      transact(doc, t => {
+      if (!foundFormattingItem) {
+        iterateDeletedStructs(transaction, transaction.deleteSet, item => {
+          if (item instanceof GC || foundFormattingItem) {
+            return
+          }
+          if (item.parent === this && item.content.constructor === ContentFormat) {
+            foundFormattingItem = true;
+          }
+        });
+      }
+      transact(doc, (t) => {
         if (foundFormattingItem) {
           // If a formatting item was inserted, we simply clean the whole type.
           // We need to compute currentAttributes for the current position anyway.
@@ -52926,7 +50076,7 @@ class YText extends AbstractType {
           // If no formatting attribute was inserted, we can make due with contextless
           // formatting cleanups.
           // Contextless: it is not necessary to compute currentAttributes for the affected position.
-          iterateDeletedStructs(t, transaction.deleteSet, item => {
+          iterateDeletedStructs(t, t.deleteSet, item => {
             if (item instanceof GC) {
               return
             }
@@ -52974,17 +50124,16 @@ class YText extends AbstractType {
    * Apply a {@link Delta} on this shared YText type.
    *
    * @param {any} delta The changes to apply on this element.
+   * @param {object}  [opts]
+   * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
+   *
    *
    * @public
    */
-  applyDelta (delta) {
+  applyDelta (delta, { sanitize = true } = {}) {
     if (this.doc !== null) {
       transact(this.doc, transaction => {
-        /**
-         * @type {ItemListPosition}
-         */
-        let pos = new ItemListPosition(null, this._start);
-        const currentAttributes = new Map();
+        const currPos = new ItemTextListPosition(null, this._start, 0, new Map());
         for (let i = 0; i < delta.length; i++) {
           const op = delta[i];
           if (op.insert !== undefined) {
@@ -52993,14 +50142,14 @@ class YText extends AbstractType {
             // there is a newline at the end of the content.
             // If we omit this step, clients will see a different number of
             // paragraphs, but nothing bad will happen.
-            const ins = (typeof op.insert === 'string' && i === delta.length - 1 && pos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert;
+            const ins = (!sanitize && typeof op.insert === 'string' && i === delta.length - 1 && currPos.right === null && op.insert.slice(-1) === '\n') ? op.insert.slice(0, -1) : op.insert;
             if (typeof ins !== 'string' || ins.length > 0) {
-              pos = insertText(transaction, this, pos.left, pos.right, currentAttributes, ins, op.attributes || {});
+              insertText(transaction, this, currPos, ins, op.attributes || {});
             }
           } else if (op.retain !== undefined) {
-            pos = formatText(transaction, this, pos.left, pos.right, currentAttributes, op.retain, op.attributes || {});
+            formatText(transaction, this, currPos, op.retain, op.attributes || {});
           } else if (op.delete !== undefined) {
-            pos = deleteText(transaction, pos.left, pos.right, currentAttributes, op.delete);
+            deleteText(transaction, currPos, op.delete);
           }
         }
       });
@@ -53036,10 +50185,10 @@ class YText extends AbstractType {
          */
         const attributes = {};
         let addAttributes = false;
-        for (const [key, value] of currentAttributes) {
+        currentAttributes.forEach((value, key) => {
           addAttributes = true;
           attributes[key] = value;
-        }
+        });
         /**
          * @type {Object<string,any>}
          */
@@ -53093,9 +50242,9 @@ class YText extends AbstractType {
               if (currentAttributes.size > 0) {
                 const attrs = /** @type {Object<string,any>} */ ({});
                 op.attributes = attrs;
-                for (const [key, value] of currentAttributes) {
+                currentAttributes.forEach((value, key) => {
                   attrs[key] = value;
-                }
+                });
               }
               ops.push(op);
               break
@@ -53132,13 +50281,13 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, this, index);
+        const pos = findPosition(transaction, this, index);
         if (!attributes) {
           attributes = {};
           // @ts-ignore
-          currentAttributes.forEach((v, k) => { attributes[k] = v; });
+          pos.currentAttributes.forEach((v, k) => { attributes[k] = v; });
         }
-        insertText(transaction, this, left, right, currentAttributes, text, attributes);
+        insertText(transaction, this, pos, text, attributes);
       });
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.insert(index, text, attributes));
@@ -53162,8 +50311,8 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, this, index);
-        insertText(transaction, this, left, right, currentAttributes, embed, attributes);
+        const pos = findPosition(transaction, this, index);
+        insertText(transaction, this, pos, embed, attributes);
       });
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes));
@@ -53185,8 +50334,7 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, this, index);
-        deleteText(transaction, left, right, currentAttributes, length);
+        deleteText(transaction, findPosition(transaction, this, index), length);
       });
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length));
@@ -53210,11 +50358,11 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const { left, right, currentAttributes } = findPosition(transaction, this, index);
-        if (right === null) {
+        const pos = findPosition(transaction, this, index);
+        if (pos.right === null) {
           return
         }
-        formatText(transaction, this, left, right, currentAttributes, length, attributes);
+        formatText(transaction, this, pos, length, attributes);
       });
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.format(index, length, attributes));
@@ -53222,15 +50370,15 @@ class YText extends AbstractType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YTextRefID);
+    encoder.writeTypeRef(YTextRefID);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YText}
  *
  * @private
@@ -53270,7 +50418,7 @@ const readYText = decoder => new YText();
  * Can be created with {@link YXmlFragment#createTreeWalker}
  *
  * @public
- * @implements {IterableIterator}
+ * @implements {Iterable<YXmlElement|YXmlText|YXmlElement|YXmlHook>}
  */
 class YXmlTreeWalker {
   /**
@@ -53303,10 +50451,10 @@ class YXmlTreeWalker {
      * @type {Item|null}
      */
     let n = this._currentNode;
-    let type = /** @type {ContentType} */ (n.content).type;
+    let type = /** @type {any} */ (n.content).type;
     if (n !== null && (!this._firstCall || n.deleted || !this._filter(type))) { // if first call, we check if we can use the first item
       do {
-        type = /** @type {ContentType} */ (n.content).type;
+        type = /** @type {any} */ (n.content).type;
         if (!n.deleted && (type.constructor === YXmlElement || type.constructor === YXmlFragment) && type._start !== null) {
           // walk down in the tree
           n = type._start;
@@ -53319,7 +50467,7 @@ class YXmlTreeWalker {
             } else if (n.parent === this._root) {
               n = null;
             } else {
-              n = n.parent._item;
+              n = /** @type {AbstractType<any>} */ (n.parent)._item;
             }
           }
         }
@@ -53547,15 +50695,15 @@ class YXmlFragment extends AbstractType {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YXmlFragmentRefID);
+    encoder.writeTypeRef(YXmlFragmentRefID);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlFragment}
  *
  * @private
@@ -53730,21 +50878,21 @@ class YXmlElement extends YXmlFragment {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YXmlElementRefID);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, this.nodeName);
+    encoder.writeTypeRef(YXmlElementRefID);
+    encoder.writeKey(this.nodeName);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlElement}
  *
  * @function
  */
-const readYXmlElement = decoder => new YXmlElement(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder));
+const readYXmlElement = decoder => new YXmlElement(decoder.readKey());
 
 /**
  * An Event that describes changes on a YXml Element or Yxml Fragment
@@ -53840,24 +50988,23 @@ class YXmlHook extends YMap {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    */
   _write (encoder) {
-    super._write(encoder);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YXmlHookRefID);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, this.hookName);
+    encoder.writeTypeRef(YXmlHookRefID);
+    encoder.writeKey(this.hookName);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlHook}
  *
  * @private
  * @function
  */
 const readYXmlHook = decoder =>
-  new YXmlHook(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder));
+  new YXmlHook(decoder.readKey());
 
 /**
  * Represents text in a Dom Element. In the future this type will also handle
@@ -53933,15 +51080,15 @@ class YXmlText extends YText {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, YXmlTextRefID);
+    encoder.writeTypeRef(YXmlTextRefID);
   }
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {YXmlText}
  *
  * @private
@@ -53955,14 +51102,15 @@ class AbstractStruct {
    * @param {number} length
    */
   constructor (id, length) {
-    /**
-     * The uniqe identifier of this struct.
-     * @type {ID}
-     * @readonly
-     */
     this.id = id;
     this.length = length;
-    this.deleted = false;
+  }
+
+  /**
+   * @type {boolean}
+   */
+  get deleted () {
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
@@ -53977,54 +51125,20 @@ class AbstractStruct {
   }
 
   /**
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    * @param {number} offset
    * @param {number} encodingRef
    */
   write (encoder, offset, encodingRef) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
    * @param {Transaction} transaction
-   */
-  integrate (transaction) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
-  }
-}
-
-class AbstractStructRef {
-  /**
-   * @param {ID} id
-   */
-  constructor (id) {
-    /**
-     * @type {Array<ID>}
-     */
-    this._missing = [];
-    /**
-     * The uniqe identifier of this type.
-     * @type {ID}
-     */
-    this.id = id;
-  }
-
-  /**
-   * @param {Transaction} transaction
-   * @return {Array<ID|null>}
-   */
-  getMissing (transaction) {
-    return this._missing
-  }
-
-  /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
    * @param {number} offset
-   * @return {AbstractStruct}
    */
-  toStruct (transaction, store, offset) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+  integrate (transaction, offset) {
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 }
 
@@ -54034,13 +51148,8 @@ const structGCRefNumber = 0;
  * @private
  */
 class GC extends AbstractStruct {
-  /**
-   * @param {ID} id
-   * @param {number} length
-   */
-  constructor (id, length) {
-    super(id, length);
-    this.deleted = true;
+  get deleted () {
+    return true
   }
 
   delete () {}
@@ -54056,54 +51165,32 @@ class GC extends AbstractStruct {
 
   /**
    * @param {Transaction} transaction
+   * @param {number} offset
    */
-  integrate (transaction) {
+  integrate (transaction, offset) {
+    if (offset > 0) {
+      this.id.clock += offset;
+      this.length -= offset;
+    }
     addStruct(transaction.doc.store, this);
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeUint8"])(encoder, structGCRefNumber);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, this.length - offset);
-  }
-}
-
-/**
- * @private
- */
-class GCRef extends AbstractStructRef {
-  /**
-   * @param {decoding.Decoder} decoder
-   * @param {ID} id
-   * @param {number} info
-   */
-  constructor (decoder, id, info) {
-    super(id);
-    /**
-     * @type {number}
-     */
-    this.length = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+    encoder.writeInfo(structGCRefNumber);
+    encoder.writeLen(this.length - offset);
   }
 
   /**
    * @param {Transaction} transaction
    * @param {StructStore} store
-   * @param {number} offset
-   * @return {GC}
+   * @return {null | number}
    */
-  toStruct (transaction, store, offset) {
-    if (offset > 0) {
-      // @ts-ignore
-      this.id = createID(this.id.client, this.id.clock + offset);
-      this.length -= offset;
-    }
-    return new GC(
-      this.id,
-      this.length
-    )
+  getMissing (transaction, store) {
+    return null
   }
 }
 
@@ -54148,7 +51235,7 @@ class ContentBinary {
    * @return {ContentBinary}
    */
   splice (offset) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
@@ -54173,11 +51260,11 @@ class ContentBinary {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint8Array"])(encoder, this.content);
+    encoder.writeBuf(this.content);
   }
 
   /**
@@ -54189,10 +51276,10 @@ class ContentBinary {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentBinary}
  */
-const readContentBinary = decoder => new ContentBinary(Object(lib0_buffer_js__WEBPACK_IMPORTED_MODULE_15__["copyUint8Array"])(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint8Array"])(decoder)));
+const readContentBinary = decoder => new ContentBinary(decoder.readBuf());
 
 class ContentDeleted {
   /**
@@ -54254,8 +51341,8 @@ class ContentDeleted {
    * @param {Item} item
    */
   integrate (transaction, item) {
-    addToDeleteSet(transaction.deleteSet, item.id, this.len);
-    item.deleted = true;
+    addToDeleteSet(transaction.deleteSet, item.id.client, item.id.clock, this.len);
+    item.markDeleted();
   }
 
   /**
@@ -54267,11 +51354,11 @@ class ContentDeleted {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, this.len - offset);
+    encoder.writeLen(this.len - offset);
   }
 
   /**
@@ -54285,10 +51372,10 @@ class ContentDeleted {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentDeleted}
  */
-const readContentDeleted = decoder => new ContentDeleted(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder));
+const readContentDeleted = decoder => new ContentDeleted(decoder.readLen());
 
 /**
  * @private
@@ -54334,7 +51421,7 @@ class ContentEmbed {
    * @return {ContentEmbed}
    */
   splice (offset) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
@@ -54359,11 +51446,11 @@ class ContentEmbed {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, JSON.stringify(this.embed));
+    encoder.writeJSON(this.embed);
   }
 
   /**
@@ -54377,10 +51464,10 @@ class ContentEmbed {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentEmbed}
  */
-const readContentEmbed = decoder => new ContentEmbed(JSON.parse(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder)));
+const readContentEmbed = decoder => new ContentEmbed(decoder.readJSON());
 
 /**
  * @private
@@ -54428,7 +51515,7 @@ class ContentFormat {
    * @return {ContentFormat}
    */
   splice (offset) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
@@ -54443,7 +51530,11 @@ class ContentFormat {
    * @param {Transaction} transaction
    * @param {Item} item
    */
-  integrate (transaction, item) {}
+  integrate (transaction, item) {
+    // @todo searchmarker are currently unsupported for rich text documents
+    /** @type {AbstractType<any>} */ (item.parent)._searchMarker = null;
+  }
+
   /**
    * @param {Transaction} transaction
    */
@@ -54453,12 +51544,12 @@ class ContentFormat {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, this.key);
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, JSON.stringify(this.value));
+    encoder.writeKey(this.key);
+    encoder.writeJSON(this.value);
   }
 
   /**
@@ -54470,10 +51561,10 @@ class ContentFormat {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentFormat}
  */
-const readContentFormat = decoder => new ContentFormat(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder), JSON.parse(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder)));
+const readContentFormat = decoder => new ContentFormat(decoder.readString(), decoder.readJSON());
 
 /**
  * @private
@@ -54550,15 +51641,15 @@ class ContentJSON {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     const len = this.arr.length;
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, len - offset);
+    encoder.writeLen(len - offset);
     for (let i = offset; i < len; i++) {
       const c = this.arr[i];
-      Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, c === undefined ? 'undefined' : JSON.stringify(c));
+      encoder.writeString(c === undefined ? 'undefined' : JSON.stringify(c));
     }
   }
 
@@ -54573,14 +51664,14 @@ class ContentJSON {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentJSON}
  */
 const readContentJSON = decoder => {
-  const len = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+  const len = decoder.readLen();
   const cs = [];
   for (let i = 0; i < len; i++) {
-    const c = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder);
+    const c = decoder.readString();
     if (c === 'undefined') {
       cs.push(undefined);
     } else {
@@ -54662,15 +51753,15 @@ class ContentAny {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
     const len = this.arr.length;
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, len - offset);
+    encoder.writeLen(len - offset);
     for (let i = offset; i < len; i++) {
       const c = this.arr[i];
-      Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeAny"])(encoder, c);
+      encoder.writeAny(c);
     }
   }
 
@@ -54683,14 +51774,14 @@ class ContentAny {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentAny}
  */
 const readContentAny = decoder => {
-  const len = Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder);
+  const len = decoder.readLen();
   const cs = [];
   for (let i = 0; i < len; i++) {
-    cs.push(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readAny"])(decoder));
+    cs.push(decoder.readAny());
   }
   return new ContentAny(cs)
 };
@@ -54770,11 +51861,11 @@ class ContentString {
    */
   gc (store) {}
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, offset === 0 ? this.str : this.str.slice(offset));
+    encoder.writeString(offset === 0 ? this.str : this.str.slice(offset));
   }
 
   /**
@@ -54788,13 +51879,13 @@ class ContentString {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentString}
  */
-const readContentString = decoder => new ContentString(Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder));
+const readContentString = decoder => new ContentString(decoder.readString());
 
 /**
- * @type {Array<function(decoding.Decoder):AbstractType<any>>}
+ * @type {Array<function(AbstractUpdateDecoder):AbstractType<any>>}
  * @private
  */
 const typeRefs = [
@@ -54862,7 +51953,7 @@ class ContentType {
    * @return {ContentType}
    */
   splice (offset) {
-    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["methodUnimplemented"])()
+    throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["methodUnimplemented"])()
   }
 
   /**
@@ -54894,7 +51985,7 @@ class ContentType {
         // We try to merge all deleted items after each transaction,
         // but we have no knowledge about that this needs to be merged
         // since it is not in transaction.ds. Hence we add it to transaction._mergeStructs
-        transaction._mergeStructs.add(item.id);
+        transaction._mergeStructs.push(item);
       }
       item = item.right;
     }
@@ -54903,7 +51994,7 @@ class ContentType {
         item.delete(transaction);
       } else {
         // same as above
-        transaction._mergeStructs.add(item.id);
+        transaction._mergeStructs.push(item);
       }
     });
     transaction.changed.delete(this.type);
@@ -54929,7 +52020,7 @@ class ContentType {
   }
 
   /**
-   * @param {encoding.Encoder} encoder
+   * @param {AbstractUpdateEncoder} encoder
    * @param {number} offset
    */
   write (encoder, offset) {
@@ -54947,10 +52038,10 @@ class ContentType {
 /**
  * @private
  *
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @return {ContentType}
  */
-const readContentType = decoder => new ContentType(typeRefs[Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder)](decoder));
+const readContentType = decoder => new ContentType(typeRefs[decoder.readTypeRef()](decoder));
 
 /**
  * @todo This should return several items
@@ -54991,7 +52082,7 @@ const followRedone = (store, id) => {
 const keepItem = (item, keep) => {
   while (item !== null && item.keep !== keep) {
     item.keep = keep;
-    item = item.parent._item;
+    item = /** @type {AbstractType<any>} */ (item.parent)._item;
   }
 };
 
@@ -55006,12 +52097,12 @@ const keepItem = (item, keep) => {
  * @private
  */
 const splitItem = (transaction, leftItem, diff) => {
-  const id = leftItem.id;
   // create rightItem
+  const { client, clock } = leftItem.id;
   const rightItem = new Item(
-    createID(id.client, id.clock + diff),
+    createID(client, clock + diff),
     leftItem,
-    createID(id.client, id.clock + diff - 1),
+    createID(client, clock + diff - 1),
     leftItem.right,
     leftItem.rightOrigin,
     leftItem.parent,
@@ -55019,7 +52110,7 @@ const splitItem = (transaction, leftItem, diff) => {
     leftItem.content.splice(diff)
   );
   if (leftItem.deleted) {
-    rightItem.deleted = true;
+    rightItem.markDeleted();
   }
   if (leftItem.keep) {
     rightItem.keep = true;
@@ -55034,10 +52125,10 @@ const splitItem = (transaction, leftItem, diff) => {
     rightItem.right.left = rightItem;
   }
   // right is more specific.
-  transaction._mergeStructs.add(rightItem.id);
+  transaction._mergeStructs.push(rightItem);
   // update parent._map
   if (rightItem.parentSub !== null && rightItem.right === null) {
-    rightItem.parent._map.set(rightItem.parentSub, rightItem);
+    /** @type {AbstractType<any>} */ (rightItem.parent)._map.set(rightItem.parentSub, rightItem);
   }
   leftItem.length = diff;
   return rightItem
@@ -55055,10 +52146,14 @@ const splitItem = (transaction, leftItem, diff) => {
  * @private
  */
 const redoItem = (transaction, item, redoitems) => {
-  if (item.redone !== null) {
-    return getItemCleanStart(transaction, item.redone)
+  const doc = transaction.doc;
+  const store = doc.store;
+  const ownClientID = doc.clientID;
+  const redone = item.redone;
+  if (redone !== null) {
+    return getItemCleanStart(transaction, redone)
   }
-  let parentItem = item.parent._item;
+  let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item;
   /**
    * @type {Item|null}
    */
@@ -55076,14 +52171,14 @@ const redoItem = (transaction, item, redoitems) => {
     left = item;
     while (left.right !== null) {
       left = left.right;
-      if (left.id.client !== transaction.doc.clientID) {
+      if (left.id.client !== ownClientID) {
         // It is not possible to redo this item because it conflicts with a
         // change from another client
         return null
       }
     }
     if (left.right !== null) {
-      left = /** @type {Item} */ (item.parent._map.get(item.parentSub));
+      left = /** @type {Item} */ (/** @type {AbstractType<any>} */ (item.parent)._map.get(item.parentSub));
     }
     right = null;
   }
@@ -55105,10 +52200,10 @@ const redoItem = (transaction, item, redoitems) => {
        */
       let leftTrace = left;
       // trace redone until parent matches
-      while (leftTrace !== null && leftTrace.parent._item !== parentItem) {
+      while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
         leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone);
       }
-      if (leftTrace !== null && leftTrace.parent._item === parentItem) {
+      if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace;
         break
       }
@@ -55120,27 +52215,29 @@ const redoItem = (transaction, item, redoitems) => {
        */
       let rightTrace = right;
       // trace redone until parent matches
-      while (rightTrace !== null && rightTrace.parent._item !== parentItem) {
+      while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone);
       }
-      if (rightTrace !== null && rightTrace.parent._item === parentItem) {
+      if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace;
         break
       }
       right = right.right;
     }
   }
+  const nextClock = getState(store, ownClientID);
+  const nextId = createID(ownClientID, nextClock);
   const redoneItem = new Item(
-    nextID(transaction),
-    left, left === null ? null : left.lastId,
-    right, right === null ? null : right.id,
+    nextId,
+    left, left && left.lastId,
+    right, right && right.id,
     parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type,
     item.parentSub,
     item.content.copy()
   );
-  item.redone = redoneItem.id;
+  item.redone = nextId;
   keepItem(redoneItem, true);
-  redoneItem.integrate(transaction);
+  redoneItem.integrate(transaction, 0);
   return redoneItem
 };
 
@@ -55154,7 +52251,7 @@ class Item extends AbstractStruct {
    * @param {ID | null} origin
    * @param {Item | null} right
    * @param {ID | null} rightOrigin
-   * @param {AbstractType<any>} parent
+   * @param {AbstractType<any>|ID|null} parent Is a type if integrated, is null if it is possible to copy parent from left or right, is ID before integration to search for it.
    * @param {string | null} parentSub
    * @param {AbstractContent} content
    */
@@ -55163,7 +52260,6 @@ class Item extends AbstractStruct {
     /**
      * The item that was originally to the left of this item.
      * @type {ID | null}
-     * @readonly
      */
     this.origin = origin;
     /**
@@ -55178,14 +52274,11 @@ class Item extends AbstractStruct {
     this.right = right;
     /**
      * The item that was originally to the right of this item.
-     * @readonly
      * @type {ID | null}
      */
     this.rightOrigin = rightOrigin;
     /**
-     * The parent type.
-     * @type {AbstractType<any>}
-     * @readonly
+     * @type {AbstractType<any>|ID|null}
      */
     this.parent = parent;
     /**
@@ -55194,14 +52287,8 @@ class Item extends AbstractStruct {
      * to insert this item. If `parentSub = null` type._start is the list in
      * which to insert to. Otherwise it is `parent._map`.
      * @type {String | null}
-     * @readonly
      */
     this.parentSub = parentSub;
-    /**
-     * Whether this item was deleted or not.
-     * @type {Boolean}
-     */
-    this.deleted = false;
     /**
      * If this type's effect is reundone this type refers to the type that undid
      * this operation.
@@ -55212,109 +52299,235 @@ class Item extends AbstractStruct {
      * @type {AbstractContent}
      */
     this.content = content;
-    this.length = content.getLength();
-    this.countable = content.isCountable();
     /**
-     * If true, do not garbage collect this Item.
+     * bit1: keep
+     * bit2: countable
+     * bit3: deleted
+     * bit4: mark - mark node as fast-search-marker
+     * @type {number} byte
      */
-    this.keep = false;
+    this.info = this.content.isCountable() ? lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT2"] : 0;
+  }
+
+  /**
+   * This is used to mark the item as an indexed fast-search marker
+   *
+   * @type {boolean}
+   */
+  set marker (isMarked) {
+    if (((this.info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT4"]) > 0) !== isMarked) {
+      this.info ^= lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT4"];
+    }
+  }
+
+  get marker () {
+    return (this.info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT4"]) > 0
+  }
+
+  /**
+   * If true, do not garbage collect this Item.
+   */
+  get keep () {
+    return (this.info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT1"]) > 0
+  }
+
+  set keep (doKeep) {
+    if (this.keep !== doKeep) {
+      this.info ^= lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT1"];
+    }
+  }
+
+  get countable () {
+    return (this.info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT2"]) > 0
+  }
+
+  /**
+   * Whether this item was deleted or not.
+   * @type {Boolean}
+   */
+  get deleted () {
+    return (this.info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT3"]) > 0
+  }
+
+  set deleted (doDelete) {
+    if (this.deleted !== doDelete) {
+      this.info ^= lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT3"];
+    }
+  }
+
+  markDeleted () {
+    this.info |= lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT3"];
+  }
+
+  /**
+   * Return the creator clientID of the missing op or define missing items and return null.
+   *
+   * @param {Transaction} transaction
+   * @param {StructStore} store
+   * @return {null | number}
+   */
+  getMissing (transaction, store) {
+    if (this.origin && this.origin.client !== this.id.client && this.origin.clock >= getState(store, this.origin.client)) {
+      return this.origin.client
+    }
+    if (this.rightOrigin && this.rightOrigin.client !== this.id.client && this.rightOrigin.clock >= getState(store, this.rightOrigin.client)) {
+      return this.rightOrigin.client
+    }
+    if (this.parent && this.parent.constructor === ID && this.id.client !== this.parent.client && this.parent.clock >= getState(store, this.parent.client)) {
+      return this.parent.client
+    }
+
+    // We have all missing ids, now find the items
+
+    if (this.origin) {
+      this.left = getItemCleanEnd(transaction, store, this.origin);
+      this.origin = this.left.lastId;
+    }
+    if (this.rightOrigin) {
+      this.right = getItemCleanStart(transaction, this.rightOrigin);
+      this.rightOrigin = this.right.id;
+    }
+    if ((this.left && this.left.constructor === GC) || (this.right && this.right.constructor === GC)) {
+      this.parent = null;
+    }
+    // only set parent if this shouldn't be garbage collected
+    if (!this.parent) {
+      if (this.left && this.left.constructor === Item) {
+        this.parent = this.left.parent;
+        this.parentSub = this.left.parentSub;
+      }
+      if (this.right && this.right.constructor === Item) {
+        this.parent = this.right.parent;
+        this.parentSub = this.right.parentSub;
+      }
+    } else if (this.parent.constructor === ID) {
+      const parentItem = getItem(store, this.parent);
+      if (parentItem.constructor === GC) {
+        this.parent = null;
+      } else {
+        this.parent = /** @type {ContentType} */ (parentItem.content).type;
+      }
+    }
+    return null
   }
 
   /**
    * @param {Transaction} transaction
+   * @param {number} offset
    */
-  integrate (transaction) {
-    const store = transaction.doc.store;
-    const id = this.id;
-    const parent = this.parent;
-    const parentSub = this.parentSub;
-    const length = this.length;
-    /**
-     * @type {Item|null}
-     */
-    let o;
-    // set o to the first conflicting item
-    if (this.left !== null) {
-      o = this.left.right;
-    } else if (parentSub !== null) {
-      o = parent._map.get(parentSub) || null;
-      while (o !== null && o.left !== null) {
-        o = o.left;
-      }
-    } else {
-      o = parent._start;
+  integrate (transaction, offset) {
+    if (offset > 0) {
+      this.id.clock += offset;
+      this.left = getItemCleanEnd(transaction, transaction.doc.store, createID(this.id.client, this.id.clock - 1));
+      this.origin = this.left.lastId;
+      this.content = this.content.splice(offset);
+      this.length -= offset;
     }
-    // TODO: use something like DeleteSet here (a tree implementation would be best)
-    /**
-     * @type {Set<Item>}
-     */
-    const conflictingItems = new Set();
-    /**
-     * @type {Set<Item>}
-     */
-    const itemsBeforeOrigin = new Set();
-    // Let c in conflictingItems, b in itemsBeforeOrigin
-    // ***{origin}bbbb{this}{c,b}{c,b}{o}***
-    // Note that conflictingItems is a subset of itemsBeforeOrigin
-    while (o !== null && o !== this.right) {
-      itemsBeforeOrigin.add(o);
-      conflictingItems.add(o);
-      if (compareIDs(this.origin, o.origin)) {
-        // case 1
-        if (o.id.client < id.client) {
-          this.left = o;
-          conflictingItems.clear();
+
+    if (this.parent) {
+      if ((!this.left && (!this.right || this.right.left !== null)) || (this.left && this.left.right !== this.right)) {
+        /**
+         * @type {Item|null}
+         */
+        let left = this.left;
+
+        /**
+         * @type {Item|null}
+         */
+        let o;
+        // set o to the first conflicting item
+        if (left !== null) {
+          o = left.right;
+        } else if (this.parentSub !== null) {
+          o = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+          while (o !== null && o.left !== null) {
+            o = o.left;
+          }
+        } else {
+          o = /** @type {AbstractType<any>} */ (this.parent)._start;
         }
-      } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(store, o.origin))) {
-        // case 2
-        if (o.origin === null || !conflictingItems.has(getItem(store, o.origin))) {
-          this.left = o;
-          conflictingItems.clear();
+        // TODO: use something like DeleteSet here (a tree implementation would be best)
+        // @todo use global set definitions
+        /**
+         * @type {Set<Item>}
+         */
+        const conflictingItems = new Set();
+        /**
+         * @type {Set<Item>}
+         */
+        const itemsBeforeOrigin = new Set();
+        // Let c in conflictingItems, b in itemsBeforeOrigin
+        // ***{origin}bbbb{this}{c,b}{c,b}{o}***
+        // Note that conflictingItems is a subset of itemsBeforeOrigin
+        while (o !== null && o !== this.right) {
+          itemsBeforeOrigin.add(o);
+          conflictingItems.add(o);
+          if (compareIDs(this.origin, o.origin)) {
+            // case 1
+            if (o.id.client < this.id.client) {
+              left = o;
+              conflictingItems.clear();
+            } else if (compareIDs(this.rightOrigin, o.rightOrigin)) {
+              // this and o are conflicting and point to the same integration points. The id decides which item comes first.
+              // Since this is to the left of o, we can break here
+              break
+            } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
+          } else if (o.origin !== null && itemsBeforeOrigin.has(getItem(transaction.doc.store, o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
+            // case 2
+            if (!conflictingItems.has(getItem(transaction.doc.store, o.origin))) {
+              left = o;
+              conflictingItems.clear();
+            }
+          } else {
+            break
+          }
+          o = o.right;
         }
-      } else {
-        break
+        this.left = left;
       }
-      o = o.right;
-    }
-    // reconnect left/right + update parent map/start if necessary
-    if (this.left !== null) {
-      const right = this.left.right;
-      this.right = right;
-      this.left.right = this;
-    } else {
-      let r;
-      if (parentSub !== null) {
-        r = parent._map.get(parentSub) || null;
-        while (r !== null && r.left !== null) {
-          r = r.left;
-        }
-      } else {
-        r = parent._start;
-        parent._start = this;
-      }
-      this.right = r;
-    }
-    if (this.right !== null) {
-      this.right.left = this;
-    } else if (parentSub !== null) {
-      // set as current parent value if right === null and this is parentSub
-      parent._map.set(parentSub, this);
+      // reconnect left/right + update parent map/start if necessary
       if (this.left !== null) {
-        // this is the current attribute value of parent. delete right
-        this.left.delete(transaction);
+        const right = this.left.right;
+        this.right = right;
+        this.left.right = this;
+      } else {
+        let r;
+        if (this.parentSub !== null) {
+          r = /** @type {AbstractType<any>} */ (this.parent)._map.get(this.parentSub) || null;
+          while (r !== null && r.left !== null) {
+            r = r.left;
+          }
+        } else {
+          r = /** @type {AbstractType<any>} */ (this.parent)._start
+          ;/** @type {AbstractType<any>} */ (this.parent)._start = this;
+        }
+        this.right = r;
       }
-    }
-    // adjust length of parent
-    if (parentSub === null && this.countable && !this.deleted) {
-      parent._length += length;
-    }
-    addStruct(store, this);
-    this.content.integrate(transaction, this);
-    // add parent to transaction.changed
-    addChangedTypeToTransaction(transaction, parent, parentSub);
-    if ((parent._item !== null && parent._item.deleted) || (this.right !== null && parentSub !== null)) {
-      // delete if parent is deleted or if this is not the current attribute value of parent
-      this.delete(transaction);
+      if (this.right !== null) {
+        this.right.left = this;
+      } else if (this.parentSub !== null) {
+        // set as current parent value if right === null and this is parentSub
+        /** @type {AbstractType<any>} */ (this.parent)._map.set(this.parentSub, this);
+        if (this.left !== null) {
+          // this is the current attribute value of parent. delete right
+          this.left.delete(transaction);
+        }
+      }
+      // adjust length of parent
+      if (this.parentSub === null && this.countable && !this.deleted) {
+        /** @type {AbstractType<any>} */ (this.parent)._length += this.length;
+      }
+      addStruct(transaction.doc.store, this);
+      this.content.integrate(transaction, this);
+      // add parent to transaction.changed
+      addChangedTypeToTransaction(transaction, /** @type {AbstractType<any>} */ (this.parent), this.parentSub);
+      if ((/** @type {AbstractType<any>} */ (this.parent)._item !== null && /** @type {AbstractType<any>} */ (this.parent)._item.deleted) || (this.parentSub !== null && this.right !== null)) {
+        // delete if parent is deleted or if this is not the current attribute value of parent
+        this.delete(transaction);
+      }
+    } else {
+      // parent is not defined. Integrate GC struct instead
+      new GC(this.id, this.length).integrate(transaction, 0);
     }
   }
 
@@ -55344,7 +52557,8 @@ class Item extends AbstractStruct {
    * Computes the last content address of this Item.
    */
   get lastId () {
-    return createID(this.id.client, this.id.clock + this.length - 1)
+    // allocating ids is pretty costly because of the amount of ids created, so we try to reuse whenever possible
+    return this.length === 1 ? this.id : createID(this.id.client, this.id.clock + this.length - 1)
   }
 
   /**
@@ -55386,14 +52600,14 @@ class Item extends AbstractStruct {
    */
   delete (transaction) {
     if (!this.deleted) {
-      const parent = this.parent;
+      const parent = /** @type {AbstractType<any>} */ (this.parent);
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length;
       }
-      this.deleted = true;
-      addToDeleteSet(transaction.deleteSet, this.id, this.length);
-      Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_2__["setIfUndefined"])(transaction.changed, parent, lib0_set_js__WEBPACK_IMPORTED_MODULE_10__["create"]).add(this.parentSub);
+      this.markDeleted();
+      addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length);
+      Object(lib0_map_js__WEBPACK_IMPORTED_MODULE_3__["setIfUndefined"])(transaction.changed, parent, lib0_set_js__WEBPACK_IMPORTED_MODULE_11__["create"]).add(this.parentSub);
       this.content.delete(transaction);
     }
   }
@@ -55404,7 +52618,7 @@ class Item extends AbstractStruct {
    */
   gc (store, parentGCd) {
     if (!this.deleted) {
-      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
+      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])()
     }
     this.content.gc(store);
     if (parentGCd) {
@@ -55420,38 +52634,39 @@ class Item extends AbstractStruct {
    *
    * This is called when this Item is sent to a remote peer.
    *
-   * @param {encoding.Encoder} encoder The encoder to write data to.
+   * @param {AbstractUpdateEncoder} encoder The encoder to write data to.
    * @param {number} offset
    */
   write (encoder, offset) {
     const origin = offset > 0 ? createID(this.id.client, this.id.clock + offset - 1) : this.origin;
     const rightOrigin = this.rightOrigin;
     const parentSub = this.parentSub;
-    const info = (this.content.getRef() & lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BITS5"]) |
-      (origin === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT8"]) | // origin is defined
-      (rightOrigin === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT7"]) | // right origin is defined
-      (parentSub === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT6"]); // parentSub is non-null
-    Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeUint8"])(encoder, info);
+    const info = (this.content.getRef() & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BITS5"]) |
+      (origin === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT8"]) | // origin is defined
+      (rightOrigin === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT7"]) | // right origin is defined
+      (parentSub === null ? 0 : lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BIT6"]); // parentSub is non-null
+    encoder.writeInfo(info);
     if (origin !== null) {
-      writeID(encoder, origin);
+      encoder.writeLeftID(origin);
     }
     if (rightOrigin !== null) {
-      writeID(encoder, rightOrigin);
+      encoder.writeRightID(rightOrigin);
     }
     if (origin === null && rightOrigin === null) {
-      const parent = this.parent;
-      if (parent._item === null) {
+      const parent = /** @type {AbstractType<any>} */ (this.parent);
+      const parentItem = parent._item;
+      if (parentItem === null) {
         // parent type on y._map
         // find the correct key
         const ykey = findRootTypeKey(parent);
-        Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, 1); // write parentYKey
-        Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, ykey);
+        encoder.writeParentInfo(true); // write parentYKey
+        encoder.writeString(ykey);
       } else {
-        Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarUint"])(encoder, 0); // write parent id
-        writeID(encoder, parent._item.id);
+        encoder.writeParentInfo(false); // write parent id
+        encoder.writeLeftID(parentItem.id);
       }
       if (parentSub !== null) {
-        Object(lib0_encoding_js__WEBPACK_IMPORTED_MODULE_3__["writeVarString"])(encoder, parentSub);
+        encoder.writeString(parentSub);
       }
     }
     this.content.write(encoder, offset);
@@ -55459,18 +52674,18 @@ class Item extends AbstractStruct {
 }
 
 /**
- * @param {decoding.Decoder} decoder
+ * @param {AbstractUpdateDecoder} decoder
  * @param {number} info
  */
-const readItemContent = (decoder, info) => contentRefs[info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BITS5"]](decoder);
+const readItemContent = (decoder, info) => contentRefs[info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_9__["BITS5"]](decoder);
 
 /**
  * A lookup map for reading Item content.
  *
- * @type {Array<function(decoding.Decoder):AbstractContent>}
+ * @type {Array<function(AbstractUpdateDecoder):AbstractContent>}
  */
 const contentRefs = [
-  () => { throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])() }, // GC is not ItemContent
+  () => { throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_8__["unexpectedCase"])() }, // GC is not ItemContent
   readContentDeleted,
   readContentJSON,
   readContentBinary,
@@ -55480,128 +52695,6 @@ const contentRefs = [
   readContentType,
   readContentAny
 ];
-
-/**
- * @private
- */
-class ItemRef extends AbstractStructRef {
-  /**
-   * @param {decoding.Decoder} decoder
-   * @param {ID} id
-   * @param {number} info
-   */
-  constructor (decoder, id, info) {
-    super(id);
-    /**
-     * The item that was originally to the left of this item.
-     * @type {ID | null}
-     */
-    this.left = (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT8"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT8"] ? readID(decoder) : null;
-    /**
-     * The item that was originally to the right of this item.
-     * @type {ID | null}
-     */
-    this.right = (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT7"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT7"] ? readID(decoder) : null;
-    const canCopyParentInfo = (info & (lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT7"] | lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT8"])) === 0;
-    const hasParentYKey = canCopyParentInfo ? Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarUint"])(decoder) === 1 : false;
-    /**
-     * If parent = null and neither left nor right are defined, then we know that `parent` is child of `y`
-     * and we read the next string as parentYKey.
-     * It indicates how we store/retrieve parent from `y.share`
-     * @type {string|null}
-     */
-    this.parentYKey = canCopyParentInfo && hasParentYKey ? Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder) : null;
-    /**
-     * The parent type.
-     * @type {ID | null}
-     */
-    this.parent = canCopyParentInfo && !hasParentYKey ? readID(decoder) : null;
-    /**
-     * If the parent refers to this item with some kind of key (e.g. YMap, the
-     * key is specified here. The key is then used to refer to the list in which
-     * to insert this item. If `parentSub = null` type._start is the list in
-     * which to insert to. Otherwise it is `parent._map`.
-     * @type {String | null}
-     */
-    this.parentSub = canCopyParentInfo && (info & lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT6"]) === lib0_binary_js__WEBPACK_IMPORTED_MODULE_7__["BIT6"] ? Object(lib0_decoding_js__WEBPACK_IMPORTED_MODULE_4__["readVarString"])(decoder) : null;
-    const missing = this._missing;
-    if (this.left !== null) {
-      missing.push(this.left);
-    }
-    if (this.right !== null) {
-      missing.push(this.right);
-    }
-    if (this.parent !== null) {
-      missing.push(this.parent);
-    }
-    /**
-     * @type {AbstractContent}
-     */
-    this.content = readItemContent(decoder, info);
-    this.length = this.content.getLength();
-  }
-
-  /**
-   * @param {Transaction} transaction
-   * @param {StructStore} store
-   * @param {number} offset
-   * @return {Item|GC}
-   */
-  toStruct (transaction, store, offset) {
-    if (offset > 0) {
-      /**
-       * @type {ID}
-       */
-      const id = this.id;
-      this.id = createID(id.client, id.clock + offset);
-      this.left = createID(this.id.client, this.id.clock - 1);
-      this.content = this.content.splice(offset);
-      this.length -= offset;
-    }
-
-    const left = this.left === null ? null : getItemCleanEnd(transaction, store, this.left);
-    const right = this.right === null ? null : getItemCleanStart(transaction, this.right);
-    let parent = null;
-    let parentSub = this.parentSub;
-    if (this.parent !== null) {
-      const parentItem = getItem(store, this.parent);
-      // Edge case: toStruct is called with an offset > 0. In this case left is defined.
-      // Depending in which order structs arrive, left may be GC'd and the parent not
-      // deleted. This is why we check if left is GC'd. Strictly we don't have
-      // to check if right is GC'd, but we will in case we run into future issues
-      if (!parentItem.deleted && (left === null || left.constructor !== GC) && (right === null || right.constructor !== GC)) {
-        parent = /** @type {ContentType} */ (parentItem.content).type;
-      }
-    } else if (this.parentYKey !== null) {
-      parent = transaction.doc.get(this.parentYKey);
-    } else if (left !== null) {
-      if (left.constructor !== GC) {
-        parent = left.parent;
-        parentSub = left.parentSub;
-      }
-    } else if (right !== null) {
-      if (right.constructor !== GC) {
-        parent = right.parent;
-        parentSub = right.parentSub;
-      }
-    } else {
-      throw Object(lib0_error_js__WEBPACK_IMPORTED_MODULE_9__["unexpectedCase"])()
-    }
-
-    return parent === null
-      ? new GC(this.id, this.length)
-      : new Item(
-        this.id,
-        left,
-        this.left,
-        right,
-        this.right,
-        parent,
-        parentSub,
-        this.content
-      )
-  }
-}
 
 
 //# sourceMappingURL=yjs.mjs.map
