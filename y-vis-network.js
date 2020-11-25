@@ -7,10 +7,9 @@
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import * as vis from 'vis-network/peer/esm/vis-network';
+import * as vis from 'vis-network/peer';
 import { DataSet } from 'vis-data';
-
-import 'vis-network/dist/vis-network.min.css';
+import 'vis-network/styles/vis-network.min.css';
 
 /* 
 Remember to start the WS provider first:
