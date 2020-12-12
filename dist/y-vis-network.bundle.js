@@ -5,10 +5,6 @@
 /*!***************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js!./node_modules/vis-network/styles/vis-network.min.css ***!
   \***************************************************************************************************/
-/*! namespace exports */
-/*! export default [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.n, __webpack_exports__, __webpack_require__.r, module.id, __webpack_require__.d, __webpack_require__.*, module */
 /***/ ((module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -36,9 +32,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, ".vis-overlay{position:absolute;top:0;r
 /*!*****************************************************!*\
   !*** ./node_modules/css-loader/dist/runtime/api.js ***!
   \*****************************************************/
-/*! unknown exports (runtime-defined) */
-/*! runtime requirements: module */
-/*! CommonJS bailout: module.exports is used directly at 9:0-14 */
 /***/ ((module) => {
 
 "use strict";
@@ -115,9 +108,6 @@ module.exports = function (cssWithMappingToString) {
 /*!************************************************************************!*\
   !*** ./node_modules/css-loader/dist/runtime/cssWithMappingToString.js ***!
   \************************************************************************/
-/*! unknown exports (runtime-defined) */
-/*! runtime requirements: module */
-/*! CommonJS bailout: module.exports is used directly at 15:0-14 */
 /***/ ((module) => {
 
 "use strict";
@@ -160,12 +150,6 @@ module.exports = function cssWithMappingToString(item) {
 /*!***************************************************!*\
   !*** ./node_modules/isomorphic.js/iso-browser.js ***!
   \***************************************************/
-/*! default exports */
-/*! export cryptoRandomBuffer [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export default [not provided] [no usage info] [missing usage info prevents renaming] */
-/*! export performance [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_exports__ */
 /***/ ((__unused_webpack_module, exports) => {
 
 /* eslint-env browser */
@@ -204,17 +188,6 @@ exports.cryptoRandomBuffer = cryptoRandomBuffer
 /*!************************************!*\
   !*** ./node_modules/lib0/array.js ***!
   \************************************/
-/*! namespace exports */
-/*! export appendTo [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export copy [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalFlat [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export every [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export from [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export last [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export some [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -319,74 +292,6 @@ const equalFlat = (a, b) => a.length === b.length && every(a, (item, index) => i
 /*!*************************************!*\
   !*** ./node_modules/lib0/binary.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export BIT1 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT10 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT11 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT12 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT13 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT14 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT15 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT17 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT18 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT19 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT20 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT21 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT22 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT23 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT24 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT25 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT26 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT27 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT28 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT29 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT3 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT30 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT31 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT4 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT5 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT6 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT7 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BIT9 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS0 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS1 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS10 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS11 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS12 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS13 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS14 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS15 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS17 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS18 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS19 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS20 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS21 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS22 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS23 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS24 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS25 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS26 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS27 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS28 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS29 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS3 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS30 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS31 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS4 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS5 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS6 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS7 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BITS9 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -556,12 +461,6 @@ const BITS32 = 0xFFFFFFFF
 /*!***********************************************!*\
   !*** ./node_modules/lib0/broadcastchannel.js ***!
   \***********************************************/
-/*! namespace exports */
-/*! export publish [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export subscribe [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export unsubscribe [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -687,17 +586,6 @@ const publish = (room, data) => {
 /*!*************************************!*\
   !*** ./node_modules/lib0/buffer.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export copyUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createUint8ArrayFromArrayBuffer [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createUint8ArrayFromLen [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createUint8ArrayViewFromArrayBuffer [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeAny [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeAny [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export fromBase64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export toBase64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -837,10 +725,6 @@ const decodeAny = buf => _decoding_js__WEBPACK_IMPORTED_MODULE_3__.readAny(_deco
 /*!*****************************************!*\
   !*** ./node_modules/lib0/conditions.js ***!
   \*****************************************/
-/*! namespace exports */
-/*! export undefinedToNull [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -869,43 +753,6 @@ const undefinedToNull = v => v === undefined ? null : v
 /*!***************************************!*\
   !*** ./node_modules/lib0/decoding.js ***!
   \***************************************/
-/*! namespace exports */
-/*! export Decoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IncUintOptRleDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IntDiffDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IntDiffOptRleDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RleDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RleIntDiffDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export StringDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export UintOptRleDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export clone [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export hasContent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekUint16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekUint32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekUint8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekVarInt [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekVarString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peekVarUint [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readAny [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readBigInt64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readBigUint64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readFloat32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readFloat64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readFromDataView [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readTailAsUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUint16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUint32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUint32BigEndian [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUint8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readVarInt [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readVarString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readVarUint [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readVarUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export skip8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -1602,47 +1449,6 @@ class StringDecoder {
 /*!**********************************!*\
   !*** ./node_modules/lib0/dom.js ***!
   \**********************************/
-/*! namespace exports */
-/*! export CDATA_SECTION_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export COMMENT_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DOCUMENT_FRAGMENT_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DOCUMENT_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DOCUMENT_TYPE_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ELEMENT_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export TEXT_NODE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export addEventListener [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export addEventListeners [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export append [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export appendChild [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export canvas [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export checkNodeType [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDocumentFragment [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createElement [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createTextNode [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export doc [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export domParser [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export element [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export emitCustomEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export fragment [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getElementById [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export insertBefore [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isParentOf [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export mapToStyleString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export pairToStyleString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export pairsToStyleString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export parseElement [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export parseFragment [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export querySelector [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export querySelectorAll [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export remove [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export removeEventListener [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export removeEventListeners [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export replaceWith [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setAttributes [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setAttributesMap [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export text [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -1988,41 +1794,6 @@ const isParentOf = (parent, child) => {
 /*!***************************************!*\
   !*** ./node_modules/lib0/encoding.js ***!
   \***************************************/
-/*! namespace exports */
-/*! export Encoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IncUintOptRleEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IntDiffEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export IntDiffOptRleEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RleEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RleIntDiffEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export StringEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export UintOptRleEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export length [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export set [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setUint16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setUint32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setUint8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export toUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export write [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeAny [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeBigInt64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeBigUint64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeBinaryEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeFloat32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeFloat64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeOnDataView [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUint16 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUint32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUint32BigEndian [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUint8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeVarInt [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeVarString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeVarUint [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeVarUint8Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -2894,18 +2665,6 @@ class StringEncoder {
 /*!******************************************!*\
   !*** ./node_modules/lib0/environment.js ***!
   \******************************************/
-/*! namespace exports */
-/*! export getConf [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getParam [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getVariable [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export hasConf [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export hasParam [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isBrowser [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isMac [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isNode [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export production [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3041,12 +2800,6 @@ const production = hasConf('production')
 /*!************************************!*\
   !*** ./node_modules/lib0/error.js ***!
   \************************************/
-/*! namespace exports */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export methodUnimplemented [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export unexpectedCase [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3094,16 +2847,6 @@ const unexpectedCase = () => {
 /*!****************************************!*\
   !*** ./node_modules/lib0/eventloop.js ***!
   \****************************************/
-/*! namespace exports */
-/*! export Animation [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export animationFrame [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDebouncer [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export enqueue [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export idleCallback [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export interval [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export timeout [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3231,16 +2974,6 @@ const createDebouncer = timeout => {
 /*!***************************************!*\
   !*** ./node_modules/lib0/function.js ***!
   \***************************************/
-/*! namespace exports */
-/*! export apply [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export callAll [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalityDeep [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalityFlat [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalityStrict [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export id [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export nop [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3404,11 +3137,6 @@ const equalityDeep = (a, b) => {
 /*!*****************************************!*\
   !*** ./node_modules/lib0/isomorphic.js ***!
   \*****************************************/
-/*! namespace exports */
-/*! export cryptoRandomBuffer [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export performance [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3437,13 +3165,6 @@ const cryptoRandomBuffer = /** @type {any} */ (isomorphic_js__WEBPACK_IMPORTED_M
 /*!***************************************!*\
   !*** ./node_modules/lib0/iterator.js ***!
   \***************************************/
-/*! namespace exports */
-/*! export createIterator [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export iteratorFilter [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export iteratorMap [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export mapIterator [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3526,11 +3247,6 @@ const iteratorMap = (iterator, fmap) => createIterator(() => {
 /*!***********************************!*\
   !*** ./node_modules/lib0/json.js ***!
   \***********************************/
-/*! namespace exports */
-/*! export parse [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export stringify [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3568,32 +3284,6 @@ const parse = JSON.parse
 /*!**************************************!*\
   !*** ./node_modules/lib0/logging.js ***!
   \**************************************/
-/*! namespace exports */
-/*! export BLUE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export BOLD [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export GREEN [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export GREY [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ORANGE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export PURPLE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RED [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export UNBOLD [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export UNCOLOR [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export VConsole [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createModuleLogger [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createVConsole [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export group [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export groupCollapsed [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export groupEnd [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export print [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export printCanvas [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export printDom [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export printError [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export printImg [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export printImgBase64 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export vconsoles [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export warn [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4048,15 +3738,6 @@ const createModuleLogger = moduleName => {
 /*!**********************************!*\
   !*** ./node_modules/lib0/map.js ***!
   \**********************************/
-/*! namespace exports */
-/*! export all [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export any [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export copy [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export map [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export setIfUndefined [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4188,26 +3869,6 @@ const all = (m, f) => {
 /*!***********************************!*\
   !*** ./node_modules/lib0/math.js ***!
   \***********************************/
-/*! namespace exports */
-/*! export abs [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export add [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ceil [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export exp10 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export floor [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export imul [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isNaN [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isNegativeZero [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export log [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export log10 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export log2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export max [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export min [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export pow [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export round [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export sign [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export sqrt [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4297,30 +3958,6 @@ const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0
 /*!*************************************!*\
   !*** ./node_modules/lib0/metric.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export atto [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export centi [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export deca [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export deci [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export exa [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export femto [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export giga [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export hecto [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export kilo [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export mega [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export micro [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export milli [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export nano [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export peta [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export pico [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export prefix [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export tera [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export yocto [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export yotta [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export zepto [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export zetta [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4413,10 +4050,6 @@ const prefix = (n, baseMultiplier = 0) => {
 /*!************************************!*\
   !*** ./node_modules/lib0/mutex.js ***!
   \************************************/
-/*! namespace exports */
-/*! export createMutex [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4475,15 +4108,6 @@ const createMutex = () => {
 /*!*************************************!*\
   !*** ./node_modules/lib0/number.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export HIGHEST_INT32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export LOWEST_INT32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export MAX_SAFE_INTEGER [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export MIN_SAFE_INTEGER [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isInteger [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isNaN [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4531,19 +4155,6 @@ const isNaN = Number.isNaN
 /*!*************************************!*\
   !*** ./node_modules/lib0/object.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export assign [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalFlat [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export every [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export forEach [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export hasProperty [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export keys [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export length [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export map [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export some [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4662,10 +4273,6 @@ const equalFlat = (a, b) => a === b || (length(a) === length(b) && every(a, (val
 /*!*****************************************!*\
   !*** ./node_modules/lib0/observable.js ***!
   \*****************************************/
-/*! namespace exports */
-/*! export Observable [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4763,14 +4370,6 @@ class Observable {
 /*!***********************************!*\
   !*** ./node_modules/lib0/pair.js ***!
   \***********************************/
-/*! namespace exports */
-/*! export Pair [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createReversed [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export forEach [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export map [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4840,13 +4439,6 @@ const map = (arr, f) => arr.map(p => f(p.left, p.right))
 /*!*************************************!*\
   !*** ./node_modules/lib0/random.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export oneOf [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export rand [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export uint32 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export uuidv4 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4896,11 +4488,6 @@ const uuidv4 = () => uuidv4Template.replace(/[018]/g, /** @param {number} c */ c
 /*!**********************************!*\
   !*** ./node_modules/lib0/set.js ***!
   \**********************************/
-/*! namespace exports */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export toArray [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -4931,10 +4518,6 @@ const toArray = set => Array.from(set)
 /*!**************************************!*\
   !*** ./node_modules/lib0/storage.js ***!
   \**************************************/
-/*! namespace exports */
-/*! export varStorage [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5001,22 +4584,6 @@ const varStorage = _localStorage
 /*!*************************************!*\
   !*** ./node_modules/lib0/string.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export _decodeUtf8Native [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export _decodeUtf8Polyfill [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export _encodeUtf8Native [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export _encodeUtf8Polyfill [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeUtf8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeUtf8 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export fromCamelCase [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export fromCharCode [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export fromCodePoint [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export trimLeft [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export utf8ByteLength [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export utf8TextDecoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export utf8TextEncoder [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5158,11 +4725,6 @@ const decodeUtf8 = utf8TextDecoder ? _decodeUtf8Native : _decodeUtf8Polyfill
 /*!*************************************!*\
   !*** ./node_modules/lib0/symbol.js ***!
   \*************************************/
-/*! namespace exports */
-/*! export create [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isSymbol [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5197,12 +4759,6 @@ const isSymbol = s => typeof s === 'symbol'
 /*!***********************************!*\
   !*** ./node_modules/lib0/time.js ***!
   \***********************************/
-/*! namespace exports */
-/*! export getDate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getUnixTime [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export humanizeDuration [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5270,11 +4826,6 @@ const humanizeDuration = d => {
 /*!**********************************!*\
   !*** ./node_modules/lib0/url.js ***!
   \**********************************/
-/*! namespace exports */
-/*! export decodeQueryParams [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeQueryParams [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5329,10 +4880,6 @@ const encodeQueryParams = params =>
 /*!*************************************************************!*\
   !*** ./node_modules/vis-network/styles/vis-network.min.css ***!
   \*************************************************************/
-/*! namespace exports */
-/*! export default [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.n, __webpack_exports__, __webpack_require__.r, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -5363,9 +4910,6 @@ var update = _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMP
 /*!****************************************************************************!*\
   !*** ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js ***!
   \****************************************************************************/
-/*! unknown exports (runtime-defined) */
-/*! runtime requirements: module, __webpack_require__.nc, __webpack_require__.* */
-/*! CommonJS bailout: module.exports is used directly at 230:0-14 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
@@ -5645,17 +5189,6 @@ module.exports = function (list, options) {
 /*!****************************************************!*\
   !*** ./node_modules/vis-data/peer/esm/vis-data.js ***!
   \****************************************************/
-/*! namespace exports */
-/*! export DELETE [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DataSet [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DataStream [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export DataView [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Queue [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createNewDataPipeFrom [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isDataSetLike [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isDataViewLike [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.g, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -13535,10 +13068,6 @@ function isDataViewLike(idProp, v) {
 /*!********************************************************!*\
   !*** ./node_modules/vis-data/peer/umd/vis-data.min.js ***!
   \********************************************************/
-/*! unknown exports (runtime-defined) */
-/*! runtime requirements: __webpack_exports__, top-level-this-exports, __webpack_require__.g, __webpack_require__.* */
-/*! CommonJS bailout: this is used directly at 26:211-215 */
-/*! CommonJS bailout: exports is used directly at 26:70-77 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 /**
@@ -13601,16 +13130,6 @@ function isDataViewLike(idProp, v) {
 /*!****************************************************!*\
   !*** ./node_modules/vis-network/peer/esm/index.js ***!
   \****************************************************/
-/*! namespace exports */
-/*! export Network [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .Network */
-/*! export NetworkImages [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .NetworkImages */
-/*! export networkDOTParser [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkDOTParser */
-/*! export networkGephiParser [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkGephiParser */
-/*! export networkOptions [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkOptions */
-/*! export parseDOTNetwork [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .parseDOTNetwork */
-/*! export parseGephiNetwork [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .parseGephiNetwork */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_exports__, __webpack_require__.d, __webpack_require__.r, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -13634,16 +13153,6 @@ __webpack_require__.r(__webpack_exports__);
 /*!**********************************************************!*\
   !*** ./node_modules/vis-network/peer/esm/vis-network.js ***!
   \**********************************************************/
-/*! namespace exports */
-/*! export Network [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export NetworkImages [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export networkDOTParser [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export networkGephiParser [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export networkOptions [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export parseDOTNetwork [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export parseGephiNetwork [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.g, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -52984,16 +52493,6 @@ var parseDOTNetwork = DOTToGraph;
 /*!************************************************!*\
   !*** ./node_modules/vis-network/peer/index.js ***!
   \************************************************/
-/*! namespace exports */
-/*! export Network [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .Network */
-/*! export NetworkImages [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .NetworkImages */
-/*! export networkDOTParser [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkDOTParser */
-/*! export networkGephiParser [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkGephiParser */
-/*! export networkOptions [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .networkOptions */
-/*! export parseDOTNetwork [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .parseDOTNetwork */
-/*! export parseGephiNetwork [provided] [no usage info] [missing usage info prevents renaming] -> ./node_modules/vis-network/peer/esm/vis-network.js .parseGephiNetwork */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_exports__, __webpack_require__.d, __webpack_require__.r, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -53017,12 +52516,6 @@ __webpack_require__.r(__webpack_exports__);
 /*!******************************************!*\
   !*** ./node_modules/y-protocols/auth.js ***!
   \******************************************/
-/*! namespace exports */
-/*! export messagePermissionDenied [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readAuthMessage [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writePermissionDenied [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -53075,15 +52568,6 @@ const readAuthMessage = (decoder, y, permissionDeniedHandler) => {
 /*!***********************************************!*\
   !*** ./node_modules/y-protocols/awareness.js ***!
   \***********************************************/
-/*! namespace exports */
-/*! export Awareness [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export applyAwarenessUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeAwarenessUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export modifyAwarenessUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export outdatedTimeout [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export removeAwarenessStates [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -53392,19 +52876,6 @@ const applyAwarenessUpdate = (awareness, update, origin) => {
 /*!******************************************!*\
   !*** ./node_modules/y-protocols/sync.js ***!
   \******************************************/
-/*! namespace exports */
-/*! export messageYjsSyncStep1 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export messageYjsSyncStep2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export messageYjsUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readSyncMessage [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readSyncStep1 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readSyncStep2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeSyncStep1 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeSyncStep2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -53557,10 +53028,6 @@ const readSyncMessage = (decoder, encoder, doc, transactionOrigin) => {
 /*!*****************************************************!*\
   !*** ./node_modules/y-websocket/src/y-websocket.js ***!
   \*****************************************************/
-/*! namespace exports */
-/*! export WebsocketProvider [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -53679,8 +53146,8 @@ const setupWS = provider => {
       if (provider.wsconnected) {
         provider.wsconnected = false
         provider.synced = false
-        // update awareness (all users left)
-        y_protocols_awareness_js__WEBPACK_IMPORTED_MODULE_2__.removeAwarenessStates(provider.awareness, Array.from(provider.awareness.getStates().keys()), provider)
+        // update awareness (all users except local left)
+        y_protocols_awareness_js__WEBPACK_IMPORTED_MODULE_2__.removeAwarenessStates(provider.awareness, Array.from(provider.awareness.getStates().keys()).filter(client => client !== provider.doc.clientID), provider)
         provider.emit('status', [{
           status: 'disconnected'
         }])
@@ -53953,82 +53420,6 @@ class WebsocketProvider extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_8__.
 /*!***************************************!*\
   !*** ./node_modules/yjs/dist/yjs.mjs ***!
   \***************************************/
-/*! namespace exports */
-/*! export AbstractConnector [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export AbstractStruct [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export AbstractType [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Array [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentAny [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentBinary [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentDeleted [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentEmbed [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentFormat [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentJSON [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentString [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ContentType [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Doc [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export GC [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export ID [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Item [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Map [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export PermanentUserData [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export RelativePosition [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Snapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Text [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export Transaction [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export UndoManager [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export XmlElement [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export XmlFragment [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export XmlHook [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export XmlText [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export YArrayEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export YEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export YMapEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export YTextEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export YXmlEvent [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export applyUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export applyUpdateV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export compareIDs [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export compareRelativePositions [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createAbsolutePositionFromRelativePosition [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDeleteSet [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDeleteSetFromStructStore [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createDocFromSnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createID [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createRelativePositionFromJSON [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createRelativePositionFromTypeIndex [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export createSnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeSnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeSnapshotV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeStateVector [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export decodeStateVectorV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export emptySnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeSnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeSnapshotV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeStateAsUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeStateAsUpdateV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeStateVector [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export encodeStateVectorV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export equalSnapshots [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export findRootTypeKey [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getItem [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getState [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export getTypeChildren [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isDeleted [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export isParentOf [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export iterateDeletedStructs [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export logType [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readRelativePosition [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUpdate [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export readUpdateV2 [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export snapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export transact [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export tryGc [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export typeListToArraySnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export typeMapGetSnapshot [provided] [no usage info] [missing usage info prevents renaming] */
-/*! export writeRelativePosition [provided] [no usage info] [missing usage info prevents renaming] */
-/*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -54713,6 +54104,7 @@ class Doc extends lib0_observable_js__WEBPACK_IMPORTED_MODULE_0__.Observable {
       }, null, true);
     }
     this.emit('destroyed', [true]);
+    this.emit('destroy', [this]);
     super.destroy();
   }
 
@@ -56412,6 +55804,7 @@ const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
 /**
  * @param {RelativePosition|null} a
  * @param {RelativePosition|null} b
+ * @return {boolean}
  *
  * @function
  */
@@ -57318,9 +56711,6 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       }
       result = stackItem;
-      if (result != null) {
-        undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager]);
-      }
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary
@@ -57329,6 +56719,9 @@ const popStackItem = (undoManager, stack, eventType) => {
       }
     });
   }, undoManager);
+  if (result != null) {
+    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType }, undoManager]);
+  }
   return result
 };
 
@@ -57526,6 +56919,8 @@ class YEvent {
 
   /**
    * Computes the path from `y` to the changed type.
+   *
+   * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.
    *
    * The following property holds:
    * @example
@@ -57978,6 +57373,13 @@ class AbstractType {
      * @type {null | Array<ArraySearchMarker>}
      */
     this._searchMarker = null;
+  }
+
+  /**
+   * @return {AbstractType<any>|null}
+   */
+  get parent () {
+    return this._item ? /** @type {AbstractType<any>} */ (this._item.parent) : null
   }
 
   /**
@@ -59519,13 +58921,32 @@ class YTextEvent extends YEvent {
   /**
    * @param {YText} ytext
    * @param {Transaction} transaction
+   * @param {Set<any>} subs The keys that changed
    */
-  constructor (ytext, transaction) {
+  constructor (ytext, transaction, subs) {
     super(ytext, transaction);
     /**
      * @type {Array<DeltaItem>|null}
      */
     this._delta = null;
+    /**
+     * Whether the children changed.
+     * @type {Boolean}
+     * @private
+     */
+    this.childListChanged = false;
+    /**
+     * Set of all changed attributes.
+     * @type {Set<string>}
+     */
+    this.keysChanged = new Set();
+    subs.forEach((sub) => {
+      if (sub === null) {
+        this.childListChanged = true;
+      } else {
+        this.keysChanged.add(sub);
+      }
+    });
   }
 
   /**
@@ -59786,7 +59207,7 @@ class YText extends AbstractType {
    */
   _callObserver (transaction, parentSubs) {
     super._callObserver(transaction, parentSubs);
-    const event = new YTextEvent(this, transaction);
+    const event = new YTextEvent(this, transaction, parentSubs);
     const doc = transaction.doc;
     // If a remote change happened, we try to cleanup potential formatting duplicates.
     if (!transaction.local) {
@@ -60119,6 +59540,74 @@ class YText extends AbstractType {
   }
 
   /**
+   * Removes an attribute.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that is to be removed.
+   *
+   * @public
+   */
+  removeAttribute (attributeName) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeMapDelete(transaction, this, attributeName);
+      });
+    } else {
+      /** @type {Array<function>} */ (this._pending).push(() => this.removeAttribute(attributeName));
+    }
+  }
+
+  /**
+   * Sets or updates an attribute.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that is to be set.
+   * @param {any} attributeValue The attribute value that is to be set.
+   *
+   * @public
+   */
+  setAttribute (attributeName, attributeValue) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        typeMapSet(transaction, this, attributeName, attributeValue);
+      });
+    } else {
+      /** @type {Array<function>} */ (this._pending).push(() => this.setAttribute(attributeName, attributeValue));
+    }
+  }
+
+  /**
+   * Returns an attribute value that belongs to the attribute name.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {String} attributeName The attribute name that identifies the
+   *                               queried value.
+   * @return {any} The queried attribute value.
+   *
+   * @public
+   */
+  getAttribute (attributeName) {
+    return /** @type {any} */ (typeMapGet(this, attributeName))
+  }
+
+  /**
+   * Returns all attribute name/value pairs in a JSON Object.
+   *
+   * @note Xml-Text nodes don't have attributes. You can use this feature to assign properties to complete text-blocks.
+   *
+   * @param {Snapshot} [snapshot]
+   * @return {Object<string, any>} A JSON Object that describes the attributes.
+   *
+   * @public
+   */
+  getAttributes (snapshot) {
+    return typeMapGetAll(this)
+  }
+
+  /**
    * @param {AbstractUpdateEncoder} encoder
    */
   _write (encoder) {
@@ -60248,6 +59737,14 @@ class YXmlFragment extends AbstractType {
      * @type {Array<any>|null}
      */
     this._prelimContent = [];
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get firstChild () {
+    const first = this._first;
+    return first ? first.content.getContent()[0] : null
   }
 
   /**
@@ -60423,6 +59920,32 @@ class YXmlFragment extends AbstractType {
   }
 
   /**
+   * Inserts new content at an index.
+   *
+   * @example
+   *  // Insert character 'a' at position 0
+   *  xml.insert(0, [new Y.XmlText('text')])
+   *
+   * @param {null|Item|YXmlElement|YXmlText} ref The index to insert content at
+   * @param {Array<YXmlElement|YXmlText>} content The array of content
+   */
+  insertAfter (ref, content) {
+    if (this.doc !== null) {
+      transact(this.doc, transaction => {
+        const refItem = (ref && ref instanceof AbstractType) ? ref._item : ref;
+        typeListInsertGenericsAfter(transaction, this, refItem, content);
+      });
+    } else {
+      const pc = /** @type {Array<any>} */ (this._prelimContent);
+      const index = ref === null ? 0 : pc.findIndex(el => el === ref) + 1;
+      if (index === 0 && ref !== null) {
+        throw (0,lib0_error_js__WEBPACK_IMPORTED_MODULE_8__.create)('Reference item not found')
+      }
+      pc.splice(index, 0, ...content);
+    }
+  }
+
+  /**
    * Deletes elements starting from an index.
    *
    * @param {number} index Index at which to start deleting elements
@@ -60524,6 +60047,22 @@ class YXmlElement extends YXmlFragment {
      * @type {Map<string, any>|null}
      */
     this._prelimAttrs = new Map();
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get nextSibling () {
+    const n = this._item ? this._item.next : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get prevSibling () {
+    const n = this._item ? this._item.prev : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
   }
 
   /**
@@ -60711,7 +60250,7 @@ const readYXmlElement = decoder => new YXmlElement(decoder.readKey());
  */
 class YXmlEvent extends YEvent {
   /**
-   * @param {YXmlElement|YXmlFragment} target The target on which the event is created.
+   * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
    * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
    *                   child list changed.
    * @param {Transaction} transaction The transaction instance with wich the
@@ -60727,7 +60266,7 @@ class YXmlEvent extends YEvent {
     this.childListChanged = false;
     /**
      * Set of all changed attributes.
-     * @type {Set<string|null>}
+     * @type {Set<string>}
      */
     this.attributesChanged = new Set();
     subs.forEach((sub) => {
@@ -60834,6 +60373,22 @@ const readYXmlHook = decoder =>
  * simple formatting information like bold and italic.
  */
 class YXmlText extends YText {
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get nextSibling () {
+    const n = this._item ? this._item.next : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
+  /**
+   * @type {YXmlElement|YXmlText|null}
+   */
+  get prevSibling () {
+    const n = this._item ? this._item.prev : null;
+    return n ? /** @type {YXmlElement|YXmlText} */ (/** @type {ContentType} */ (n.content).type) : null
+  }
+
   _copy () {
     return new YXmlText()
   }
@@ -62679,9 +62234,6 @@ const contentRefs = [
 /*!**************************!*\
   !*** ./y-vis-network.js ***!
   \**************************/
-/*! namespace exports */
-/*! exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__, __webpack_require__.n, __webpack_require__.r, __webpack_exports__, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -62720,11 +62272,12 @@ create a new shared document and start the WebSocket provider
 const doc = new yjs__WEBPACK_IMPORTED_MODULE_3__.Doc();
 const wsProvider = new y_websocket__WEBPACK_IMPORTED_MODULE_4__.WebsocketProvider(
 //	'ws://localhost:1234',
-	'wss://cress.soc.surrey.ac.uk/wss',
+//	'wss://cress.soc.surrey.ac.uk/wss',
+	'wss://demos.yjs.dev',
 	'y-vis-network-example6',
 	doc
 );
-wsProvider.on('status', (event) => {
+wsProvider.on('status', (event) => {	
 	console.log(event.status); // logs "connected" or "disconnected"
 });
 

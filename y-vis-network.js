@@ -26,11 +26,12 @@ create a new shared document and start the WebSocket provider
 const doc = new Y.Doc();
 const wsProvider = new WebsocketProvider(
 //	'ws://localhost:1234',
-	'wss://cress.soc.surrey.ac.uk/wss',
+//	'wss://cress.soc.surrey.ac.uk/wss',
+	'wss://demos.yjs.dev',
 	'y-vis-network-example6',
 	doc
 );
-wsProvider.on('status', (event) => {
+wsProvider.on('status', (event) => {	
 	console.log(event.status); // logs "connected" or "disconnected"
 });
 
