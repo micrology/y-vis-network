@@ -51713,8 +51713,8 @@ class WebsocketProvider extends lib0_observable__WEBPACK_IMPORTED_MODULE_8__.Obs
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "performance": () => (/* binding */ performance),
-/* harmony export */   "cryptoRandomBuffer": () => (/* binding */ cryptoRandomBuffer)
+/* harmony export */   "cryptoRandomBuffer": () => (/* binding */ cryptoRandomBuffer),
+/* harmony export */   "performance": () => (/* binding */ performance)
 /* harmony export */ });
 /* eslint-env browser */
 const performance = typeof window === 'undefined' ? null : (typeof window.performance !== 'undefined' && window.performance) || null
@@ -51754,15 +51754,15 @@ const cryptoRandomBuffer = isoCrypto !== null
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "last": () => (/* binding */ last),
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "copy": () => (/* binding */ copy),
 /* harmony export */   "appendTo": () => (/* binding */ appendTo),
-/* harmony export */   "from": () => (/* binding */ from),
-/* harmony export */   "every": () => (/* binding */ every),
-/* harmony export */   "some": () => (/* binding */ some),
+/* harmony export */   "copy": () => (/* binding */ copy),
+/* harmony export */   "create": () => (/* binding */ create),
 /* harmony export */   "equalFlat": () => (/* binding */ equalFlat),
-/* harmony export */   "flatten": () => (/* binding */ flatten)
+/* harmony export */   "every": () => (/* binding */ every),
+/* harmony export */   "flatten": () => (/* binding */ flatten),
+/* harmony export */   "from": () => (/* binding */ from),
+/* harmony export */   "last": () => (/* binding */ last),
+/* harmony export */   "some": () => (/* binding */ some)
 /* harmony export */ });
 /**
  * Utility module to work with Arrays.
@@ -51867,14 +51867,6 @@ const flatten = arr => arr.reduce((acc, val) => acc.concat(val), [])
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "BIT1": () => (/* binding */ BIT1),
-/* harmony export */   "BIT2": () => (/* binding */ BIT2),
-/* harmony export */   "BIT3": () => (/* binding */ BIT3),
-/* harmony export */   "BIT4": () => (/* binding */ BIT4),
-/* harmony export */   "BIT5": () => (/* binding */ BIT5),
-/* harmony export */   "BIT6": () => (/* binding */ BIT6),
-/* harmony export */   "BIT7": () => (/* binding */ BIT7),
-/* harmony export */   "BIT8": () => (/* binding */ BIT8),
-/* harmony export */   "BIT9": () => (/* binding */ BIT9),
 /* harmony export */   "BIT10": () => (/* binding */ BIT10),
 /* harmony export */   "BIT11": () => (/* binding */ BIT11),
 /* harmony export */   "BIT12": () => (/* binding */ BIT12),
@@ -51885,6 +51877,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "BIT17": () => (/* binding */ BIT17),
 /* harmony export */   "BIT18": () => (/* binding */ BIT18),
 /* harmony export */   "BIT19": () => (/* binding */ BIT19),
+/* harmony export */   "BIT2": () => (/* binding */ BIT2),
 /* harmony export */   "BIT20": () => (/* binding */ BIT20),
 /* harmony export */   "BIT21": () => (/* binding */ BIT21),
 /* harmony export */   "BIT22": () => (/* binding */ BIT22),
@@ -51895,19 +51888,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "BIT27": () => (/* binding */ BIT27),
 /* harmony export */   "BIT28": () => (/* binding */ BIT28),
 /* harmony export */   "BIT29": () => (/* binding */ BIT29),
+/* harmony export */   "BIT3": () => (/* binding */ BIT3),
 /* harmony export */   "BIT30": () => (/* binding */ BIT30),
 /* harmony export */   "BIT31": () => (/* binding */ BIT31),
 /* harmony export */   "BIT32": () => (/* binding */ BIT32),
+/* harmony export */   "BIT4": () => (/* binding */ BIT4),
+/* harmony export */   "BIT5": () => (/* binding */ BIT5),
+/* harmony export */   "BIT6": () => (/* binding */ BIT6),
+/* harmony export */   "BIT7": () => (/* binding */ BIT7),
+/* harmony export */   "BIT8": () => (/* binding */ BIT8),
+/* harmony export */   "BIT9": () => (/* binding */ BIT9),
 /* harmony export */   "BITS0": () => (/* binding */ BITS0),
 /* harmony export */   "BITS1": () => (/* binding */ BITS1),
-/* harmony export */   "BITS2": () => (/* binding */ BITS2),
-/* harmony export */   "BITS3": () => (/* binding */ BITS3),
-/* harmony export */   "BITS4": () => (/* binding */ BITS4),
-/* harmony export */   "BITS5": () => (/* binding */ BITS5),
-/* harmony export */   "BITS6": () => (/* binding */ BITS6),
-/* harmony export */   "BITS7": () => (/* binding */ BITS7),
-/* harmony export */   "BITS8": () => (/* binding */ BITS8),
-/* harmony export */   "BITS9": () => (/* binding */ BITS9),
 /* harmony export */   "BITS10": () => (/* binding */ BITS10),
 /* harmony export */   "BITS11": () => (/* binding */ BITS11),
 /* harmony export */   "BITS12": () => (/* binding */ BITS12),
@@ -51918,6 +51910,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "BITS17": () => (/* binding */ BITS17),
 /* harmony export */   "BITS18": () => (/* binding */ BITS18),
 /* harmony export */   "BITS19": () => (/* binding */ BITS19),
+/* harmony export */   "BITS2": () => (/* binding */ BITS2),
 /* harmony export */   "BITS20": () => (/* binding */ BITS20),
 /* harmony export */   "BITS21": () => (/* binding */ BITS21),
 /* harmony export */   "BITS22": () => (/* binding */ BITS22),
@@ -51928,9 +51921,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "BITS27": () => (/* binding */ BITS27),
 /* harmony export */   "BITS28": () => (/* binding */ BITS28),
 /* harmony export */   "BITS29": () => (/* binding */ BITS29),
+/* harmony export */   "BITS3": () => (/* binding */ BITS3),
 /* harmony export */   "BITS30": () => (/* binding */ BITS30),
 /* harmony export */   "BITS31": () => (/* binding */ BITS31),
-/* harmony export */   "BITS32": () => (/* binding */ BITS32)
+/* harmony export */   "BITS32": () => (/* binding */ BITS32),
+/* harmony export */   "BITS4": () => (/* binding */ BITS4),
+/* harmony export */   "BITS5": () => (/* binding */ BITS5),
+/* harmony export */   "BITS6": () => (/* binding */ BITS6),
+/* harmony export */   "BITS7": () => (/* binding */ BITS7),
+/* harmony export */   "BITS8": () => (/* binding */ BITS8),
+/* harmony export */   "BITS9": () => (/* binding */ BITS9)
 /* harmony export */ });
 /* eslint-env browser */
 
@@ -52035,9 +52035,9 @@ const BITS32 = 0xFFFFFFFF
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "publish": () => (/* binding */ publish),
 /* harmony export */   "subscribe": () => (/* binding */ subscribe),
-/* harmony export */   "unsubscribe": () => (/* binding */ unsubscribe),
-/* harmony export */   "publish": () => (/* binding */ publish)
+/* harmony export */   "unsubscribe": () => (/* binding */ unsubscribe)
 /* harmony export */ });
 /* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./map.js */ "./node_modules/lib0/map.js");
 /* harmony import */ var _buffer_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./buffer.js */ "./node_modules/lib0/buffer.js");
@@ -52160,14 +52160,14 @@ const publish = (room, data) => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "copyUint8Array": () => (/* binding */ copyUint8Array),
+/* harmony export */   "createUint8ArrayFromArrayBuffer": () => (/* binding */ createUint8ArrayFromArrayBuffer),
 /* harmony export */   "createUint8ArrayFromLen": () => (/* binding */ createUint8ArrayFromLen),
 /* harmony export */   "createUint8ArrayViewFromArrayBuffer": () => (/* binding */ createUint8ArrayViewFromArrayBuffer),
-/* harmony export */   "createUint8ArrayFromArrayBuffer": () => (/* binding */ createUint8ArrayFromArrayBuffer),
-/* harmony export */   "toBase64": () => (/* binding */ toBase64),
-/* harmony export */   "fromBase64": () => (/* binding */ fromBase64),
-/* harmony export */   "copyUint8Array": () => (/* binding */ copyUint8Array),
+/* harmony export */   "decodeAny": () => (/* binding */ decodeAny),
 /* harmony export */   "encodeAny": () => (/* binding */ encodeAny),
-/* harmony export */   "decodeAny": () => (/* binding */ decodeAny)
+/* harmony export */   "fromBase64": () => (/* binding */ fromBase64),
+/* harmony export */   "toBase64": () => (/* binding */ toBase64)
 /* harmony export */ });
 /* harmony import */ var _string_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./string.js */ "./node_modules/lib0/string.js");
 /* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./environment.js */ "./node_modules/lib0/environment.js");
@@ -52328,39 +52328,39 @@ const undefinedToNull = v => v === undefined ? null : v
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Decoder": () => (/* binding */ Decoder),
+/* harmony export */   "IncUintOptRleDecoder": () => (/* binding */ IncUintOptRleDecoder),
+/* harmony export */   "IntDiffDecoder": () => (/* binding */ IntDiffDecoder),
+/* harmony export */   "IntDiffOptRleDecoder": () => (/* binding */ IntDiffOptRleDecoder),
+/* harmony export */   "RleDecoder": () => (/* binding */ RleDecoder),
+/* harmony export */   "RleIntDiffDecoder": () => (/* binding */ RleIntDiffDecoder),
+/* harmony export */   "StringDecoder": () => (/* binding */ StringDecoder),
+/* harmony export */   "UintOptRleDecoder": () => (/* binding */ UintOptRleDecoder),
+/* harmony export */   "clone": () => (/* binding */ clone),
 /* harmony export */   "createDecoder": () => (/* binding */ createDecoder),
 /* harmony export */   "hasContent": () => (/* binding */ hasContent),
-/* harmony export */   "clone": () => (/* binding */ clone),
-/* harmony export */   "readUint8Array": () => (/* binding */ readUint8Array),
-/* harmony export */   "readVarUint8Array": () => (/* binding */ readVarUint8Array),
+/* harmony export */   "peekUint16": () => (/* binding */ peekUint16),
+/* harmony export */   "peekUint32": () => (/* binding */ peekUint32),
+/* harmony export */   "peekUint8": () => (/* binding */ peekUint8),
+/* harmony export */   "peekVarInt": () => (/* binding */ peekVarInt),
+/* harmony export */   "peekVarString": () => (/* binding */ peekVarString),
+/* harmony export */   "peekVarUint": () => (/* binding */ peekVarUint),
+/* harmony export */   "readAny": () => (/* binding */ readAny),
+/* harmony export */   "readBigInt64": () => (/* binding */ readBigInt64),
+/* harmony export */   "readBigUint64": () => (/* binding */ readBigUint64),
+/* harmony export */   "readFloat32": () => (/* binding */ readFloat32),
+/* harmony export */   "readFloat64": () => (/* binding */ readFloat64),
+/* harmony export */   "readFromDataView": () => (/* binding */ readFromDataView),
 /* harmony export */   "readTailAsUint8Array": () => (/* binding */ readTailAsUint8Array),
-/* harmony export */   "skip8": () => (/* binding */ skip8),
-/* harmony export */   "readUint8": () => (/* binding */ readUint8),
 /* harmony export */   "readUint16": () => (/* binding */ readUint16),
 /* harmony export */   "readUint32": () => (/* binding */ readUint32),
 /* harmony export */   "readUint32BigEndian": () => (/* binding */ readUint32BigEndian),
-/* harmony export */   "peekUint8": () => (/* binding */ peekUint8),
-/* harmony export */   "peekUint16": () => (/* binding */ peekUint16),
-/* harmony export */   "peekUint32": () => (/* binding */ peekUint32),
-/* harmony export */   "readVarUint": () => (/* binding */ readVarUint),
+/* harmony export */   "readUint8": () => (/* binding */ readUint8),
+/* harmony export */   "readUint8Array": () => (/* binding */ readUint8Array),
 /* harmony export */   "readVarInt": () => (/* binding */ readVarInt),
-/* harmony export */   "peekVarUint": () => (/* binding */ peekVarUint),
-/* harmony export */   "peekVarInt": () => (/* binding */ peekVarInt),
 /* harmony export */   "readVarString": () => (/* binding */ readVarString),
-/* harmony export */   "peekVarString": () => (/* binding */ peekVarString),
-/* harmony export */   "readFromDataView": () => (/* binding */ readFromDataView),
-/* harmony export */   "readFloat32": () => (/* binding */ readFloat32),
-/* harmony export */   "readFloat64": () => (/* binding */ readFloat64),
-/* harmony export */   "readBigInt64": () => (/* binding */ readBigInt64),
-/* harmony export */   "readBigUint64": () => (/* binding */ readBigUint64),
-/* harmony export */   "readAny": () => (/* binding */ readAny),
-/* harmony export */   "RleDecoder": () => (/* binding */ RleDecoder),
-/* harmony export */   "IntDiffDecoder": () => (/* binding */ IntDiffDecoder),
-/* harmony export */   "RleIntDiffDecoder": () => (/* binding */ RleIntDiffDecoder),
-/* harmony export */   "UintOptRleDecoder": () => (/* binding */ UintOptRleDecoder),
-/* harmony export */   "IncUintOptRleDecoder": () => (/* binding */ IncUintOptRleDecoder),
-/* harmony export */   "IntDiffOptRleDecoder": () => (/* binding */ IntDiffOptRleDecoder),
-/* harmony export */   "StringDecoder": () => (/* binding */ StringDecoder)
+/* harmony export */   "readVarUint": () => (/* binding */ readVarUint),
+/* harmony export */   "readVarUint8Array": () => (/* binding */ readVarUint8Array),
+/* harmony export */   "skip8": () => (/* binding */ skip8)
 /* harmony export */ });
 /* harmony import */ var _buffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer.js */ "./node_modules/lib0/buffer.js");
 /* harmony import */ var _binary_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./binary.js */ "./node_modules/lib0/binary.js");
@@ -53023,44 +53023,44 @@ class StringDecoder {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "doc": () => (/* binding */ doc),
-/* harmony export */   "createElement": () => (/* binding */ createElement),
-/* harmony export */   "createDocumentFragment": () => (/* binding */ createDocumentFragment),
-/* harmony export */   "createTextNode": () => (/* binding */ createTextNode),
-/* harmony export */   "domParser": () => (/* binding */ domParser),
-/* harmony export */   "emitCustomEvent": () => (/* binding */ emitCustomEvent),
-/* harmony export */   "setAttributes": () => (/* binding */ setAttributes),
-/* harmony export */   "setAttributesMap": () => (/* binding */ setAttributesMap),
-/* harmony export */   "fragment": () => (/* binding */ fragment),
-/* harmony export */   "append": () => (/* binding */ append),
-/* harmony export */   "remove": () => (/* binding */ remove),
-/* harmony export */   "addEventListener": () => (/* binding */ addEventListener),
-/* harmony export */   "removeEventListener": () => (/* binding */ removeEventListener),
-/* harmony export */   "addEventListeners": () => (/* binding */ addEventListeners),
-/* harmony export */   "removeEventListeners": () => (/* binding */ removeEventListeners),
-/* harmony export */   "element": () => (/* binding */ element),
-/* harmony export */   "canvas": () => (/* binding */ canvas),
-/* harmony export */   "text": () => (/* binding */ text),
-/* harmony export */   "pairToStyleString": () => (/* binding */ pairToStyleString),
-/* harmony export */   "pairsToStyleString": () => (/* binding */ pairsToStyleString),
-/* harmony export */   "mapToStyleString": () => (/* binding */ mapToStyleString),
-/* harmony export */   "querySelector": () => (/* binding */ querySelector),
-/* harmony export */   "querySelectorAll": () => (/* binding */ querySelectorAll),
-/* harmony export */   "getElementById": () => (/* binding */ getElementById),
-/* harmony export */   "parseFragment": () => (/* binding */ parseFragment),
-/* harmony export */   "parseElement": () => (/* binding */ parseElement),
-/* harmony export */   "replaceWith": () => (/* binding */ replaceWith),
-/* harmony export */   "insertBefore": () => (/* binding */ insertBefore),
-/* harmony export */   "appendChild": () => (/* binding */ appendChild),
-/* harmony export */   "ELEMENT_NODE": () => (/* binding */ ELEMENT_NODE),
-/* harmony export */   "TEXT_NODE": () => (/* binding */ TEXT_NODE),
 /* harmony export */   "CDATA_SECTION_NODE": () => (/* binding */ CDATA_SECTION_NODE),
 /* harmony export */   "COMMENT_NODE": () => (/* binding */ COMMENT_NODE),
+/* harmony export */   "DOCUMENT_FRAGMENT_NODE": () => (/* binding */ DOCUMENT_FRAGMENT_NODE),
 /* harmony export */   "DOCUMENT_NODE": () => (/* binding */ DOCUMENT_NODE),
 /* harmony export */   "DOCUMENT_TYPE_NODE": () => (/* binding */ DOCUMENT_TYPE_NODE),
-/* harmony export */   "DOCUMENT_FRAGMENT_NODE": () => (/* binding */ DOCUMENT_FRAGMENT_NODE),
+/* harmony export */   "ELEMENT_NODE": () => (/* binding */ ELEMENT_NODE),
+/* harmony export */   "TEXT_NODE": () => (/* binding */ TEXT_NODE),
+/* harmony export */   "addEventListener": () => (/* binding */ addEventListener),
+/* harmony export */   "addEventListeners": () => (/* binding */ addEventListeners),
+/* harmony export */   "append": () => (/* binding */ append),
+/* harmony export */   "appendChild": () => (/* binding */ appendChild),
+/* harmony export */   "canvas": () => (/* binding */ canvas),
 /* harmony export */   "checkNodeType": () => (/* binding */ checkNodeType),
-/* harmony export */   "isParentOf": () => (/* binding */ isParentOf)
+/* harmony export */   "createDocumentFragment": () => (/* binding */ createDocumentFragment),
+/* harmony export */   "createElement": () => (/* binding */ createElement),
+/* harmony export */   "createTextNode": () => (/* binding */ createTextNode),
+/* harmony export */   "doc": () => (/* binding */ doc),
+/* harmony export */   "domParser": () => (/* binding */ domParser),
+/* harmony export */   "element": () => (/* binding */ element),
+/* harmony export */   "emitCustomEvent": () => (/* binding */ emitCustomEvent),
+/* harmony export */   "fragment": () => (/* binding */ fragment),
+/* harmony export */   "getElementById": () => (/* binding */ getElementById),
+/* harmony export */   "insertBefore": () => (/* binding */ insertBefore),
+/* harmony export */   "isParentOf": () => (/* binding */ isParentOf),
+/* harmony export */   "mapToStyleString": () => (/* binding */ mapToStyleString),
+/* harmony export */   "pairToStyleString": () => (/* binding */ pairToStyleString),
+/* harmony export */   "pairsToStyleString": () => (/* binding */ pairsToStyleString),
+/* harmony export */   "parseElement": () => (/* binding */ parseElement),
+/* harmony export */   "parseFragment": () => (/* binding */ parseFragment),
+/* harmony export */   "querySelector": () => (/* binding */ querySelector),
+/* harmony export */   "querySelectorAll": () => (/* binding */ querySelectorAll),
+/* harmony export */   "remove": () => (/* binding */ remove),
+/* harmony export */   "removeEventListener": () => (/* binding */ removeEventListener),
+/* harmony export */   "removeEventListeners": () => (/* binding */ removeEventListeners),
+/* harmony export */   "replaceWith": () => (/* binding */ replaceWith),
+/* harmony export */   "setAttributes": () => (/* binding */ setAttributes),
+/* harmony export */   "setAttributesMap": () => (/* binding */ setAttributesMap),
+/* harmony export */   "text": () => (/* binding */ text)
 /* harmony export */ });
 /* harmony import */ var _pair_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./pair.js */ "./node_modules/lib0/pair.js");
 /* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./map.js */ "./node_modules/lib0/map.js");
@@ -53369,37 +53369,37 @@ const isParentOf = (parent, child) => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Encoder": () => (/* binding */ Encoder),
+/* harmony export */   "IncUintOptRleEncoder": () => (/* binding */ IncUintOptRleEncoder),
+/* harmony export */   "IntDiffEncoder": () => (/* binding */ IntDiffEncoder),
+/* harmony export */   "IntDiffOptRleEncoder": () => (/* binding */ IntDiffOptRleEncoder),
+/* harmony export */   "RleEncoder": () => (/* binding */ RleEncoder),
+/* harmony export */   "RleIntDiffEncoder": () => (/* binding */ RleIntDiffEncoder),
+/* harmony export */   "StringEncoder": () => (/* binding */ StringEncoder),
+/* harmony export */   "UintOptRleEncoder": () => (/* binding */ UintOptRleEncoder),
 /* harmony export */   "createEncoder": () => (/* binding */ createEncoder),
 /* harmony export */   "length": () => (/* binding */ length),
+/* harmony export */   "set": () => (/* binding */ set),
+/* harmony export */   "setUint16": () => (/* binding */ setUint16),
+/* harmony export */   "setUint32": () => (/* binding */ setUint32),
+/* harmony export */   "setUint8": () => (/* binding */ setUint8),
 /* harmony export */   "toUint8Array": () => (/* binding */ toUint8Array),
 /* harmony export */   "write": () => (/* binding */ write),
-/* harmony export */   "set": () => (/* binding */ set),
-/* harmony export */   "writeUint8": () => (/* binding */ writeUint8),
-/* harmony export */   "setUint8": () => (/* binding */ setUint8),
-/* harmony export */   "writeUint16": () => (/* binding */ writeUint16),
-/* harmony export */   "setUint16": () => (/* binding */ setUint16),
-/* harmony export */   "writeUint32": () => (/* binding */ writeUint32),
-/* harmony export */   "writeUint32BigEndian": () => (/* binding */ writeUint32BigEndian),
-/* harmony export */   "setUint32": () => (/* binding */ setUint32),
-/* harmony export */   "writeVarUint": () => (/* binding */ writeVarUint),
-/* harmony export */   "writeVarInt": () => (/* binding */ writeVarInt),
-/* harmony export */   "writeVarString": () => (/* binding */ writeVarString),
-/* harmony export */   "writeBinaryEncoder": () => (/* binding */ writeBinaryEncoder),
-/* harmony export */   "writeUint8Array": () => (/* binding */ writeUint8Array),
-/* harmony export */   "writeVarUint8Array": () => (/* binding */ writeVarUint8Array),
-/* harmony export */   "writeOnDataView": () => (/* binding */ writeOnDataView),
-/* harmony export */   "writeFloat32": () => (/* binding */ writeFloat32),
-/* harmony export */   "writeFloat64": () => (/* binding */ writeFloat64),
+/* harmony export */   "writeAny": () => (/* binding */ writeAny),
 /* harmony export */   "writeBigInt64": () => (/* binding */ writeBigInt64),
 /* harmony export */   "writeBigUint64": () => (/* binding */ writeBigUint64),
-/* harmony export */   "writeAny": () => (/* binding */ writeAny),
-/* harmony export */   "RleEncoder": () => (/* binding */ RleEncoder),
-/* harmony export */   "IntDiffEncoder": () => (/* binding */ IntDiffEncoder),
-/* harmony export */   "RleIntDiffEncoder": () => (/* binding */ RleIntDiffEncoder),
-/* harmony export */   "UintOptRleEncoder": () => (/* binding */ UintOptRleEncoder),
-/* harmony export */   "IncUintOptRleEncoder": () => (/* binding */ IncUintOptRleEncoder),
-/* harmony export */   "IntDiffOptRleEncoder": () => (/* binding */ IntDiffOptRleEncoder),
-/* harmony export */   "StringEncoder": () => (/* binding */ StringEncoder)
+/* harmony export */   "writeBinaryEncoder": () => (/* binding */ writeBinaryEncoder),
+/* harmony export */   "writeFloat32": () => (/* binding */ writeFloat32),
+/* harmony export */   "writeFloat64": () => (/* binding */ writeFloat64),
+/* harmony export */   "writeOnDataView": () => (/* binding */ writeOnDataView),
+/* harmony export */   "writeUint16": () => (/* binding */ writeUint16),
+/* harmony export */   "writeUint32": () => (/* binding */ writeUint32),
+/* harmony export */   "writeUint32BigEndian": () => (/* binding */ writeUint32BigEndian),
+/* harmony export */   "writeUint8": () => (/* binding */ writeUint8),
+/* harmony export */   "writeUint8Array": () => (/* binding */ writeUint8Array),
+/* harmony export */   "writeVarInt": () => (/* binding */ writeVarInt),
+/* harmony export */   "writeVarString": () => (/* binding */ writeVarString),
+/* harmony export */   "writeVarUint": () => (/* binding */ writeVarUint),
+/* harmony export */   "writeVarUint8Array": () => (/* binding */ writeVarUint8Array)
 /* harmony export */ });
 /* harmony import */ var _buffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer.js */ "./node_modules/lib0/buffer.js");
 /* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./math.js */ "./node_modules/lib0/math.js");
@@ -54242,14 +54242,14 @@ class StringEncoder {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "isNode": () => (/* binding */ isNode),
-/* harmony export */   "isBrowser": () => (/* binding */ isBrowser),
-/* harmony export */   "isMac": () => (/* binding */ isMac),
-/* harmony export */   "hasParam": () => (/* binding */ hasParam),
+/* harmony export */   "getConf": () => (/* binding */ getConf),
 /* harmony export */   "getParam": () => (/* binding */ getParam),
 /* harmony export */   "getVariable": () => (/* binding */ getVariable),
-/* harmony export */   "getConf": () => (/* binding */ getConf),
 /* harmony export */   "hasConf": () => (/* binding */ hasConf),
+/* harmony export */   "hasParam": () => (/* binding */ hasParam),
+/* harmony export */   "isBrowser": () => (/* binding */ isBrowser),
+/* harmony export */   "isMac": () => (/* binding */ isMac),
+/* harmony export */   "isNode": () => (/* binding */ isNode),
 /* harmony export */   "production": () => (/* binding */ production)
 /* harmony export */ });
 /* harmony import */ var _map_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./map.js */ "./node_modules/lib0/map.js");
@@ -54424,13 +54424,13 @@ const unexpectedCase = () => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "enqueue": () => (/* binding */ enqueue),
-/* harmony export */   "timeout": () => (/* binding */ timeout),
-/* harmony export */   "interval": () => (/* binding */ interval),
 /* harmony export */   "Animation": () => (/* binding */ Animation),
 /* harmony export */   "animationFrame": () => (/* binding */ animationFrame),
+/* harmony export */   "createDebouncer": () => (/* binding */ createDebouncer),
+/* harmony export */   "enqueue": () => (/* binding */ enqueue),
 /* harmony export */   "idleCallback": () => (/* binding */ idleCallback),
-/* harmony export */   "createDebouncer": () => (/* binding */ createDebouncer)
+/* harmony export */   "interval": () => (/* binding */ interval),
+/* harmony export */   "timeout": () => (/* binding */ timeout)
 /* harmony export */ });
 /* global requestIdleCallback, requestAnimationFrame, cancelIdleCallback, cancelAnimationFrame */
 
@@ -54551,13 +54551,13 @@ const createDebouncer = timeout => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "callAll": () => (/* binding */ callAll),
-/* harmony export */   "nop": () => (/* binding */ nop),
 /* harmony export */   "apply": () => (/* binding */ apply),
-/* harmony export */   "id": () => (/* binding */ id),
-/* harmony export */   "equalityStrict": () => (/* binding */ equalityStrict),
+/* harmony export */   "callAll": () => (/* binding */ callAll),
+/* harmony export */   "equalityDeep": () => (/* binding */ equalityDeep),
 /* harmony export */   "equalityFlat": () => (/* binding */ equalityFlat),
-/* harmony export */   "equalityDeep": () => (/* binding */ equalityDeep)
+/* harmony export */   "equalityStrict": () => (/* binding */ equalityStrict),
+/* harmony export */   "id": () => (/* binding */ id),
+/* harmony export */   "nop": () => (/* binding */ nop)
 /* harmony export */ });
 /* harmony import */ var _array_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./array.js */ "./node_modules/lib0/array.js");
 /* harmony import */ var _object_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./object.js */ "./node_modules/lib0/object.js");
@@ -54714,10 +54714,10 @@ const equalityDeep = (a, b) => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "mapIterator": () => (/* binding */ mapIterator),
 /* harmony export */   "createIterator": () => (/* binding */ createIterator),
 /* harmony export */   "iteratorFilter": () => (/* binding */ iteratorFilter),
-/* harmony export */   "iteratorMap": () => (/* binding */ iteratorMap)
+/* harmony export */   "iteratorMap": () => (/* binding */ iteratorMap),
+/* harmony export */   "mapIterator": () => (/* binding */ mapIterator)
 /* harmony export */ });
 /**
  * Utility module to create and manipulate Iterators.
@@ -54796,8 +54796,8 @@ const iteratorMap = (iterator, fmap) => createIterator(() => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "stringify": () => (/* binding */ stringify),
-/* harmony export */   "parse": () => (/* binding */ parse)
+/* harmony export */   "parse": () => (/* binding */ parse),
+/* harmony export */   "stringify": () => (/* binding */ stringify)
 /* harmony export */ });
 /**
  * JSON utility functions.
@@ -54833,29 +54833,29 @@ const parse = JSON.parse
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "BOLD": () => (/* binding */ BOLD),
-/* harmony export */   "UNBOLD": () => (/* binding */ UNBOLD),
 /* harmony export */   "BLUE": () => (/* binding */ BLUE),
-/* harmony export */   "GREY": () => (/* binding */ GREY),
+/* harmony export */   "BOLD": () => (/* binding */ BOLD),
 /* harmony export */   "GREEN": () => (/* binding */ GREEN),
-/* harmony export */   "RED": () => (/* binding */ RED),
-/* harmony export */   "PURPLE": () => (/* binding */ PURPLE),
+/* harmony export */   "GREY": () => (/* binding */ GREY),
 /* harmony export */   "ORANGE": () => (/* binding */ ORANGE),
+/* harmony export */   "PURPLE": () => (/* binding */ PURPLE),
+/* harmony export */   "RED": () => (/* binding */ RED),
+/* harmony export */   "UNBOLD": () => (/* binding */ UNBOLD),
 /* harmony export */   "UNCOLOR": () => (/* binding */ UNCOLOR),
-/* harmony export */   "print": () => (/* binding */ print),
-/* harmony export */   "warn": () => (/* binding */ warn),
-/* harmony export */   "printError": () => (/* binding */ printError),
-/* harmony export */   "printImg": () => (/* binding */ printImg),
-/* harmony export */   "printImgBase64": () => (/* binding */ printImgBase64),
+/* harmony export */   "VConsole": () => (/* binding */ VConsole),
+/* harmony export */   "createModuleLogger": () => (/* binding */ createModuleLogger),
+/* harmony export */   "createVConsole": () => (/* binding */ createVConsole),
 /* harmony export */   "group": () => (/* binding */ group),
 /* harmony export */   "groupCollapsed": () => (/* binding */ groupCollapsed),
 /* harmony export */   "groupEnd": () => (/* binding */ groupEnd),
-/* harmony export */   "printDom": () => (/* binding */ printDom),
+/* harmony export */   "print": () => (/* binding */ print),
 /* harmony export */   "printCanvas": () => (/* binding */ printCanvas),
+/* harmony export */   "printDom": () => (/* binding */ printDom),
+/* harmony export */   "printError": () => (/* binding */ printError),
+/* harmony export */   "printImg": () => (/* binding */ printImg),
+/* harmony export */   "printImgBase64": () => (/* binding */ printImgBase64),
 /* harmony export */   "vconsoles": () => (/* binding */ vconsoles),
-/* harmony export */   "VConsole": () => (/* binding */ VConsole),
-/* harmony export */   "createVConsole": () => (/* binding */ createVConsole),
-/* harmony export */   "createModuleLogger": () => (/* binding */ createModuleLogger)
+/* harmony export */   "warn": () => (/* binding */ warn)
 /* harmony export */ });
 /* harmony import */ var _environment_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./environment.js */ "./node_modules/lib0/environment.js");
 /* harmony import */ var _symbol_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./symbol.js */ "./node_modules/lib0/symbol.js");
@@ -55287,12 +55287,12 @@ const createModuleLogger = moduleName => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "create": () => (/* binding */ create),
-/* harmony export */   "copy": () => (/* binding */ copy),
-/* harmony export */   "setIfUndefined": () => (/* binding */ setIfUndefined),
-/* harmony export */   "map": () => (/* binding */ map),
+/* harmony export */   "all": () => (/* binding */ all),
 /* harmony export */   "any": () => (/* binding */ any),
-/* harmony export */   "all": () => (/* binding */ all)
+/* harmony export */   "copy": () => (/* binding */ copy),
+/* harmony export */   "create": () => (/* binding */ create),
+/* harmony export */   "map": () => (/* binding */ map),
+/* harmony export */   "setIfUndefined": () => (/* binding */ setIfUndefined)
 /* harmony export */ });
 /**
  * Utility module to work with key-value stores.
@@ -55418,23 +55418,23 @@ const all = (m, f) => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "floor": () => (/* binding */ floor),
-/* harmony export */   "ceil": () => (/* binding */ ceil),
 /* harmony export */   "abs": () => (/* binding */ abs),
+/* harmony export */   "add": () => (/* binding */ add),
+/* harmony export */   "ceil": () => (/* binding */ ceil),
+/* harmony export */   "exp10": () => (/* binding */ exp10),
+/* harmony export */   "floor": () => (/* binding */ floor),
 /* harmony export */   "imul": () => (/* binding */ imul),
-/* harmony export */   "round": () => (/* binding */ round),
+/* harmony export */   "isNaN": () => (/* binding */ isNaN),
+/* harmony export */   "isNegativeZero": () => (/* binding */ isNegativeZero),
+/* harmony export */   "log": () => (/* binding */ log),
 /* harmony export */   "log10": () => (/* binding */ log10),
 /* harmony export */   "log2": () => (/* binding */ log2),
-/* harmony export */   "log": () => (/* binding */ log),
-/* harmony export */   "sqrt": () => (/* binding */ sqrt),
-/* harmony export */   "add": () => (/* binding */ add),
-/* harmony export */   "min": () => (/* binding */ min),
 /* harmony export */   "max": () => (/* binding */ max),
-/* harmony export */   "isNaN": () => (/* binding */ isNaN),
+/* harmony export */   "min": () => (/* binding */ min),
 /* harmony export */   "pow": () => (/* binding */ pow),
-/* harmony export */   "exp10": () => (/* binding */ exp10),
+/* harmony export */   "round": () => (/* binding */ round),
 /* harmony export */   "sign": () => (/* binding */ sign),
-/* harmony export */   "isNegativeZero": () => (/* binding */ isNegativeZero)
+/* harmony export */   "sqrt": () => (/* binding */ sqrt)
 /* harmony export */ });
 /**
  * Common Math expressions.
@@ -55507,27 +55507,27 @@ const isNegativeZero = n => n !== 0 ? n < 0 : 1 / n < 0
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "yotta": () => (/* binding */ yotta),
-/* harmony export */   "zetta": () => (/* binding */ zetta),
-/* harmony export */   "exa": () => (/* binding */ exa),
-/* harmony export */   "peta": () => (/* binding */ peta),
-/* harmony export */   "tera": () => (/* binding */ tera),
-/* harmony export */   "giga": () => (/* binding */ giga),
-/* harmony export */   "mega": () => (/* binding */ mega),
-/* harmony export */   "kilo": () => (/* binding */ kilo),
-/* harmony export */   "hecto": () => (/* binding */ hecto),
+/* harmony export */   "atto": () => (/* binding */ atto),
+/* harmony export */   "centi": () => (/* binding */ centi),
 /* harmony export */   "deca": () => (/* binding */ deca),
 /* harmony export */   "deci": () => (/* binding */ deci),
-/* harmony export */   "centi": () => (/* binding */ centi),
-/* harmony export */   "milli": () => (/* binding */ milli),
-/* harmony export */   "micro": () => (/* binding */ micro),
-/* harmony export */   "nano": () => (/* binding */ nano),
-/* harmony export */   "pico": () => (/* binding */ pico),
+/* harmony export */   "exa": () => (/* binding */ exa),
 /* harmony export */   "femto": () => (/* binding */ femto),
-/* harmony export */   "atto": () => (/* binding */ atto),
-/* harmony export */   "zepto": () => (/* binding */ zepto),
+/* harmony export */   "giga": () => (/* binding */ giga),
+/* harmony export */   "hecto": () => (/* binding */ hecto),
+/* harmony export */   "kilo": () => (/* binding */ kilo),
+/* harmony export */   "mega": () => (/* binding */ mega),
+/* harmony export */   "micro": () => (/* binding */ micro),
+/* harmony export */   "milli": () => (/* binding */ milli),
+/* harmony export */   "nano": () => (/* binding */ nano),
+/* harmony export */   "peta": () => (/* binding */ peta),
+/* harmony export */   "pico": () => (/* binding */ pico),
+/* harmony export */   "prefix": () => (/* binding */ prefix),
+/* harmony export */   "tera": () => (/* binding */ tera),
 /* harmony export */   "yocto": () => (/* binding */ yocto),
-/* harmony export */   "prefix": () => (/* binding */ prefix)
+/* harmony export */   "yotta": () => (/* binding */ yotta),
+/* harmony export */   "zepto": () => (/* binding */ zepto),
+/* harmony export */   "zetta": () => (/* binding */ zetta)
 /* harmony export */ });
 /* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "./node_modules/lib0/math.js");
 /**
@@ -55657,10 +55657,10 @@ const createMutex = () => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "HIGHEST_INT32": () => (/* binding */ HIGHEST_INT32),
+/* harmony export */   "LOWEST_INT32": () => (/* binding */ LOWEST_INT32),
 /* harmony export */   "MAX_SAFE_INTEGER": () => (/* binding */ MAX_SAFE_INTEGER),
 /* harmony export */   "MIN_SAFE_INTEGER": () => (/* binding */ MIN_SAFE_INTEGER),
-/* harmony export */   "LOWEST_INT32": () => (/* binding */ LOWEST_INT32),
-/* harmony export */   "HIGHEST_INT32": () => (/* binding */ HIGHEST_INT32),
 /* harmony export */   "isInteger": () => (/* binding */ isInteger),
 /* harmony export */   "isNaN": () => (/* binding */ isNaN)
 /* harmony export */ });
@@ -55704,16 +55704,16 @@ const isNaN = Number.isNaN
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "create": () => (/* binding */ create),
 /* harmony export */   "assign": () => (/* binding */ assign),
-/* harmony export */   "keys": () => (/* binding */ keys),
-/* harmony export */   "forEach": () => (/* binding */ forEach),
-/* harmony export */   "map": () => (/* binding */ map),
-/* harmony export */   "length": () => (/* binding */ length),
-/* harmony export */   "some": () => (/* binding */ some),
+/* harmony export */   "create": () => (/* binding */ create),
+/* harmony export */   "equalFlat": () => (/* binding */ equalFlat),
 /* harmony export */   "every": () => (/* binding */ every),
+/* harmony export */   "forEach": () => (/* binding */ forEach),
 /* harmony export */   "hasProperty": () => (/* binding */ hasProperty),
-/* harmony export */   "equalFlat": () => (/* binding */ equalFlat)
+/* harmony export */   "keys": () => (/* binding */ keys),
+/* harmony export */   "length": () => (/* binding */ length),
+/* harmony export */   "map": () => (/* binding */ map),
+/* harmony export */   "some": () => (/* binding */ some)
 /* harmony export */ });
 /**
  * Utility functions for working with EcmaScript objects.
@@ -55988,9 +55988,9 @@ const map = (arr, f) => arr.map(p => f(p.left, p.right))
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "oneOf": () => (/* binding */ oneOf),
 /* harmony export */   "rand": () => (/* binding */ rand),
 /* harmony export */   "uint32": () => (/* binding */ uint32),
-/* harmony export */   "oneOf": () => (/* binding */ oneOf),
 /* harmony export */   "uuidv4": () => (/* binding */ uuidv4)
 /* harmony export */ });
 /* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./math.js */ "./node_modules/lib0/math.js");
@@ -56067,8 +56067,8 @@ const toArray = set => Array.from(set)
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "varStorage": () => (/* binding */ varStorage),
-/* harmony export */   "onChange": () => (/* binding */ onChange)
+/* harmony export */   "onChange": () => (/* binding */ onChange),
+/* harmony export */   "varStorage": () => (/* binding */ varStorage)
 /* harmony export */ });
 /* global localStorage, addEventListener */
 
@@ -56145,19 +56145,19 @@ const onChange = eventHandler => usePolyfill || addEventListener('storage', /** 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "_decodeUtf8Native": () => (/* binding */ _decodeUtf8Native),
+/* harmony export */   "_decodeUtf8Polyfill": () => (/* binding */ _decodeUtf8Polyfill),
+/* harmony export */   "_encodeUtf8Native": () => (/* binding */ _encodeUtf8Native),
+/* harmony export */   "_encodeUtf8Polyfill": () => (/* binding */ _encodeUtf8Polyfill),
+/* harmony export */   "decodeUtf8": () => (/* binding */ decodeUtf8),
+/* harmony export */   "encodeUtf8": () => (/* binding */ encodeUtf8),
+/* harmony export */   "fromCamelCase": () => (/* binding */ fromCamelCase),
 /* harmony export */   "fromCharCode": () => (/* binding */ fromCharCode),
 /* harmony export */   "fromCodePoint": () => (/* binding */ fromCodePoint),
 /* harmony export */   "trimLeft": () => (/* binding */ trimLeft),
-/* harmony export */   "fromCamelCase": () => (/* binding */ fromCamelCase),
 /* harmony export */   "utf8ByteLength": () => (/* binding */ utf8ByteLength),
-/* harmony export */   "_encodeUtf8Polyfill": () => (/* binding */ _encodeUtf8Polyfill),
-/* harmony export */   "utf8TextEncoder": () => (/* binding */ utf8TextEncoder),
-/* harmony export */   "_encodeUtf8Native": () => (/* binding */ _encodeUtf8Native),
-/* harmony export */   "encodeUtf8": () => (/* binding */ encodeUtf8),
-/* harmony export */   "_decodeUtf8Polyfill": () => (/* binding */ _decodeUtf8Polyfill),
 /* harmony export */   "utf8TextDecoder": () => (/* binding */ utf8TextDecoder),
-/* harmony export */   "_decodeUtf8Native": () => (/* binding */ _decodeUtf8Native),
-/* harmony export */   "decodeUtf8": () => (/* binding */ decodeUtf8)
+/* harmony export */   "utf8TextEncoder": () => (/* binding */ utf8TextEncoder)
 /* harmony export */ });
 /**
  * Utility module to work with strings.
@@ -56442,8 +56442,8 @@ const encodeQueryParams = params =>
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "messagePermissionDenied": () => (/* binding */ messagePermissionDenied),
-/* harmony export */   "writePermissionDenied": () => (/* binding */ writePermissionDenied),
-/* harmony export */   "readAuthMessage": () => (/* binding */ readAuthMessage)
+/* harmony export */   "readAuthMessage": () => (/* binding */ readAuthMessage),
+/* harmony export */   "writePermissionDenied": () => (/* binding */ writePermissionDenied)
 /* harmony export */ });
 /* harmony import */ var lib0_encoding__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/encoding */ "./node_modules/lib0/encoding.js");
 /* harmony import */ var lib0_decoding__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lib0/decoding */ "./node_modules/lib0/decoding.js");
@@ -56493,12 +56493,12 @@ const readAuthMessage = (decoder, y, permissionDeniedHandler) => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "outdatedTimeout": () => (/* binding */ outdatedTimeout),
 /* harmony export */   "Awareness": () => (/* binding */ Awareness),
-/* harmony export */   "removeAwarenessStates": () => (/* binding */ removeAwarenessStates),
+/* harmony export */   "applyAwarenessUpdate": () => (/* binding */ applyAwarenessUpdate),
 /* harmony export */   "encodeAwarenessUpdate": () => (/* binding */ encodeAwarenessUpdate),
 /* harmony export */   "modifyAwarenessUpdate": () => (/* binding */ modifyAwarenessUpdate),
-/* harmony export */   "applyAwarenessUpdate": () => (/* binding */ applyAwarenessUpdate)
+/* harmony export */   "outdatedTimeout": () => (/* binding */ outdatedTimeout),
+/* harmony export */   "removeAwarenessStates": () => (/* binding */ removeAwarenessStates)
 /* harmony export */ });
 /* harmony import */ var lib0_encoding__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lib0/encoding */ "./node_modules/lib0/encoding.js");
 /* harmony import */ var lib0_decoding__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! lib0/decoding */ "./node_modules/lib0/decoding.js");
@@ -56817,13 +56817,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "messageYjsSyncStep1": () => (/* binding */ messageYjsSyncStep1),
 /* harmony export */   "messageYjsSyncStep2": () => (/* binding */ messageYjsSyncStep2),
 /* harmony export */   "messageYjsUpdate": () => (/* binding */ messageYjsUpdate),
-/* harmony export */   "writeSyncStep1": () => (/* binding */ writeSyncStep1),
-/* harmony export */   "writeSyncStep2": () => (/* binding */ writeSyncStep2),
+/* harmony export */   "readSyncMessage": () => (/* binding */ readSyncMessage),
 /* harmony export */   "readSyncStep1": () => (/* binding */ readSyncStep1),
 /* harmony export */   "readSyncStep2": () => (/* binding */ readSyncStep2),
-/* harmony export */   "writeUpdate": () => (/* binding */ writeUpdate),
 /* harmony export */   "readUpdate": () => (/* binding */ readUpdate),
-/* harmony export */   "readSyncMessage": () => (/* binding */ readSyncMessage)
+/* harmony export */   "writeSyncStep1": () => (/* binding */ writeSyncStep1),
+/* harmony export */   "writeSyncStep2": () => (/* binding */ writeSyncStep2),
+/* harmony export */   "writeUpdate": () => (/* binding */ writeUpdate)
 /* harmony export */ });
 /* harmony import */ var lib0_encoding__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lib0/encoding */ "./node_modules/lib0/encoding.js");
 /* harmony import */ var lib0_decoding__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lib0/decoding */ "./node_modules/lib0/decoding.js");
@@ -66689,6 +66689,11 @@ glo[importIdentifier] = true;
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/nonce */
+/******/ 	(() => {
+/******/ 		__webpack_require__.nc = undefined;
 /******/ 	})();
 /******/ 	
 /************************************************************************/
